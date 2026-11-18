@@ -25,8 +25,23 @@ Other RadioMaster radios may use the corresponding variant if they meet the
 requirements below. They are not automatically validated simply because they
 have a monochrome or color display.
 
+## Screenshots
+
+Actual GX12 captures of the monochrome interface, enlarged for readability.
+The readings show the captured state and are not an indication of flight readiness.
+
+| Overview | Flight data |
+| --- | --- |
+| ![APMon monochrome overview in English](images/apmon-sw-overview-en.png) | ![APMon monochrome flight data in English](images/apmon-sw-flight-en.png) |
+
+**Change language:** On SW displays, press **ENTER** (the rotary wheel), select
+**English** or **Deutsch** with the wheel or Plus/Minus, then press ENTER to
+confirm. On COLOR displays, long-press APMon and open **Widget settings →
+Language → English / Deutsch**.
+
 ## Contents
 
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Compatibility and requirements](#compatibility-and-requirements)
 - [Installation](#installation)

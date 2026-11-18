@@ -25,8 +25,23 @@ Der aktuelle Projektstand ist **Version 0.1.0**; die Versionsnummer steht in
 Unterstützung ersetzt keine Prüfung auf der jeweiligen Hardware; der aktuelle
 Prüfstatus ist im Abschnitt zur Kompatibilität dokumentiert.
 
+## Screenshots
+
+Echte GX12-Aufnahmen der Schwarzweißoberfläche, zur besseren Lesbarkeit vergrößert.
+Die Werte zeigen den Aufnahmezustand und sind keine Aussage zur Flugbereitschaft.
+
+| Übersicht | Flugwerte |
+| --- | --- |
+| ![APMon-Schwarzweißübersicht auf Deutsch](images/apmon-sw-overview-de.png) | ![APMon-Schwarzweiß-Flugwerte auf Deutsch](images/apmon-sw-flight-de.png) |
+
+**Sprache wechseln:** Auf SW-Displays **ENTER** (Drehgeber drücken) betätigen,
+mit Drehgeber oder Plus/Minus **Deutsch** oder **English** auswählen und mit
+ENTER bestätigen. Auf COLOR-Displays APMon lange antippen und
+**Widget-Einstellungen → Language → English / Deutsch** öffnen.
+
 ## Inhalt
 
+- [Screenshots](#screenshots)
 - [Funktionen](#funktionen)
 - [Kompatibilität und Voraussetzungen](#kompatibilität-und-voraussetzungen)
 - [Installation](#installation)
