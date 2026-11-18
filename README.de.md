@@ -27,12 +27,17 @@ Prüfstatus ist im Abschnitt zur Kompatibilität dokumentiert.
 
 ## Screenshots
 
-Echte GX12-Aufnahmen der Schwarzweißoberfläche, zur besseren Lesbarkeit vergrößert.
+Echte Aufnahmen der GX12-Schwarzweißoberfläche und des GX15-Farbwidgets.
+Die Schwarzweißbilder sind zur besseren Lesbarkeit vergrößert.
 Die Werte zeigen den Aufnahmezustand und sind keine Aussage zur Flugbereitschaft.
 
 | Übersicht | Flugwerte |
 | --- | --- |
 | ![APMon-Schwarzweißübersicht auf Deutsch](images/apmon-sw-overview-de.png) | ![APMon-Schwarzweiß-Flugwerte auf Deutsch](images/apmon-sw-flight-de.png) |
+
+**Farbübersicht — GX15**
+
+![APMon-Farbübersicht auf Deutsch auf der RadioMaster GX15](images/apmon-color-overview-de.png)
 
 **Sprache wechseln:** Auf SW-Displays **ENTER** (Drehgeber drücken) betätigen,
 mit Drehgeber oder Plus/Minus **Deutsch** oder **English** auswählen und mit

@@ -27,12 +27,17 @@ have a monochrome or color display.
 
 ## Screenshots
 
-Actual GX12 captures of the monochrome interface, enlarged for readability.
+Actual GX12 monochrome and GX15 color captures. The monochrome images are
+enlarged for readability.
 The readings show the captured state and are not an indication of flight readiness.
 
 | Overview | Flight data |
 | --- | --- |
 | ![APMon monochrome overview in English](images/apmon-sw-overview-en.png) | ![APMon monochrome flight data in English](images/apmon-sw-flight-en.png) |
+
+**Color dashboard — GX15**
+
+![APMon color dashboard in English on RadioMaster GX15](images/apmon-color-overview-en.png)
 
 **Change language:** On SW displays, press **ENTER** (the rotary wheel), select
 **English** or **Deutsch** with the wheel or Plus/Minus, then press ENTER to
