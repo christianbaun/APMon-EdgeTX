@@ -6,48 +6,23 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
-**ArduPilot telemetry on EdgeTX radio transmitters.** APMon displays battery
-readings, flight attitude, GPS status and flight-controller messages. It runs as
-Lua scripts on the radio's SD card: no laptop or additional flight-controller
-script is required during use.
+**ArduPilot telemetry on RadioMaster transmitters running EdgeTX.** APMon
+displays battery readings, flight attitude, GPS status and flight-controller
+messages. It runs as Lua scripts on the radio's SD card: no laptop or
+additional flight-controller script is required during use.
 
-Current project version: **0.2.0**, recorded in [VERSION](VERSION).
-See the [v0.2.0 release notes](releases/v0.2.0.md).
+Current project version: **0.2.1**, recorded in [VERSION](VERSION).
+See the [v0.2.1 release notes](releases/v0.2.1.md).
+
 The GUI supports **English and German**, with English as the default.
 
-## Choose your display
-
-| Package | Display / interface | Reference radios |
-| --- | --- | --- |
-| [APMon-SW.zip](APMon-SW.zip) | Monochrome, 128 × 64; telemetry script with two data pages | RadioMaster GX12, Boxer |
-| [APMon-COLOR.zip](APMon-COLOR.zip) | Color LCD; single-page widget, minimum zone 440 × 252 | RadioMaster GX15, 480 × 320 |
-
-**SW** means *Schwarzweiß* (German for monochrome). Package selection and
-deployment depend on the **display type**, not a radio model name.
-Other RadioMaster radios may use the corresponding variant if they meet the
-requirements below. They are not automatically validated simply because they
-have a monochrome or color display.
-
-## Screenshots
-
-Actual GX12 monochrome and GX15 color captures. The monochrome images are
-enlarged for readability and show the layout from the published 0.1.0 package.
-The readings show the captured state and are not an indication of flight readiness.
-
-| Overview | Flight data |
-| --- | --- |
-| ![APMon monochrome overview in English](images/apmon-sw-overview-en.png) | ![APMon monochrome flight data in English](images/apmon-sw-flight-en.png) |
-
-**Color dashboard — GX15**
-
-![APMon color dashboard in English on RadioMaster GX15](images/apmon-color-overview-en.png)
-
-**Change language:** On SW, press **ENTER** and select **Language / Sprache**.
-On COLOR, open APMon in full screen and select **Menu → Language**. For a
-persistent COLOR setting, use **Widget settings → Language**.
+**AI-assisted development:** OpenAI Codex CLI helped write and revise the
+source, tests and documentation. This does not replace hardware testing;
+see the compatibility section for the current validation status.
 
 ## Contents
 
+- [Choose your display](#choose-your-display)
 - [Screenshots](#screenshots)
 - [Features](#features)
 - [Compatibility and requirements](#compatibility-and-requirements)
@@ -59,6 +34,49 @@ persistent COLOR setting, use **Widget settings → Language**.
 - [Development and tests](#development-and-tests)
 - [Contributing](#contributing)
 - [License](#license)
+
+## Choose your display
+
+| Package | Display / interface | Reference radios |
+| --- | --- | --- |
+| [APMon-SW.zip](APMon-SW.zip) | Monochrome, 128 × 64; telemetry script with two data pages | RadioMaster GX12, Boxer |
+| [APMon-COLOR.zip](APMon-COLOR.zip) | Color LCD; dashboard widget, minimum zone 440 × 252 | RadioMaster GX15 and TX15 (480 × 320), TX16S MK3 (800 × 480) |
+
+**SW** means *Schwarzweiß* (German for monochrome). Choose the package and
+deployment option by **display type**, not radio model: `--display sw` installs
+the telemetry script, `--display color` the color widget. Other RadioMaster
+radios may work if they meet the requirements below; a matching display alone
+does not mean the hardware has been tested.
+
+## Screenshots
+
+Actual captures from the GX12, GX15 and TX16S MK3, including the project menu
+on each radio. The GX12 images are enlarged 4×. The readings show the captured
+state and are not an indication of flight readiness.
+
+| Overview | Flight data |
+| --- | --- |
+| ![APMon monochrome overview in English](images/screenshots/apmon-sw-gx12-overview-en-v0.2.0-2000-02-23-212903-4x.png) | ![APMon monochrome flight data in English](images/screenshots/apmon-sw-gx12-flight-en-v0.2.0-2000-02-23-212832-4x.png) |
+
+**Monochrome project menu — GX12**
+
+![APMon monochrome project menu in English](images/screenshots/apmon-sw-gx12-menu-en-v0.2.0-2000-02-23-212826-4x.png)
+
+**Color dashboard and project menu — GX15 (480 × 320)**
+
+| Dashboard in full screen | Project menu |
+| --- | --- |
+| ![APMon color dashboard in English with the full title and telemetry pulse logo on RadioMaster GX15](images/screenshots/apmon-color-gx15-overview-en-v0.2.0-2000-04-24-102152.png) | ![APMon color project menu in English with the same header on RadioMaster GX15](images/screenshots/apmon-color-gx15-menu-en-v0.2.0-2000-04-24-102151.png) |
+
+**Color dashboard and project menu — TX16S MK3 (800 × 480)**
+
+| Dashboard | Project menu |
+| --- | --- |
+| ![APMon color dashboard in English with the full title and telemetry pulse logo on RadioMaster TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.2.0-2000-06-21-111002.png) | ![APMon color project menu in English with the same header on RadioMaster TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.2.0-2000-06-21-110921.png) |
+
+**Change language:** On SW, press **ENTER** and select **Language / Sprache**.
+On COLOR, open APMon in full screen and select **Menu → Language**. For a
+persistent COLOR setting, use **Widget settings → Language**.
 
 ## Features
 
@@ -91,6 +109,8 @@ versions require separate testing.
 | Reference radio | Firmware / validation status |
 | --- | --- |
 | GX15 | EdgeTX 2.12.5, ELRS 4.1.0; UI and several live readings confirmed in practical use |
+| TX15 | Tested on hardware with the current source build: color dashboard and full-screen project menu at 480 × 320, in English and German. Firmware version and full functional validation not recorded. |
+| TX16S MK3 | Tested on hardware with the current source build: color dashboard and full-screen project menu at 800 × 480, in English and German. Firmware version and full functional validation not recorded. |
 | GX12 | EdgeTX 2.12.2; automated SW tests pass; complete hardware validation after recent fixes is pending |
 | Boxer | Shared SW variant; hardware validation and exact firmware version are pending |
 | Other radios | Potentially compatible when display and API requirements match; not hardware-qualified |
@@ -148,7 +168,7 @@ SCRIPTS/
 WIDGETS/                   # COLOR package only
 └── APMon/
     ├── main.lua
-    └── logo.png           # source builds after v0.2.0
+    └── logo.png
 ```
 
 Do not add an enclosing package directory:
@@ -213,6 +233,36 @@ are left untouched. `config.lua` is replaced: keep custom sensor mappings in
 
 The ZIP packages include the license; direct deployment does not copy it.
 Safely eject the card and restart the radio after deployment.
+
+### Import screenshots
+
+Take a screenshot with the EdgeTX **Screenshot** special function, then
+connect the radio in USB storage mode. `import_screenshots.py` uses the same
+card detection as `deploy.py`; use `--sd PATH` if more than one card is mounted.
+Preview and import need Pillow 9.1+ (`python3-pil` on Debian); listing does not.
+
+```bash
+python3 import_screenshots.py --list
+python3 import_screenshots.py --display sw --radio gx12 --view overview --lang de --scale 4
+python3 import_screenshots.py --display sw --radio gx12 --view overview --lang de --scale 4 --apply
+```
+
+By default the importer picks up **all new captures** in `SCREENSHOTS` and
+skips existing imports with the same capture time and pixels, even if their
+labels or scale differ. The supplied view and language apply to the whole
+batch. If those differ between captures, select the originals with
+`--file NAME` (repeat for several captures with the same metadata).
+For example, GX15 menu captures use
+`--display color --radio gx15 --view menu --lang en`. Use `--version` if
+the APMon version on the radio differs from [VERSION](VERSION).
+The other view names include `flight`, `language`, `messages` and `diagnostics`.
+
+The importer reads BMP and PNG files and writes PNGs such as
+`images/screenshots/apmon-sw-gx12-overview-de-v0.2.1-2026-11-20-090305-4x.png`.
+It uses the EdgeTX filename timestamp, or local file modification time for
+renamed captures. Images keep their native size unless `--scale` is given.
+Identical imports are skipped; different captures with the same name get
+a numeric suffix. The SD card and existing README screenshots are untouched.
 
 ## Operation
 
@@ -307,6 +357,8 @@ Armed, the active EKF source set or VTX settings.
 
 ## Data meaning and validity
 
+### Missing and stale readings
+
 `--` means missing, unmapped, invalid or stale data. Valid zero readings are kept.
 
 | Source | Validity |
@@ -395,10 +447,10 @@ README.de.md            German documentation
 ### Source headers and versioning
 
 All Lua and Python source files have headers recording purpose, project version,
-update date, authorship, Codex CLI assistance, copyright and the `Apache-2.0`
-SPDX identifier. “APMon contributors” refers to project contributors; Codex CLI
-is separately identified as development assistance. Dates describe the recorded
-change state, not an assumed original creation date.
+update date, authorship and the `Apache-2.0` SPDX identifier. Christian Baun is
+listed under `Authors`; Codex CLI is credited separately for development
+assistance. Dates describe the recorded change state, not an assumed original
+creation date.
 
 [VERSION](VERSION) is the central project version. When releasing a new version,
 update source-header versions and both READMEs together. Update each changed

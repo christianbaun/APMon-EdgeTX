@@ -1,18 +1,17 @@
 -- =============================================================================
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/WIDGETS/APMon/main.lua
--- Purpose: Render the GX15 dashboard, full-screen project menu and language selection.
--- Project version: 0.2.0
+-- Purpose: Render the color dashboard, full-screen project menu and language selection.
+-- Project version: 0.2.1
 -- Updated: 2026-11-20
--- Authors: APMon contributors
+-- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
--- Copyright (c) 2026 APMon contributors
 -- SPDX-License-Identifier: Apache-2.0
 -- License: Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
 -- See LICENSE in the repository or SCRIPTS/APMON/LICENSE.txt in SD packages.
 -- =============================================================================
 
--- GX15 color widget, classic EdgeTX LCD API (2.x).
+-- Color widget, classic EdgeTX LCD API (2.x).
 local function module(name)
   local path = '/SCRIPTS/APMON/' .. name .. '.lua'
   local chunk, reason = loadScript(path)
@@ -26,12 +25,12 @@ local i18n = module('i18n')
 local project = module('project')
 local options = { { 'Language', CHOICE, 1, i18n.choices } }
 local logo
-local function drawMenuLogo(width)
+local function drawLogo(zone, headerHeight)
   if not (Bitmap and Bitmap.open and lcd.drawBitmap) then return end
-  -- Load once across instances, only when a menu is opened. EdgeTX draws
-  -- nothing for a missing/invalid bitmap, so older SD installs still work.
+  -- Load once across instances. EdgeTX draws nothing for a missing or
+  -- invalid bitmap, so older SD installs still work.
   if logo == nil then logo = Bitmap.open('/WIDGETS/APMon/logo.png') or false end
-  if logo then lcd.drawBitmap(logo, width - 44, 3) end
+  if logo then lcd.drawBitmap(logo, zone.x + zone.w - 44, zone.y + math.floor((headerHeight - 32) / 2)) end
 end
 local function create(zone, opts)
   return { zone = zone, options = opts, monitor = core.new(config, receiver) }
@@ -47,15 +46,61 @@ end
 local function setView(widget, view, focus)
   widget.view, widget.focus = view, focus
 end
-local menuW, menuH = 148, 24
-local rowHeight, visibleChoices = 28, 5
-local function rows(widget, z)
-  if widget.view == 'menu' then return 142, 1, 3 end
-  if widget.view == 'messages' then return z.h - 44, 1, 1 end
-  local count = #i18n.languages + 1
-  return 52, math.max(1, widget.focus - visibleChoices + 1), count
+local menuW = 148
+local regularFont = SMLSIZE or 0
+local headingFont = MIDSIZE or regularFont
+local menuTitle = 'APMon - ArduPilot Telemetry Monitor'
+local menuSubtitle = 'for EdgeTX monochrome and color radios'
+local repoAddress = project.repo[1] .. project.repo[2]
+local function layoutFor(widget, z)
+  local layout = widget.menuLayout
+  if layout and layout.width == z.w and layout.height == z.h then return layout end
+
+  local regularFlags = regularFont + CUSTOM_COLOR
+  local headingFlags = headingFont + CUSTOM_COLOR
+  local _, smallHeight = lcd.sizeText('Ag', regularFlags)
+  local _, largeHeight = lcd.sizeText('Ag', headingFlags)
+  local titleWidth = z.w - 64 -- reserve space for the logo and side padding
+  local titles, titleFont, titleHeight = {menuTitle}, headingFont, largeHeight
+  if lcd.sizeText(menuTitle, headingFlags) > titleWidth then
+    titleFont, titleHeight = regularFont, smallHeight
+    if lcd.sizeText(menuTitle, regularFlags) > titleWidth then
+      titles = {'APMon - ArduPilot', 'Telemetry Monitor'}
+    end
+  end
+  local inner = z.w - 24
+  local subtitles = lcd.sizeText(menuSubtitle, regularFlags) <= inner and {menuSubtitle}
+    or {'for EdgeTX monochrome', 'and color radios'}
+  local repo = lcd.sizeText(repoAddress, regularFlags) <= inner and {repoAddress} or project.repo
+  -- EdgeTX devices can use different pixel sizes for the same font flag.
+  -- Keep the full font box on the colored bar, with padding above and below.
+  local header = math.max(38, math.max(largeHeight, #titles * titleHeight) + 16)
+  local subtitleY, step = header + 6, smallHeight + 4
+  local repoY = math.max(108, subtitleY + #subtitles * step + 4)
+  local divider = math.max(132, repoY + #repo * step + 4)
+  local rowHeight = math.max(28, smallHeight + 9)
+  local languageTop = header + 14
+  local messageStep = math.max(20, smallHeight + 2)
+  layout = {
+    width = z.w, height = z.h, header = header,
+    titles = titles, titleFont = titleFont, titleHeight = titleHeight,
+    subtitles = subtitles, subtitleY = subtitleY, repo = repo, repoY = repoY,
+    divider = divider, menuTop = divider + 10, languageTop = languageTop,
+    smallHeight = smallHeight, step = step, rowHeight = rowHeight,
+    languageRows = math.max(1, math.min(5, math.floor((z.h - smallHeight - 16 - languageTop) / rowHeight))),
+    footerY = z.h - messageStep - smallHeight - 6, messageStep = messageStep,
+    buttonHeight = math.max(24, smallHeight + 6),
+  }
+  widget.menuLayout = layout
+  return layout
 end
-local function handleInput(widget, z, event, touch)
+local function rows(widget, z, layout)
+  if widget.view == 'menu' then return layout.menuTop, 1, 3, 3 end
+  if widget.view == 'messages' then return z.h - layout.rowHeight - 16, 1, 1, 1 end
+  local count = #i18n.languages + 1
+  return layout.languageTop, math.max(1, widget.focus - layout.languageRows + 1), count, layout.languageRows
+end
+local function handleInput(widget, z, layout, event, touch)
   if event == nil then setView(widget); return end
   if event == 0 then return end
   local enter = event == EVT_VIRTUAL_ENTER
@@ -65,8 +110,8 @@ local function handleInput(widget, z, event, touch)
     return tap and tap.x >= 12 and tap.x < z.w - 12 and tap.y >= top and tap.y < top + height
   end
   if not widget.view then
-    local top = z.h - 47
-    if enter or (inButton(top, menuH) and tap.x >= z.w - 12 - menuW) then
+    local top = layout.footerY - 5
+    if enter or (inButton(top, layout.buttonHeight) and tap.x >= z.w - 12 - menuW) then
       setView(widget, 'menu', 1)
     end
     return
@@ -76,7 +121,8 @@ local function handleInput(widget, z, event, touch)
     else setView(widget, 'menu', widget.view == 'messages' and 2 or 1) end
     return
   end
-  local top, first, count = rows(widget, z)
+  local top, first, count, visibleChoices = rows(widget, z, layout)
+  local rowHeight = layout.rowHeight
   if event == EVT_VIRTUAL_NEXT then widget.focus = widget.focus % count + 1
   elseif event == EVT_VIRTUAL_PREV then widget.focus = (widget.focus - 2) % count + 1 end
   if tap then
@@ -137,30 +183,41 @@ local function refresh(widget, event, touch)
     if z.h >= 22 then text(z.x + 3, z.y + 2, 'APMon: grosse Zone waehlen', warn, z.w - 6) end
     return
   end
-  handleInput(widget, z, event, touch)
+  local layout = layoutFor(widget, z)
+  handleInput(widget, z, layout, event, touch)
   language = languageOf(widget)
+  local left, inner = z.x + 12, z.w - 24
+  rect(z.x, z.y, z.w, layout.header, info)
+  if widget.view == 'language' or widget.view == 'messages' then
+    local heading = widget.view == 'language' and 'Sprache' or 'FC-Meldungen'
+    text(left, z.y + 8, heading, bg, inner - 40, headingFont)
+  else
+    for i, line in ipairs(layout.titles) do
+      text(left, z.y + 8 + (i - 1) * layout.titleHeight, line, bg, inner - 40, layout.titleFont)
+    end
+  end
+  drawLogo(z, layout.header)
   if widget.view then
-    local left, inner = 12, z.w - 24
-    rect(0, 0, z.w, 38, info)
-    local heading = widget.view == 'menu' and project.title[1]
-      or widget.view == 'language' and 'Sprache' or 'FC-Meldungen'
-    text(left, 8, heading, bg, inner - 40, MIDSIZE)
-    drawMenuLogo(z.w)
     if widget.view == 'menu' then
-      for i = 2, #project.title do
-        text(left, 44 + (i - 2) * 20, project.title[i], normal, inner)
+      for i, line in ipairs(layout.subtitles) do
+        text(left, layout.subtitleY + (i - 1) * layout.step, line, normal, inner)
       end
-      text(left, 108, project.repo[1] .. project.repo[2], info, inner)
-      rect(left, 132, inner, 1, info)
-    elseif widget.view == 'language' then
-      text(left, z.h - 24, 'Nur für diese Sitzung', info, inner)
-    else
+      for i, line in ipairs(layout.repo) do
+        text(left, layout.repoY + (i - 1) * layout.step, line, info, inner)
+      end
+      rect(left, layout.divider, inner, 1, info)
+    end
+    local top, first, count, visibleChoices = rows(widget, z, layout)
+    if widget.view == 'language' then
+      text(left, z.h - layout.smallHeight - 8, 'Nur für diese Sitzung', info, inner)
+    elseif widget.view == 'messages' then
       local message, age = receiver.message, receiver.age(receiver.message)
       local label = message and string.format(tr('FC-Meldung / vor %ds'), age or 0) or tr('FC-Meldung: --')
-      text(left, 47, label, info, inner)
+      local labelY = layout.header + 9
+      text(left, labelY, label, info, inner)
       local value = message and message.value or ''
-      local flags = (SMLSIZE or 0) + CUSTOM_COLOR
-      for y = 72, z.h - 67, 20 do
+      local flags = regularFont + CUSTOM_COLOR
+      for y = labelY + layout.smallHeight + 9, top - layout.smallHeight - 8, layout.step do
         if #value == 0 then break end
         local part = fit(value, inner, flags)
         lcd.setColor(CUSTOM_COLOR, message.severity <= 4 and warn or normal)
@@ -168,7 +225,7 @@ local function refresh(widget, event, touch)
         value = string.sub(value, #part + 1)
       end
     end
-    local top, first, count = rows(widget, z)
+    local rowHeight = layout.rowHeight
     for i = first, math.min(count, first + visibleChoices - 1) do
       local label
       if widget.view == 'menu' then
@@ -216,44 +273,43 @@ local function refresh(widget, event, touch)
       { 'Steigen', m:format('climb') },
     },
   }
-  text(z.x + 8, z.y + 3, 'ARDUPILOT MONITOR', info, z.w - 16)
-  local status, severity = m:status()
-  if severity == 'warn' then
-    text(z.x + math.floor(z.w / 2), z.y + 3, status, warn, math.floor(z.w / 2) - 8)
-  end
   local cellWidth = math.floor(z.w / 2)
-  -- Reserve two full-width lines for the most recent FC message.
-  local rowHeight = math.floor((z.h - 76) / 11)
+  local firstY, footer = z.y + layout.header + 4, z.y + layout.footerY
+  local rowHeight = math.floor((footer - firstY - 2) / #groups[1])
+  -- At the minimum widget size, keep all rows readable under the shared header.
+  local bodyFont = rowHeight < layout.smallHeight and (TINSIZE or regularFont) or regularFont
+  local bodyFlags = bodyFont + CUSTOM_COLOR
   for col, rows in ipairs(groups) do
     local x = z.x + (col - 1) * cellWidth + 8
     for slot, field in ipairs(rows) do
-      local y = z.y + 28 + (slot - 1) * rowHeight
+      local y = firstY + (slot - 1) * rowHeight
       if not field[2] then
-        text(x, y, field[1], info, cellWidth - 16)
+        text(x, y, field[1], info, cellWidth - 16, bodyFont)
       else
         local value = tr(field[2])
-        local flags = (SMLSIZE or 0) + CUSTOM_COLOR
-        local valueWidth = math.min(lcd.sizeText(value, flags), cellWidth - 80)
-        text(x, y, field[1], normal, cellWidth - 24 - valueWidth)
+        local valueWidth = math.min(lcd.sizeText(value, bodyFlags), cellWidth - 80)
+        text(x, y, field[1], normal, cellWidth - 24 - valueWidth, bodyFont)
         text(x + cellWidth - 16 - valueWidth, y, value,
-          string.find(value, '--', 1, true) and warn or normal, valueWidth)
+          string.find(value, '--', 1, true) and warn or normal, valueWidth, bodyFont)
       end
     end
   end
+  local status, severity = m:status()
+  if severity == 'warn' then
+    text(z.x + cellWidth + 8, firstY + #groups[2] * rowHeight, status, warn, cellWidth - 12, bodyFont)
+  end
   local message, age = receiver.message, receiver.age(receiver.message)
-  local footer = z.y + z.h - 42
   local messageColor = message and message.severity <= 4 and warn or normal
   local label = message and string.format(tr('FC-Meldung / vor %ds'), age or 0) or tr('FC-Meldung: --')
   local buttonX = z.x + z.w - 12 - menuW
   text(z.x + 8, footer, label, info, z.w - menuW - 24)
   if event ~= nil then
-    -- The button ends above the message body, which starts 20 pixels below the label.
-    rect(buttonX, footer - 5, menuW, menuH, panel)
+    rect(buttonX, footer - 5, menuW, layout.buttonHeight, panel)
     text(buttonX + 8, footer - 2, 'Menü', info, menuW - 16)
   else
     text(buttonX, footer, 'Vollbild: Menü', info, menuW)
   end
-  if message then text(z.x + 8, footer + 20, message.value, messageColor, z.w - 16) end
+  if message then text(z.x + 8, footer + layout.messageStep, message.value, messageColor, z.w - 16) end
 
 end
 return { name = 'APMon', options = options, create = create, update = update,

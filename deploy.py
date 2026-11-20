@@ -3,11 +3,10 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: deploy.py
 # Purpose: Preview or deploy APMon files to a mounted SD card after running validation.
-# Project version: 0.2.0
+# Project version: 0.2.1
 # Updated: 2026-11-20
-# Authors: APMon contributors
+# Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)
-# Copyright (c) 2026 APMon contributors
 # SPDX-License-Identifier: Apache-2.0
 # License: Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
 # See LICENSE in the repository or SCRIPTS/APMON/LICENSE.txt in SD packages.
@@ -28,6 +27,23 @@ def radio_card(path):
     return all((path / name).is_dir() for name in ('MODELS', 'RADIO', 'SCRIPTS'))
 
 
+def resolve_card(parser, sd):
+    if sd:
+        target = sd.resolve()
+        if not radio_card(target):
+            parser.error('Target must contain MODELS, RADIO and SCRIPTS directories')
+        return target
+    candidates = set()
+    for base in (Path('/run/media'), Path('/media'), Path('/mnt')):
+        for pattern in ('*', '*/*'):
+            for path in base.glob(pattern):
+                if radio_card(path):
+                    candidates.add(path.resolve())
+    if len(candidates) != 1:
+        parser.error('Connect exactly one EdgeTX SD card, or specify --sd PATH')
+    return candidates.pop()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sd', type=Path, help='Mounted SD-card root')
@@ -35,20 +51,7 @@ def main():
     parser.add_argument('--display', choices=('sw', 'color'), required=True,
                         help='sw: monochrome telemetry script; color: color LCD widget')
     args = parser.parse_args()
-    if args.sd:
-        target = args.sd.resolve()
-        if not radio_card(target):
-            parser.error('Target must contain MODELS, RADIO and SCRIPTS directories')
-    else:
-        candidates = set()
-        for base in (Path('/run/media'), Path('/media'), Path('/mnt')):
-            for pattern in ('*', '*/*'):
-                for path in base.glob(pattern):
-                    if radio_card(path):
-                        candidates.add(path.resolve())
-        if len(candidates) != 1:
-            parser.error('Connect exactly one EdgeTX SD card, or specify --sd PATH')
-        target = candidates.pop()
+    target = resolve_card(parser, args.sd)
 
     files = files_for(args.display)
     caches = {rel: (target / rel).with_suffix('.luac') for rel in files if rel.suffix == '.lua'}

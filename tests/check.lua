@@ -2,11 +2,10 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 0.2.0
+-- Project version: 0.2.1
 -- Updated: 2026-11-20
--- Authors: APMon contributors
+-- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
--- Copyright (c) 2026 APMon contributors
 -- SPDX-License-Identifier: Apache-2.0
 -- License: Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
 -- See LICENSE in the repository or SCRIPTS/APMON/LICENSE.txt in SD packages.
@@ -26,13 +25,21 @@ getSourceValue = function(id)
 end
 loadScript = function(path) return assert(loadfile(root .. path)) end
 SMLSIZE, MIDSIZE, DBLSIZE, INVERS, RIGHT = 0x200, 0x300, 0x400, 2, 4
+TINSIZE = 0x100
 FORCE, ERASE = 2, 4
-VALUE, CUSTOM_COLOR, BOOL, CHOICE = 0, 256, 2, 3
+VALUE, CUSTOM_COLOR, BOOL, CHOICE = 0, 0x10000, 2, 3
 EVT_VIRTUAL_NEXT, EVT_VIRTUAL_PREV = 10, 11
 EVT_VIRTUAL_ENTER, EVT_VIRTUAL_EXIT, EVT_ROT_RIGHT, EVT_ROT_LEFT = 12,13,14,15
 EVT_TOUCH_TAP = 16
 local function measure(text, flags)
-  if colorDisplay then return #text * 8, 16 end
+  if colorDisplay then
+    local font = (flags or 0) & 0xF00
+    if font == TINSIZE then return #text * 6, 12 end
+    local medium = font == MIDSIZE
+    -- Simulate the larger fonts on the 800x480 TX16S MK3.
+    if LCD_W == 800 then return medium and #text * 16 or #text * 10, medium and 36 or 24 end
+    return medium and #text * 11 or #text * 8, medium and 22 or 16
+  end
   local _, glyphs = string.gsub(text, '[^\128-\191]', '')
   local font = (flags or 0) & 0xF00
   if font == SMLSIZE then
@@ -67,7 +74,7 @@ lcd = {
     lines[#lines + 1] = { x1=x1, y1=y1, x2=x2, y2=y2, pattern=pattern, flags=flags }
   end,
   drawBitmap = function(bitmap, x, y)
-    assert(colorDisplay and bitmap == 'APMon logo' and x >= 0 and x + 32 <= LCD_W and y >= 0 and y + 32 <= 38)
+    assert(colorDisplay and bitmap == 'APMon logo' and x >= 0 and x + 32 <= LCD_W and y >= 0 and y + 32 <= LCD_H)
     bitmaps[#bitmaps + 1] = {x=x, y=y}
   end,
 }
@@ -303,17 +310,31 @@ local function colorFrame(w, event, x, y)
   calls, draws, rectangles, bitmaps = {}, {}, {}, {}
   widget.refresh(w, event, x and {x=x,y=y})
 end
+local colorTitle = 'APMon - ArduPilot Telemetry Monitor'
+local function assertColorHeader(x, y, width)
+  x, y, width = x or 0, y or 0, width or LCD_W
+  local title = assert(drawOf(colorTitle), 'Full color title was not drawn')
+  local header, logo = rectangles[2], bitmaps[1]
+  assert(header.x == x and header.y == y and header.w == width)
+  assert(title.x == x + 12 and title.y == y + 8 and title.y + title.h < y + header.h)
+  assert(#bitmaps == 1 and logo.x == x + width - 44 and logo.y == y + math.floor((header.h - 32) / 2))
+  assert(logo.y >= y and logo.y + 32 <= y + header.h and title.x + title.w < logo.x)
+  return header, logo
+end
 local function assertColorMenu(language, messages)
-  assertProjectTitle()
-  assert(drawOf('github.com/christianbaun/APMon-EdgeTX', 108))
-  assert(drawOf(language, 146) and drawOf(messages, 174))
-  assert(#bitmaps == 1 and bitmaps[1].x == LCD_W - 44 and bitmaps[1].y == 3)
+  local header, logo = assertColorHeader()
+  assert(assert(drawOf('for EdgeTX monochrome and color radios')).y > header.h)
+  assert(drawOf('github.com/christianbaun/APMon-EdgeTX'))
+  assert(drawOf(language) and drawOf(messages))
+  return header, logo
 end
 colorFrame(full, EVT_TOUCH_TAP, 30, 275)
-assert(drawOf('ARDUPILOT MONITOR')) -- unrelated touches do not open the menu
-assert(bitmapLoads == 0 and #bitmaps == 0)
+local dashboardHeader, dashboardLogo = assertColorHeader()
+assert(drawOf('Flugmodus') and not drawOf('Sprache: Deutsch')) -- tap outside the button
+assert(bitmapLoads == 1)
 colorFrame(full, EVT_TOUCH_TAP, 460, 275)
-assertColorMenu('> Sprache: Deutsch', 'FC-Meldungen')
+local menuHeader, menuLogo = assertColorMenu('> Sprache: Deutsch', 'FC-Meldungen')
+assert(dashboardHeader.h == menuHeader.h and dashboardLogo.x == menuLogo.x and dashboardLogo.y == menuLogo.y)
 colorFrame(full, EVT_VIRTUAL_ENTER)
 assert(drawOf('Sprache') and drawOf('Nur für diese Sitzung'))
 assert(bitmapLoads == 1 and #bitmaps == 1)
@@ -335,7 +356,11 @@ local isolated = widget.create({x=0,y=0,w=480,h=272}, { Language = 2 })
 colorFrame(isolated, EVT_VIRTUAL_ENTER)
 assertColorMenu('> Sprache: Deutsch', 'FC-Meldungen')
 colorFrame(isolated)
-assert(drawOf('Flugmodus') and not drawOf('APMon - ArduPilot'))
+assert(drawOf('Flugmodus') and not drawOf('> Sprache: Deutsch'))
+assertColorHeader()
+local offset = widget.create({x=8,y=20,w=464,h=280}, { Language = 2 })
+colorFrame(offset)
+assertColorHeader(8, 20, 464)
 widget.update(full, { Language = 2 })
 colorFrame(full, EVT_VIRTUAL_ENTER)
 assertColorMenu('> Sprache: Deutsch', 'FC-Meldungen')
@@ -345,10 +370,40 @@ assert(drawOf('Flugmodus'))
 LCD_W, LCD_H = 440, 252
 local smallZone = widget.create({x=10,y=10,w=90,h=50}, { Language = 0 })
 colorFrame(smallZone)
-assert(not drawOf('ARDUPILOT MONITOR'))
+assert(not drawOf(colorTitle) and #bitmaps == 0)
+colorFrame(smallZone, 0)
+assertColorHeader()
+local lastRow = assert(drawOf('Last EKF set'))
+assert(lastRow.flags & 0xF00 == TINSIZE and lastRow.y + lastRow.h < assert(drawOf('FC message: --')).y)
+getSourceValue = nil
+local noFC = widget.create({x=0,y=0,w=440,h=252}, {})
+colorFrame(noFC)
+local warning = assert(drawOf('Missing getSourceValue API'))
+assert(warning.y > rectangles[2].h and warning.y + warning.h < assert(drawOf('FC message: --')).y)
+getSourceValue = saved
 colorFrame(smallZone, EVT_VIRTUAL_ENTER)
 assertColorMenu('> Language: English', 'FC messages')
+assert(drawOf(colorTitle).flags & 0xF00 == SMLSIZE) -- long heading fits on a narrower display
 assert(bitmapLoads == 1) -- menu refreshes and widget instances share the bitmap
+-- Same menu on the TX16S MK3: large glyphs fit; touch follows moved rows.
+LCD_W, LCD_H = 800, 480
+local mk3 = widget.create({x=0,y=0,w=800,h=440}, { Language = 1 })
+colorFrame(mk3, 0)
+local mk3DashboardHeader, mk3DashboardLogo = assertColorHeader()
+colorFrame(mk3, EVT_VIRTUAL_ENTER)
+local mk3MenuHeader, mk3MenuLogo = assertColorMenu('> Language: English', 'FC messages')
+assert(mk3DashboardHeader.h == mk3MenuHeader.h and mk3DashboardLogo.y == mk3MenuLogo.y)
+assert(rectangles[2].h > 38 and drawOf(colorTitle).flags & 0xF00 == MIDSIZE)
+local messages = assert(drawOf('FC messages'))
+colorFrame(mk3, EVT_TOUCH_TAP, messages.x + 1, messages.y + 1)
+local messageTitle = assert(drawOf('FC messages', 8))
+assert(messageTitle.y + messageTitle.h < rectangles[2].h)
+colorFrame(mk3, EVT_VIRTUAL_EXIT)
+local language = assert(drawOf('Language: English'))
+colorFrame(mk3, EVT_TOUCH_TAP, language.x + 1, language.y + 1)
+local german = assert(drawOf('Deutsch'))
+colorFrame(mk3, EVT_TOUCH_TAP, german.x + 1, german.y + 1)
+assertColorMenu('> Sprache: Deutsch', 'FC-Meldungen')
 LCD_W, LCD_H = 480, 320
 -- An unavailable bitmap must not interfere with the menu.
 local openBitmap, failedLoads = Bitmap.open, 0
@@ -357,7 +412,7 @@ local logoMissing = loadScript('/WIDGETS/APMon/main.lua')()
 local withoutLogo = logoMissing.create({x=0,y=0,w=480,h=272}, {})
 bitmaps, calls = {}, {}
 logoMissing.refresh(withoutLogo, EVT_VIRTUAL_ENTER)
-assertProjectTitle()
+assert(drawOf(colorTitle))
 logoMissing.refresh(withoutLogo, 0)
 assert(#bitmaps == 0 and failedLoads == 1)
 Bitmap.open = openBitmap

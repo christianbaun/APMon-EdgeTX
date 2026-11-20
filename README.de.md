@@ -12,42 +12,18 @@ auf der Fernsteuerung an. Die Anwendung besteht aus Lua-Skripten auf der
 SD-Karte und benötigt zur Laufzeit weder einen Laptop noch ein zusätzliches
 Skript im Flugcontroller.
 
-| Paket | Sender | Oberfläche |
-| --- | --- | --- |
-| [APMon-SW.zip](APMon-SW.zip) | RadioMaster GX12 und Boxer | Telemetrieskript, 128 × 64 Pixel, zwei Datenseiten |
-| [APMon-COLOR.zip](APMon-COLOR.zip) | RadioMaster GX15 | Widget, 480 × 320 Pixel, eine Gesamtansicht |
+Der aktuelle Projektstand ist **Version 0.2.1**; die Versionsnummer steht in
+[VERSION](VERSION). Siehe [Release-Notizen zu v0.2.1](releases/v0.2.1.md).
 
 Die GUI unterstützt **Englisch und Deutsch**. Englisch ist die Standardsprache.
-Der aktuelle Projektstand ist **Version 0.2.0**; die Versionsnummer steht in
-[VERSION](VERSION). Siehe [Release-Notizen zu v0.2.0](releases/v0.2.0.md).
 
-**Entwicklung mit KI-Unterstützung:** APMon wurde unter Mithilfe von
-**OpenAI Codex CLI** entwickelt. Codex CLI wurde für die Erstellung und
-Überarbeitung von Quellcode, Tests und Dokumentation eingesetzt. Diese
-Unterstützung ersetzt keine Prüfung auf der jeweiligen Hardware; der aktuelle
-Prüfstatus ist im Abschnitt zur Kompatibilität dokumentiert.
-
-## Screenshots
-
-Echte Aufnahmen der GX12-Schwarzweißoberfläche und des GX15-Farbwidgets.
-Die Schwarzweißbilder zeigen das Layout aus dem veröffentlichten Paket 0.1.0
-und sind zur besseren Lesbarkeit vergrößert.
-Die Werte zeigen den Aufnahmezustand und sind keine Aussage zur Flugbereitschaft.
-
-| Übersicht | Flugwerte |
-| --- | --- |
-| ![APMon-Schwarzweißübersicht auf Deutsch](images/apmon-sw-overview-de.png) | ![APMon-Schwarzweiß-Flugwerte auf Deutsch](images/apmon-sw-flight-de.png) |
-
-**Farbübersicht — GX15**
-
-![APMon-Farbübersicht auf Deutsch auf der RadioMaster GX15](images/apmon-color-overview-de.png)
-
-**Sprache wechseln:** Auf SW-Displays **ENTER** drücken und **Sprache /
-Language** auswählen. Auf COLOR-Displays APMon im Vollbild öffnen und
-**Menü → Sprache** wählen. Dauerhaft gilt dort **Widget-Einstellungen → Language**.
+**Entwicklung mit KI-Unterstützung:** OpenAI Codex CLI half bei der Erstellung
+und Überarbeitung von Quellcode, Tests und Dokumentation. Das ersetzt keine
+Hardwaretests; der aktuelle Prüfstand steht im Abschnitt zur Kompatibilität.
 
 ## Inhalt
 
+- [Passende Displayvariante wählen](#passende-displayvariante-wählen)
 - [Screenshots](#screenshots)
 - [Funktionen](#funktionen)
 - [Kompatibilität und Voraussetzungen](#kompatibilität-und-voraussetzungen)
@@ -59,6 +35,50 @@ Language** auswählen. Auf COLOR-Displays APMon im Vollbild öffnen und
 - [Entwicklung und Tests](#entwicklung-und-tests)
 - [Mitwirken](#mitwirken)
 - [Lizenz](#lizenz)
+
+## Passende Displayvariante wählen
+
+| Paket | Display / Oberfläche | Referenzsender |
+| --- | --- | --- |
+| [APMon-SW.zip](APMon-SW.zip) | Schwarzweiß, 128 × 64 Pixel; Telemetrieskript mit zwei Datenseiten | RadioMaster GX12 und Boxer |
+| [APMon-COLOR.zip](APMon-COLOR.zip) | Farbdisplay; Dashboard-Widget, Mindestgröße der Widget-Zone: 440 × 252 Pixel | RadioMaster GX15 und TX15 (480 × 320), TX16S MK3 (800 × 480) |
+
+**SW** steht für *Schwarzweiß*. Paket und Deployment-Option richten sich nach
+dem **Displaytyp**, nicht nach dem Sendernamen: `--display sw` installiert das
+Telemetrieskript, `--display color` das Farbwidget. Andere RadioMaster-Sender
+können funktionieren, wenn sie die unten genannten Voraussetzungen erfüllen.
+Ein passendes Display allein bedeutet nicht, dass der Sender getestet wurde.
+
+## Screenshots
+
+Echte Aufnahmen von GX12, GX15 und TX16S MK3, jeweils mit Projektmenü.
+Die GX12-Bilder sind vierfach vergrößert: Die Telemetrieseiten sind auf
+Englisch, das Projektmenü auf Deutsch.
+Die Werte zeigen den Aufnahmezustand und sind keine Aussage zur Flugbereitschaft.
+
+| Übersicht | Flugwerte |
+| --- | --- |
+| ![APMon-Schwarzweißübersicht auf Englisch](images/screenshots/apmon-sw-gx12-overview-en-v0.2.0-2000-02-23-212903-4x.png) | ![APMon-Schwarzweiß-Flugwerte auf Englisch](images/screenshots/apmon-sw-gx12-flight-en-v0.2.0-2000-02-23-212832-4x.png) |
+
+**Schwarzweiß-Projektmenü — GX12**
+
+![APMon-Schwarzweiß-Projektmenü auf Deutsch](images/screenshots/apmon-sw-gx12-menu-de-v0.2.0-2000-02-23-212824-4x.png)
+
+**Farbübersicht und Projektmenü — GX15 (480 × 320)**
+
+| Übersicht | Projektmenü |
+| --- | --- |
+| ![APMon-Farbübersicht auf Deutsch mit vollständigem Titel und Telemetrie-Puls-Logo auf der RadioMaster GX15](images/screenshots/apmon-color-gx15-overview-de-v0.2.0-2000-04-24-102130.png) | ![APMon-Farbmenü auf Deutsch mit derselben Kopfzeile auf der RadioMaster GX15](images/screenshots/apmon-color-gx15-menu-de-v0.2.0-2000-04-24-102159.png) |
+
+**Farbübersicht und Projektmenü — TX16S MK3 (800 × 480)**
+
+| Übersicht im Vollbild | Projektmenü |
+| --- | --- |
+| ![APMon-Farbübersicht auf Deutsch mit vollständigem Titel und Telemetrie-Puls-Logo auf der RadioMaster TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-de-v0.2.0-2000-06-21-110938.png) | ![APMon-Farbmenü auf Deutsch mit derselben Kopfzeile auf der RadioMaster TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-menu-de-v0.2.0-2000-06-21-110917.png) |
+
+**Sprache wechseln:** Auf SW-Displays **ENTER** drücken und **Sprache /
+Language** auswählen. Auf COLOR-Displays APMon im Vollbild öffnen und
+**Menü → Sprache** wählen. Dauerhaft gilt dort **Widget-Einstellungen → Language**.
 
 ## Funktionen
 
@@ -85,13 +105,19 @@ PreArm-Prüfungen des Flugcontrollers.
 ## Kompatibilität und Voraussetzungen
 
 Zielplattform ist die **klassische EdgeTX-2.x-LCD-API**. Eine Oberfläche für
-EdgeTX 3.x/LVGL ist nicht enthalten.
+EdgeTX 3.x/LVGL ist nicht enthalten. SW ist für 128 × 64 Pixel ausgelegt;
+COLOR benötigt eine Widget-Zone von mindestens 440 × 252 Pixeln. Andere
+Auflösungen, Tastenbelegungen, Speicherbudgets und Firmwarestände müssen
+separat geprüft werden.
 
 | Sender | Firmwarestand / Prüfstatus |
 | --- | --- |
 | GX15 | EdgeTX 2.12.5 und ELRS 4.1.0; Oberfläche und mehrere Live-Werte im praktischen Einsatz bestätigt |
+| TX15 | Aktuellen Quellstand auf dem Sender getestet: Farb-Dashboard und Vollbild-Projektmenü bei 480 × 320 Pixeln, auf Deutsch und Englisch. Firmwarestand und vollständiger Funktionstest sind nicht dokumentiert. |
+| TX16S MK3 | Aktuellen Quellstand auf dem Sender getestet: Farb-Dashboard und Vollbild-Projektmenü bei 800 × 480 Pixeln, auf Deutsch und Englisch. Firmwarestand und vollständiger Funktionstest sind nicht dokumentiert. |
 | GX12 | EdgeTX 2.12.2; SW-Version automatisiert geprüft, vollständiger Hardwaretest nach den Korrekturen noch offen |
 | Boxer | Gemeinsame SW-Version; Hardwaretest und konkrete Firmwareversion noch offen |
+| Andere Sender | Bei passendem Display und passender API möglicherweise kompatibel; nicht auf Hardware geprüft |
 
 Für den vollständigen Funktionsumfang werden benötigt:
 
@@ -103,19 +129,6 @@ Für den vollständigen Funktionsumfang werden benötigt:
 
 Fehlt Passthrough, bleiben die normalen EdgeTX-Sensoranzeigen nutzbar.
 Die zusätzlichen Statusanzeigen können dann unbekannt bleiben.
-
-### Auswahl nach Displaytyp
-
-Die Paketauswahl und das Deployment richten sich nach dem Display, nicht nach
-dem Sendernamen: `--display sw` installiert das Telemetrieskript,
-`--display color` das Farbwidget. Die früheren `--radio`-Aufrufe entfallen.
-Andere RadioMaster-Sender mit passender EdgeTX-API können dieselbe Variante
-verwenden, sind damit aber nicht automatisch hardwaregeprüft.
-
-SW ist für 128 × 64 Pixel ausgelegt. COLOR benötigt eine Widget-Zone von
-mindestens 440 × 252 Pixeln. Andere Auflösungen, Tastenbelegungen, Speicherbudgets
-und EdgeTX-Versionen müssen separat geprüft werden. EdgeTX 3.x/LVGL ist nicht
-unterstützt. Der Herstellername allein reicht nicht als Kompatibilitätsnachweis.
 
 ### Datenweg
 
@@ -160,7 +173,7 @@ SCRIPTS/
 WIDGETS/                   # nur im COLOR-Paket
 └── APMon/
     ├── main.lua
-    └── logo.png           # Builds aus dem Quellcode nach v0.2.0
+    └── logo.png
 ```
 
 **Keinen zusätzlichen Paketordner anlegen:**
@@ -206,7 +219,8 @@ python3 deploy.py --display color --apply
 python3 deploy.py --display sw --apply
 ```
 
-`--display` ist erforderlich; eine automatische Modellfreigabe findet nicht statt.
+`--display` ist erforderlich. Die frühere `--radio`-Option von `deploy.py`
+entfällt; eine automatische Modellfreigabe findet nicht statt.
 Das Skript erkennt eine eingebundene EdgeTX-SD-Karte anhand der Verzeichnisse
 `MODELS`, `RADIO` und `SCRIPTS`. Bei mehreren Karten das Ziel angeben:
 
@@ -224,6 +238,39 @@ Sensorzuordnungen deshalb vor einem Update in
 [SD/SCRIPTS/APMON/config.lua](SD/SCRIPTS/APMON/config.lua) übernehmen.
 Die gespeicherte SW-Sprachwahl in `mono.cfg` bleibt erhalten.
 Die Lizenz liegt in beiden ZIP-Paketen; das direkte Deployment kopiert sie nicht.
+
+### Screenshots importieren
+
+Auf dem Sender mit der EdgeTX-Spezialfunktion **Screenshot** eine Aufnahme
+machen und den Sender dann im USB-Speichermodus anschließen.
+`import_screenshots.py` erkennt die SD-Karte wie `deploy.py`; bei mehreren
+Karten hilft `--sd PFAD`. Für Vorschau und Import wird Pillow ab 9.1
+benötigt (`python3-pil` unter Debian), für die Dateiliste nicht.
+
+```bash
+python3 import_screenshots.py --list
+python3 import_screenshots.py --display sw --radio gx12 --view overview --lang de --scale 4
+python3 import_screenshots.py --display sw --radio gx12 --view overview --lang de --scale 4 --apply
+```
+
+Ohne Dateiauswahl übernimmt das Skript **alle neuen Aufnahmen** aus
+`SCREENSHOTS`. Bereits importierte Aufnahmen erkennt es an Aufnahmezeit
+und Bildinhalt, auch bei anderen Metadaten oder anderer Vergrößerung.
+Die angegebene Ansicht und Sprache gelten für den ganzen Import. Bei
+gemischten Aufnahmen die Dateien mit `--file NAME` auswählen; die Option
+kann für mehrere Aufnahmen mit gleichen Metadaten wiederholt werden.
+Für das englische GX15-Menü beispielsweise
+`--display color --radio gx15 --view menu --lang en` angeben. Falls auf dem
+Sender eine andere Version als in [VERSION](VERSION) läuft, `--version` setzen.
+Weitere Ansichten heißen `flight`, `language`, `messages` und `diagnostics`.
+
+BMP- und PNG-Aufnahmen landen zum Beispiel als
+`images/screenshots/apmon-sw-gx12-overview-de-v0.2.1-2026-11-20-090305-4x.png`
+im Repository. Datum und Uhrzeit stammen aus dem EdgeTX-Dateinamen oder,
+bei umbenannten Aufnahmen, aus der lokalen Dateiänderungszeit. Ohne
+`--scale` bleiben die Originalmaße erhalten. Identische Importe werden
+übersprungen, Namenskollisionen nummeriert. Die SD-Karte und vorhandene
+README-Bilder bleiben unverändert.
 
 ## Bedienung
 
@@ -416,10 +463,10 @@ LICENSE                 Apache License 2.0
 
 Alle Lua- und Python-Dateien enthalten einen einheitlichen Kommentarheader mit
 Dateipfad, Zweck, Projektversion, Aktualisierungsdatum, Autorenangabe,
-Codex-CLI-Unterstützung, Copyright und SPDX-Lizenzkennung `Apache-2.0`.
-„APMon contributors“ bezeichnet die Projektmitwirkenden; Codex CLI wird separat
-als Entwicklungsunterstützung aufgeführt. Das Datum beschreibt den dokumentierten
-Änderungsstand, nicht ein nachträglich angenommenes Erstellungsdatum.
+Codex-CLI-Unterstützung und SPDX-Lizenzkennung `Apache-2.0`. Unter `Authors`
+steht Christian Baun; Codex CLI wird separat als Entwicklungsunterstützung
+aufgeführt. Das Datum beschreibt den dokumentierten Änderungsstand, nicht ein
+nachträglich angenommenes Erstellungsdatum.
 
 [VERSION](VERSION) ist die zentrale Projektversionsnummer. Bei einer neuen
 Projektversion die Versionsangaben in allen Quellcode-Headern und in dieser

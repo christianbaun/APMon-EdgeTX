@@ -2,11 +2,10 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: tests/test_deployment.py
 # Purpose: Verify display selection, deployment preview and SD-card file isolation.
-# Project version: 0.2.0
+# Project version: 0.2.1
 # Updated: 2026-11-20
-# Authors: APMon contributors
+# Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)
-# Copyright (c) 2026 APMon contributors
 # SPDX-License-Identifier: Apache-2.0
 # License: Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
 # See LICENSE in the repository or SCRIPTS/APMON/LICENSE.txt in SD packages.
