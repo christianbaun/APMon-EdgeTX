@@ -108,10 +108,10 @@ versions require separate testing.
 
 | Reference radio | Firmware / validation status |
 | --- | --- |
-| GX15 | EdgeTX 2.12.5, ELRS 4.1.0; UI and several live readings confirmed in practical use |
-| TX15 | Tested on hardware with the current source build: color dashboard and full-screen project menu at 480 × 320, in English and German. Firmware version and full functional validation not recorded. |
-| TX16S MK3 | Tested on hardware with the current source build: color dashboard and full-screen project menu at 800 × 480, in English and German. Firmware version and full functional validation not recorded. |
-| GX12 | EdgeTX 2.12.2; automated SW tests pass; complete hardware validation after recent fixes is pending |
+| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0; UI and several live readings confirmed in practical use |
+| TX15 | EdgeTX 2.12.4, ExpressLRS 4.1.0; color dashboard and full-screen project menu tested at 480 × 320 in English and German with the current source build. Full functional validation not recorded. |
+| TX16S MK3 | EdgeTX 2.12.2, ExpressLRS 4.1.0; color dashboard and full-screen project menu tested at 800 × 480 in English and German with the current source build. Full functional validation not recorded. |
+| GX12 | EdgeTX 2.12.2, ExpressLRS 4.1.0; automated SW tests pass; complete hardware validation after recent fixes is pending |
 | Boxer | Shared SW variant; hardware validation and exact firmware version are pending |
 | Other radios | Potentially compatible when display and API requirements match; not hardware-qualified |
 

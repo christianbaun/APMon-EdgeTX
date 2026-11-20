@@ -112,10 +112,10 @@ separat geprüft werden.
 
 | Sender | Firmwarestand / Prüfstatus |
 | --- | --- |
-| GX15 | EdgeTX 2.12.5 und ELRS 4.1.0; Oberfläche und mehrere Live-Werte im praktischen Einsatz bestätigt |
-| TX15 | Aktuellen Quellstand auf dem Sender getestet: Farb-Dashboard und Vollbild-Projektmenü bei 480 × 320 Pixeln, auf Deutsch und Englisch. Firmwarestand und vollständiger Funktionstest sind nicht dokumentiert. |
-| TX16S MK3 | Aktuellen Quellstand auf dem Sender getestet: Farb-Dashboard und Vollbild-Projektmenü bei 800 × 480 Pixeln, auf Deutsch und Englisch. Firmwarestand und vollständiger Funktionstest sind nicht dokumentiert. |
-| GX12 | EdgeTX 2.12.2; SW-Version automatisiert geprüft, vollständiger Hardwaretest nach den Korrekturen noch offen |
+| GX15 | EdgeTX 2.12.5 und ExpressLRS 4.1.0; Oberfläche und mehrere Live-Werte im praktischen Einsatz bestätigt |
+| TX15 | EdgeTX 2.12.4 und ExpressLRS 4.1.0; Farb-Dashboard und Vollbild-Projektmenü bei 480 × 320 Pixeln mit aktuellem Quellstand auf Deutsch und Englisch getestet. Ein vollständiger Funktionstest ist nicht dokumentiert. |
+| TX16S MK3 | EdgeTX 2.12.2 und ExpressLRS 4.1.0; Farb-Dashboard und Vollbild-Projektmenü bei 800 × 480 Pixeln mit aktuellem Quellstand auf Deutsch und Englisch getestet. Ein vollständiger Funktionstest ist nicht dokumentiert. |
+| GX12 | EdgeTX 2.12.2 und ExpressLRS 4.1.0; SW-Version automatisiert geprüft, vollständiger Hardwaretest nach den Korrekturen noch offen |
 | Boxer | Gemeinsame SW-Version; Hardwaretest und konkrete Firmwareversion noch offen |
 | Andere Sender | Bei passendem Display und passender API möglicherweise kompatibel; nicht auf Hardware geprüft |
 
