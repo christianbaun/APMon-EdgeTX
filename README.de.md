@@ -16,8 +16,8 @@ Skript im Flugcontroller.
 | [APMon-COLOR.zip](APMon-COLOR.zip) | RadioMaster GX15 | Widget, 480 × 320 Pixel, eine Gesamtansicht |
 
 Die GUI unterstützt **Englisch und Deutsch**. Englisch ist die Standardsprache.
-Der aktuelle Projektstand ist **Version 0.1.0**; die Versionsnummer steht in
-[VERSION](VERSION).
+Der aktuelle Projektstand ist **Version 0.2.0**; die Versionsnummer steht in
+[VERSION](VERSION). Siehe [Release-Notizen zu v0.2.0](releases/v0.2.0.md).
 
 **Entwicklung mit KI-Unterstützung:** APMon wurde unter Mithilfe von
 **OpenAI Codex CLI** entwickelt. Codex CLI wurde für die Erstellung und
@@ -28,7 +28,8 @@ Prüfstatus ist im Abschnitt zur Kompatibilität dokumentiert.
 ## Screenshots
 
 Echte Aufnahmen der GX12-Schwarzweißoberfläche und des GX15-Farbwidgets.
-Die Schwarzweißbilder sind zur besseren Lesbarkeit vergrößert.
+Die Schwarzweißbilder zeigen das Layout aus dem veröffentlichten Paket 0.1.0
+und sind zur besseren Lesbarkeit vergrößert.
 Die Werte zeigen den Aufnahmezustand und sind keine Aussage zur Flugbereitschaft.
 
 | Übersicht | Flugwerte |
@@ -39,10 +40,9 @@ Die Werte zeigen den Aufnahmezustand und sind keine Aussage zur Flugbereitschaft
 
 ![APMon-Farbübersicht auf Deutsch auf der RadioMaster GX15](images/apmon-color-overview-de.png)
 
-**Sprache wechseln:** Auf SW-Displays **ENTER** (Drehgeber drücken) betätigen,
-mit Drehgeber oder Plus/Minus **Deutsch** oder **English** auswählen und mit
-ENTER bestätigen. Auf COLOR-Displays APMon lange antippen und
-**Widget-Einstellungen → Language → English / Deutsch** öffnen.
+**Sprache wechseln:** Auf SW-Displays **ENTER** drücken und **Sprache /
+Language** auswählen. Auf COLOR-Displays APMon im Vollbild öffnen und
+**Menü → Sprache** wählen. Dauerhaft gilt dort **Widget-Einstellungen → Language**.
 
 ## Inhalt
 
@@ -150,6 +150,7 @@ SCRIPTS/
 │   ├── core.lua
 │   ├── i18n.lua
 │   ├── pass.lua
+│   ├── project.lua
 │   └── LICENSE.txt
 └── TELEMETRY/             # nur im SW-Paket
     ├── APMon.lua
@@ -232,21 +233,31 @@ Fluglage, horizontales GPS-Tempo, Richtung und Steigen. Die letzte FC-Meldung
 erscheint unten mit Altersangabe; langer Text wird auf die verfügbare Breite
 gekürzt.
 
-**Sprache wechseln:** APMon lange antippen → **Widget settings /
-Widget-Einstellungen → Language → English oder Deutsch**.
-Die Auswahl gilt pro Widget und wird von EdgeTX mit dem Modell gespeichert.
+- **Projektmenü öffnen:** APMon doppelt antippen oder im Kontextmenü
+  **Vollbild** wählen. Im Vollbild auf **Menü** tippen oder **ENTER** drücken.
+- Das Menü zeigt den vollständigen Projekttitel und die GitHub-Adresse.
+  **Sprache** und **FC-Meldungen** lassen sich per Touch oder mit Drehgeber
+  und **ENTER** öffnen. **RTN** geht eine Ebene zurück; **RTN** lang gedrückt
+  verlässt das Vollbild.
+- Die Sprachwahl im APMon-Menü gilt für dieses Widget in der aktuellen
+  Sitzung. Dauerhaft speichert EdgeTX sie im Modell: APMon in der Hauptansicht
+  lange antippen → **Widget-Einstellungen → Language → English oder Deutsch**.
 
 ### Schwarzweißdisplay / SW
 
 | Ansicht | Inhalt |
 | --- | --- |
-| Seite 1 | Werte der linken GX15-Spalte: Flugmodus, Armed, Akku, RC-Linkqualität, GPS-Fix, Satelliten und letzte EKF-Umschaltmeldung |
-| Seite 2 | Werte der rechten GX15-Spalte: Höhe, Roll, Pitch, Yaw, horizontales GPS-Tempo, Richtung und Steigen |
+| Übersicht | Flugmodus und Armed links, darunter Akkustrom, Restladung, Verbrauch, RC-Linkqualität, GPS-Fix mit Satellitenzahl und letzte EKF-Umschaltmeldung |
+| Flugwerte | Höhe groß links, darunter horizontales GPS-Tempo, Steigen, Roll, Pitch und Yaw mit Himmelsrichtung |
+
+Die **Akkuspannung in Volt steht auf beiden Seiten oben rechts**.
+Ohne gültigen Wert zeigt das Feld `--`.
 
 - **Drehgeber, Plus/Minus oder NEXT/PREV:** Seite wechseln; kein automatisches Blättern.
-- **ENTER / Drehgeber drücken:** Menü öffnen.
-- Im Menü Sprache oder **FC messages / FC-Meldungen** wählen und mit ENTER bestätigen.
-- **RTN:** Menüauswahl verwerfen bzw. Meldungsansicht verlassen.
+- **ENTER / Drehgeber drücken:** Menü mit vollständigem Projekttitel und
+  GitHub-Adresse öffnen.
+- Unter **Sprache** zwischen **Deutsch** und **English** wählen. **FC-Meldungen**
+  öffnet die zuletzt empfangene Meldung. **RTN** geht ohne Änderung eine Ebene zurück.
 
 Die Sprache wird als Sprachcode in `/SCRIPTS/APMON/mono.cfg` gespeichert und
 gilt für alle Modelle dieser SD-Karte. Bei einem Schreibfehler erscheint ein
@@ -256,15 +267,15 @@ Für das kleine Display werden kurze Labels verwendet:
 
 | Label | Bedeutung |
 | --- | --- |
-| FM / Arm | Flugmodus / Motorenstatus |
-| V / A | Akkuspannung / Akkustrom |
+| Akku / Strom | Akkuspannung (V) / Akkustrom (A) |
 | Rest / Left | Restladung laut FC |
 | Verbr. / Used | verbrauchte mAh |
-| RC LQ | RC-Linkqualität |
+| LQ | RC-Linkqualität |
 | GAlt | Höhe aus dem gleichnamigen Sensor |
-| H-V / V-V | horizontales GPS-Tempo / Steigen |
-| Dir | Himmelsrichtung aus Yaw |
-| EKF* | letzte EKF-Umschaltmeldung, z. B. `2/30s` = Set 2 vor 30 Sekunden gemeldet |
+| GPS | Auf der Übersicht Fix/Satellitenzahl (z. B. `3D/12`); auf der Flugseite horizontales GPS-Tempo |
+| Vario / Climb | Steigen |
+| Dir | Himmelsrichtung aus Yaw, falls sie nicht neben dem Winkel Platz findet |
+| EKF | letzte EKF-Umschaltmeldung, z. B. `2/30s` = Set 2 vor 30 Sekunden gemeldet |
 
 ## Sensoren konfigurieren
 

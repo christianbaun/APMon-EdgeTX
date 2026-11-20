@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 0.1.0
--- Updated: 2026-11-17
+-- Project version: 0.2.0
+-- Updated: 2026-11-20
 -- Authors: APMon contributors
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- Copyright (c) 2026 APMon contributors
@@ -16,6 +16,7 @@
 debug.setmetatable('', nil)
 local root = 'SD'
 local now, data, calls, colorDisplay = 100, {}, {}, false
+local draws, rectangles = {}, {}
 getTime = function() return now end
 getFieldInfo = function(name) if data[name] then return { id = name } end end
 getSourceValue = function(id)
@@ -23,24 +24,64 @@ getSourceValue = function(id)
   return item.value, item.current ~= false, item.fresh ~= false
 end
 loadScript = function(path) return assert(loadfile(root .. path)) end
-SMLSIZE, INVERS, VALUE, CUSTOM_COLOR, BOOL, CHOICE = 0, 1, 0, 256, 2, 3
+SMLSIZE, MIDSIZE, DBLSIZE, INVERS, RIGHT = 0x200, 0x300, 0x400, 2, 4
+FORCE, ERASE = 2, 4
+VALUE, CUSTOM_COLOR, BOOL, CHOICE = 0, 256, 2, 3
 EVT_VIRTUAL_NEXT, EVT_VIRTUAL_PREV = 10, 11
 EVT_VIRTUAL_ENTER, EVT_VIRTUAL_EXIT, EVT_ROT_RIGHT, EVT_ROT_LEFT = 12,13,14,15
+EVT_TOUCH_TAP = 16
+local function measure(text, flags)
+  if colorDisplay then return #text * 8, 16 end
+  local _, glyphs = string.gsub(text, '[^\128-\191]', '')
+  local font = (flags or 0) & 0xF00
+  if font == SMLSIZE then
+    local _, wide = string.gsub(text, '[#$+MWmw]', '')
+    local _, spaces = string.gsub(text, ' ', '')
+    local _, narrow = string.gsub(text, "[.!':|]", '')
+    return glyphs * 5 + wide - spaces * 2 - narrow * 3, 7
+  end
+  if font == MIDSIZE then return glyphs * 9, 12 end
+  if font == DBLSIZE then return glyphs * 11, 16 end
+  return glyphs * 6, 8
+end
 lcd = {
-  clear = function() calls = {} end,
+  clear = function() calls, draws, rectangles = {}, {}, {} end,
   RGB = function(r, g, b) return r * 65536 + g * 256 + b end,
   setColor = function() end,
-  sizeText = function(text) return #text * (colorDisplay and 8 or 5), colorDisplay and 16 or 8 end,
-  drawText = function(x, y, text)
-    local w, h = lcd.sizeText(text)
+  drawText = function(x, y, text, flags)
+    flags = flags or 0
+    local w, h = measure(text, flags)
+    if not colorDisplay and flags & RIGHT ~= 0 then x = x - w end
     assert(x >= 0 and y >= 0 and x + w <= LCD_W and y + h <= LCD_H,
       'Text outside screen: ' .. text)
     calls[#calls + 1] = text
+    draws[#draws + 1] = {x=x, y=y, w=w, h=h, flags=flags, text=text}
   end,
-  drawFilledRectangle = function(x, y, w, h)
+  drawFilledRectangle = function(x, y, w, h, flags)
     assert(x >= 0 and y >= 0 and x + w <= LCD_W and y + h <= LCD_H)
+    rectangles[#rectangles + 1] = {x=x, y=y, w=w, h=h, flags=flags}
   end,
 }
+local function drawOf(text, y)
+  for _, draw in ipairs(draws) do
+    if draw.text == text and (y == nil or y == draw.y) then return draw end
+  end
+end
+local function assertPage(title, counter)
+  assert(calls[1] == 'APMon ' .. title and calls[2] == counter, 'Expected page: ' .. title)
+  assert(rectangles[1].x == 0 and rectangles[1].w == LCD_W)
+  assert(draws[1].flags & INVERS ~= 0 and draws[2].flags & INVERS ~= 0)
+  assert(draws[2].x + draws[2].w == LCD_W - 2)
+end
+local function assertProjectTitle()
+  local title = table.concat(calls, ' ', 1, 4)
+  assert(title == 'APMon - ArduPilot telemetry monitor for EdgeTX monochrome and color radios', title)
+end
+local function assertMonoMenu(language, messages)
+  assertProjectTitle()
+  assert(drawOf('github.com/christianbaun/', 33) and drawOf('APMon-EdgeTX', 40))
+  assert(drawOf(language, 49) and drawOf(messages, 57))
+end
 -- Any attempt to write or transmit fails the test.
 model = setmetatable({}, { __index = function() error('Model mutation/access not allowed') end })
 crossfireTelemetryPush = function() error('No transmissions allowed') end
@@ -106,37 +147,86 @@ io = {
   write = function(f, value) savedLanguage = value; return f end,
   close = function() end,
 }
+data.RxBt, data.GAlt = { value = 15.5 }, { value = 24.6 }
+data.Yaw, data.Sats = { value = 0 }, { value = 12 }
 local mono = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 mono.run(0)
-assert(calls[1] == 'AP Overview 1/2')
-assert(string.find(table.concat(calls,'|'), 'STABILIZE',1,true))
+assertPage('Overview', '1/2')
+assert(drawOf('STABILIZE') and drawOf('Battery'))
+local voltage, volts = assert(drawOf('15.50', 18)), assert(drawOf('V', 27))
+assert(voltage.flags & 0xF00 == DBLSIZE and volts.x > voltage.x)
 mono.run(EVT_ROT_RIGHT)
-assert(calls[1] == 'AP Flight 2/2')
+assertPage('Flight', '2/2')
+local flightVoltage, flightVolts = assert(drawOf('15.50', 18)), assert(drawOf('V', 27))
+assert(flightVoltage.x == voltage.x and flightVoltage.flags == voltage.flags and flightVolts.x == volts.x)
+assert(drawOf('GAlt', 10) and drawOf('24.6', 18) and drawOf('0.0° N', 49))
 mono.run(EVT_ROT_LEFT)
-assert(calls[1] == 'AP Overview 1/2')
+assertPage('Overview', '1/2')
 mono.run(EVT_VIRTUAL_PREV)
-assert(calls[1] == 'AP Flight 2/2')
+assertPage('Flight', '2/2')
+data.Yaw.value = -118 * math.pi / 180
+now = now + 20
+mono.run(0)
+assert(drawOf('-118.0° SW', 49))
+data.Alt = { value = -1234.5 }
+data.Yaw.value = -1198 * math.pi / 180
+data.RxBt.current = false
+now = now + 20
+mono.run(0)
+assert(not drawOf('15.50') and drawOf('--', 18) and drawOf('V', 27))
+assert(drawOf('Altitude', 10) and drawOf('-1234.5', 27) and drawOf('m', 27))
+assert(drawOf('-1198.0°', 49) and drawOf('SW', 49)) -- direction keeps its own slot when needed
+mono.run(EVT_ROT_LEFT)
+assert(drawOf('--', 18) and not drawOf('15.50'))
+data.Alt = nil
 for i = 1, 2 do mono.background(); assert(mono.run(EVT_VIRTUAL_NEXT) == 0) end
 local selected = calls[1]
 now = 1000; mono.run(0); assert(calls[1] == selected)
 now = 5000; mono.run(0); assert(calls[1] == selected)
 mono.run(EVT_VIRTUAL_ENTER)
-assert(calls[1] == 'APMon / Menu')
+assertMonoMenu('Language: English', 'FC messages')
+assert(drawOf('Language: English', 49).flags & INVERS ~= 0)
+mono.run(EVT_VIRTUAL_ENTER)
+assert(calls[1] == 'APMon / Language')
+assert(drawOf('English') and drawOf('Deutsch'))
 mono.run(EVT_ROT_RIGHT); mono.run(EVT_VIRTUAL_ENTER)
 assert(savedLanguage == 'de')
+assertMonoMenu('Sprache: Deutsch', 'FC-Meldungen')
+mono.run(EVT_ROT_RIGHT)
+assert(drawOf('FC-Meldungen', 57).flags & INVERS ~= 0)
+mono.run(EVT_ROT_LEFT); mono.run(EVT_VIRTUAL_ENTER)
+mono.run(EVT_ROT_LEFT); mono.run(EVT_VIRTUAL_EXIT)
+assert(savedLanguage == 'de')
+assertMonoMenu('Sprache: Deutsch', 'FC-Meldungen')
 local reloaded = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
-reloaded.run(0); assert(calls[1] == 'AP Uebersicht 1/2')
+reloaded.run(0); assertPage('Übersicht', '1/2')
+assert(drawOf('Akku') and drawOf('ENT: Menü'))
 reloaded.run(EVT_VIRTUAL_ENTER); reloaded.run(EVT_ROT_LEFT)
 reloaded.run(EVT_VIRTUAL_EXIT); reloaded.run(0)
-assert(calls[1] == 'AP Uebersicht 1/2' and savedLanguage == 'de')
+assertPage('Übersicht', '1/2'); assert(savedLanguage == 'de')
+reloaded.run(EVT_ROT_RIGHT)
+assertPage('Flugwerte', '2/2')
+assert(drawOf('Akku') and drawOf('V', 27))
+reloaded.run(EVT_ROT_LEFT)
+getGeneralSettings = function() return { language = 'EN' } end
+local nonGermanRadio = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
+nonGermanRadio.run(0)
+local umlautBase = assert(drawOf('Ubersicht', 2))
+assert(calls[3] == '1/2' and drawOf('ENT: Menue'))
+assert(rectangles[2].flags == ERASE and rectangles[2].x == umlautBase.x and rectangles[2].y == 0)
+assert(rectangles[3].flags == ERASE and rectangles[3].x == umlautBase.x + 3 and rectangles[3].y == 0)
+getGeneralSettings = nil
 writeFailure = true
-reloaded.run(EVT_VIRTUAL_ENTER); reloaded.run(EVT_ROT_LEFT)
+reloaded.run(EVT_VIRTUAL_ENTER); reloaded.run(EVT_VIRTUAL_ENTER); reloaded.run(EVT_ROT_LEFT)
 reloaded.run(EVT_VIRTUAL_ENTER)
-assert(calls[1] == 'AP Overview 1/2')
+assertMonoMenu('Language: English', 'FC messages')
+reloaded.run(EVT_VIRTUAL_EXIT)
+assertPage('Overview', '1/2')
 assert(calls[#calls] == 'Language not saved')
 io = realIO
 -- Color lifecycle at target resolution, zones and every configured page.
 colorDisplay, LCD_W, LCD_H = true, 480, 320
+lcd.sizeText = measure
 local widget = loadScript('/WIDGETS/APMon/main.lua')()
 assert(#widget.options == 1 and widget.options[1][1] == 'Language')
 assert(widget.options[1][2] == CHOICE and widget.options[1][3] == 1)
@@ -184,6 +274,52 @@ calls = {}; widget.refresh(full)
 visible = table.concat(calls, '|')
 assert(string.find(visible, 'Flugmodus', 1, true))
 assert(string.find(visible, '|O|', 1, true))
+local function colorFrame(w, event, x, y)
+  calls, draws, rectangles = {}, {}, {}
+  widget.refresh(w, event, x and {x=x,y=y})
+end
+local function assertColorMenu(language, messages)
+  assertProjectTitle()
+  assert(drawOf('github.com/christianbaun/APMon-EdgeTX', 108))
+  assert(drawOf(language, 146) and drawOf(messages, 174))
+end
+colorFrame(full, EVT_TOUCH_TAP, 30, 275)
+assert(drawOf('ARDUPILOT MONITOR')) -- unrelated touches do not open the menu
+colorFrame(full, EVT_TOUCH_TAP, 460, 275)
+assertColorMenu('> Sprache: Deutsch', 'FC-Meldungen')
+colorFrame(full, EVT_VIRTUAL_ENTER)
+assert(drawOf('Sprache') and drawOf('Nur für diese Sitzung'))
+colorFrame(full, EVT_TOUCH_TAP, 30, 55)
+assertColorMenu('> Language: English', 'FC messages')
+assert(full.options.Language == 2)
+colorFrame(full, EVT_VIRTUAL_NEXT)
+assertColorMenu('Language: English', '> FC messages')
+colorFrame(full, EVT_VIRTUAL_ENTER)
+assert(drawOf('FC messages') and drawOf('FC message: --'))
+colorFrame(full, EVT_VIRTUAL_EXIT)
+assertColorMenu('Language: English', '> FC messages')
+colorFrame(full, EVT_VIRTUAL_EXIT)
+assert(drawOf('Flight mode') and drawOf('Menu'))
+colorFrame(full)
+assert(drawOf('Flight mode')) -- session language applies in the normal widget too
+local isolated = widget.create({x=0,y=0,w=480,h=272}, { Language = 2 })
+colorFrame(isolated, EVT_VIRTUAL_ENTER)
+assertColorMenu('> Sprache: Deutsch', 'FC-Meldungen')
+colorFrame(isolated)
+assert(drawOf('Flugmodus') and not drawOf('APMon - ArduPilot'))
+widget.update(full, { Language = 2 })
+colorFrame(full, EVT_VIRTUAL_ENTER)
+assertColorMenu('> Sprache: Deutsch', 'FC-Meldungen')
+colorFrame(full, EVT_TOUCH_TAP, 100, 204)
+assert(drawOf('Flugmodus'))
+-- Small normal zones still show the dashboard warning; full screen uses LCD dimensions.
+LCD_W, LCD_H = 440, 252
+local smallZone = widget.create({x=10,y=10,w=90,h=50}, { Language = 0 })
+colorFrame(smallZone)
+assert(not drawOf('ARDUPILOT MONITOR'))
+colorFrame(smallZone, EVT_VIRTUAL_ENTER)
+assertColorMenu('> Language: English', 'FC messages')
+LCD_W, LCD_H = 480, 320
 local translated = loadScript('/SCRIPTS/APMON/i18n.lua')()
 assert(translated.text(1, 'Ja DGPS') == 'Yes DGPS')
 assert(translated.text(1, 'Keine aktuellen FC-Daten') == 'No current FC data')
@@ -212,6 +348,7 @@ assert(m:status() == 'Keine aktuellen FC-Daten')
 assert(m:rows()[2][2] == '--')
 -- Independent diagnostics exposes raw API values even when APMon rejects them.
 colorDisplay, LCD_W, LCD_H = false, 128, 64
+lcd.sizeText = nil
 getValue = function(id) return data[id].value end
 local diag = loadScript('/SCRIPTS/TELEMETRY/APDiag.lua')()
 data.RxBt = { value = 15.5, current = false, fresh = false }
@@ -290,6 +427,7 @@ now = 1; pass.poll()
 assert(pass.ekf == nil and pass.message == nil) -- timer reset clears history
 -- Exercise the actual widget's receiver, merging, and final rendering together.
 colorDisplay, LCD_W, LCD_H = true, 480, 320
+lcd.sizeText = measure
 local incoming = {multi, {0xF0,0x02,0x50,0x3F,0x40,0x00,0xFC}, message('Using EKF Source Set 3')}
 crossfireTelemetryPop = function()
   local payload = table.remove(incoming,1)
@@ -316,26 +454,33 @@ visible = table.concat(calls,'|')
 assert(string.find(visible,'Yes DGPS',1,true))
 assert(string.find(visible,'FC message / 0s ago',1,true))
 assert(string.find(visible,'Using EKF Source Set 3',1,true)) -- original FC text
+calls, draws, rectangles = {}, {}, {}
+liveWidget.refresh(live, EVT_VIRTUAL_ENTER)
+liveWidget.refresh(live, EVT_TOUCH_TAP, {x=30,y=174})
+assert(drawOf('FC messages', 8) and drawOf('Using EKF Source Set 3', 72))
 now = now + 301
 calls = {}; liveWidget.refresh(live)
 visible = table.concat(calls,'|')
 assert(not string.find(visible,'ARMED',1,true))
 -- Mono integration receives exactly the same confirmed FC data as the GX15.
 LCD_W, LCD_H, colorDisplay = 128,64,false
+lcd.sizeText = nil
 incoming = { {0xF0,0x02,0x50,0x3F,0x40,0x00,0xFC}, single(0x5001,256),
   message('Using EKF Source Set 2') }
 local small = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 small.run(0)
 assert(string.find(table.concat(calls,'|'),'ARMED',1,true))
-assert(calls[1] == 'AP Overview 1/2')
-assert(string.find(table.concat(calls,'|'),'Yes DGPS',1,true))
+assertPage('Overview', '1/2')
+assert(drawOf('DGPS/--', 42))
 small.run(EVT_VIRTUAL_ENTER)
-small.run(EVT_ROT_RIGHT); small.run(EVT_ROT_RIGHT); small.run(EVT_VIRTUAL_ENTER)
+small.run(EVT_ROT_RIGHT); small.run(EVT_VIRTUAL_ENTER)
 assert(string.find(table.concat(calls,'|'),'Using EKF Source Set 2',1,true))
 small.run(EVT_VIRTUAL_EXIT)
+assertMonoMenu('Language: English', 'FC messages')
+small.run(EVT_VIRTUAL_EXIT)
 now = now + 301
-small.run(EVT_ROT_LEFT)
-assert(not string.find(table.concat(calls,'|'),'Yes DGPS',1,true))
+small.run(0)
+assert(not drawOf('DGPS/--', 42))
 -- Run the complete mono application and every loaded module without table.*.
 local restricted = setmetatable({}, {__index = function(_, key)
   if key == 'table' then return nil end
@@ -352,9 +497,10 @@ local restrictedMono = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 assert(restrictedMono.run(0) == 0)
 visible = table.concat(calls,'|')
 assert(string.find(visible,'ARMED',1,true))
-assert(string.find(visible,'Yes DGPS',1,true))
+assert(drawOf('DGPS/--', 42))
 restrictedMono.run(EVT_VIRTUAL_ENTER)
-restrictedMono.run(EVT_ROT_RIGHT); restrictedMono.run(EVT_ROT_RIGHT)
+assertMonoMenu('Language: English', 'FC messages')
+restrictedMono.run(EVT_ROT_RIGHT)
 restrictedMono.run(EVT_VIRTUAL_ENTER)
 assert(string.find(table.concat(calls,'|'),'Using EKF Source Set 1',1,true))
-print('OK: sensor validity, stale data, read-only, layouts, diagnostics, passthrough, restricted mono Lua')
+print('OK: sensor validity, stale data, read-only, layouts, bilingual menus, diagnostics, passthrough, restricted mono Lua')

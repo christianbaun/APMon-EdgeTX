@@ -9,7 +9,8 @@ readings, flight attitude, GPS status and flight-controller messages. It runs as
 Lua scripts on the radio's SD card: no laptop or additional flight-controller
 script is required during use.
 
-Current project version: **0.1.0**, recorded in [VERSION](VERSION).
+Current project version: **0.2.0**, recorded in [VERSION](VERSION).
+See the [v0.2.0 release notes](releases/v0.2.0.md).
 The GUI supports **English and German**, with English as the default.
 
 ## Choose your display
@@ -28,7 +29,7 @@ have a monochrome or color display.
 ## Screenshots
 
 Actual GX12 monochrome and GX15 color captures. The monochrome images are
-enlarged for readability.
+enlarged for readability and show the layout from the published 0.1.0 package.
 The readings show the captured state and are not an indication of flight readiness.
 
 | Overview | Flight data |
@@ -39,10 +40,9 @@ The readings show the captured state and are not an indication of flight readine
 
 ![APMon color dashboard in English on RadioMaster GX15](images/apmon-color-overview-en.png)
 
-**Change language:** On SW displays, press **ENTER** (the rotary wheel), select
-**English** or **Deutsch** with the wheel or Plus/Minus, then press ENTER to
-confirm. On COLOR displays, long-press APMon and open **Widget settings →
-Language → English / Deutsch**.
+**Change language:** On SW, press **ENTER** and select **Language / Sprache**.
+On COLOR, open APMon in full screen and select **Menu → Language**. For a
+persistent COLOR setting, use **Widget settings → Language**.
 
 ## Contents
 
@@ -138,6 +138,7 @@ SCRIPTS/
 │   ├── core.lua
 │   ├── i18n.lua
 │   ├── pass.lua
+│   ├── project.lua
 │   └── LICENSE.txt
 └── TELEMETRY/             # SW package only
     ├── APMon.lua
@@ -219,19 +220,30 @@ satellites and the last EKF source-set message on the left. Flight attitude,
 altitude, horizontal GPS speed, direction and climb rate are on the right.
 The latest FC message appears at the bottom with its age; long text is clipped.
 
-**Change language:** long-press APMon → **Widget settings → Language →
-English / Deutsch**. The setting takes effect immediately and is saved per
-widget in the model. If the old English checkbox remains after an update,
-restart the radio, then remove and re-add the widget if necessary.
+- **Open the project menu:** double-tap APMon, or choose **Full screen** from
+  the widget's context menu. In full screen, tap **Menu** or press **ENTER**.
+- The menu shows the full project title and GitHub address. Open **Language**
+  or **FC messages** by tapping an item or using the wheel and **ENTER**.
+  **RTN** goes back; hold **RTN** to leave full screen.
+- The menu language change applies to this widget for the current session.
+  To save it in the model, long-press APMon in the main view and choose
+  **Widget settings → Language → English / Deutsch**. If the old English
+  checkbox remains after an update, restart and re-add the widget if needed.
 
 ### SW
 
-- **Page 1:** all values from the COLOR view's left column.
-- **Page 2:** the flight readings from its right column.
+- **Overview:** flight mode and arming state on the left, with battery current,
+  remaining charge, consumed mAh, link quality, GPS fix/satellites and the last
+  EKF source set below.
+- **Flight:** large altitude on the left, with horizontal GPS speed, climb rate,
+  roll, pitch and yaw with compass direction below.
+- **Battery voltage is in the upper right on both pages**. Without a valid
+  reading it shows `--`.
 - **Rotary wheel, Plus/Minus or NEXT/PREV:** change pages manually; no automatic rotation.
-- **ENTER / press the wheel:** open the menu.
-- Choose a language or **FC messages**, then confirm with ENTER.
-- **RTN:** cancel menu selection or leave the message view.
+- **ENTER / press the wheel:** open the menu with the full project title and
+  GitHub address.
+- Select **Language** to choose **English / Deutsch**, or **FC messages** to
+  see the latest message. **RTN** returns one level without changing the selection.
 
 The latest FC message is wrapped over several lines. Language is saved as a
 code in `/SCRIPTS/APMON/mono.cfg`, shared by all models on that SD card. If
@@ -242,15 +254,15 @@ Short labels keep readings on the same line on the small display:
 
 | Label | Meaning |
 | --- | --- |
-| FM / Arm | Flight mode / motor arming state |
-| V / A | Battery voltage / current |
+| Battery / Curr. | Battery voltage (V) / current (A) |
 | Rest / Left | Remaining percentage reported by the FC |
 | Verbr. / Used | Consumed mAh |
-| RC LQ | RC link quality |
+| LQ | RC link quality |
 | GAlt | Altitude from the GAlt sensor |
-| H-V / V-V | Horizontal GPS speed / climb rate |
-| Dir | Compass direction derived from yaw |
-| EKF* | Last source-set message; `2/30s` means set 2 was reported 30 seconds ago |
+| GPS | Fix/satellite count on Overview (e.g. `3D/12`); horizontal GPS speed on Flight |
+| Climb / Vario | Climb rate |
+| Dir | Compass direction derived from yaw, when it does not fit next to the angle |
+| EKF | Last source-set message; `2/30s` means set 2 was reported 30 seconds ago |
 
 ## Sensor configuration
 

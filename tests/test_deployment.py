@@ -2,8 +2,8 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: tests/test_deployment.py
 # Purpose: Verify display selection, deployment preview and SD-card file isolation.
-# Project version: 0.1.0
-# Updated: 2026-11-17
+# Project version: 0.2.0
+# Updated: 2026-11-20
 # Authors: APMon contributors
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)
 # Copyright (c) 2026 APMon contributors
@@ -27,7 +27,8 @@ from package_sd import files_for
 class DeploymentTests(unittest.TestCase):
     def test_display_file_sets(self):
         sw, color = set(files_for('sw')), set(files_for('color'))
-        shared = {Path('SCRIPTS/APMON/config.lua'), Path('SCRIPTS/APMON/pass.lua')}
+        shared = {Path('SCRIPTS/APMON/config.lua'), Path('SCRIPTS/APMON/pass.lua'),
+                  Path('SCRIPTS/APMON/project.lua')}
         self.assertTrue(shared <= sw & color)
         self.assertIn(Path('SCRIPTS/TELEMETRY/APMon.lua'), sw)
         self.assertNotIn(Path('WIDGETS/APMon/main.lua'), sw)

@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/core.lua
 -- Purpose: Read and validate EdgeTX sensors and merge optional ArduPilot passthrough data.
--- Project version: 0.1.0
--- Updated: 2026-11-17
+-- Project version: 0.2.0
+-- Updated: 2026-11-20
 -- Authors: APMon contributors
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- Copyright (c) 2026 APMon contributors

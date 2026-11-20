@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/i18n.lua
 -- Purpose: Provide the extensible GUI language registry, translations and fallback rules.
--- Project version: 0.1.0
--- Updated: 2026-11-17
+-- Project version: 0.2.0
+-- Updated: 2026-11-20
 -- Authors: APMon contributors
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- Copyright (c) 2026 APMon contributors
@@ -17,10 +17,13 @@ local english = {
   ['Enter: waehlen'] = 'ENTER:select RTN:back',
   ['Rest'] = 'Left', ['Verbr.'] = 'Used',
   ['FC-Meldungen'] = 'FC messages',
-  ['Rad: Seite ENTER:Menu'] = 'Wheel:page ENTER:menu',
-  ['Uebersicht'] = 'Overview', ['Akku'] = 'Battery',
+  ['Sprache'] = 'Language', ['Zurück'] = 'Back', ['Menü'] = 'Menu',
+  ['Vollbild: Menü'] = 'Full screen: menu',
+  ['Nur für diese Sitzung'] = 'For this session only',
+  ['Rad: Seite'] = 'Wheel: page', ['ENT: Menu'] = 'ENT: menu',
+  ['Übersicht'] = 'Overview', ['Akku'] = 'Battery',
   ['Flugwerte'] = 'Flight', ['Lage'] = 'Attitude', ['FC-Status'] = 'FC status',
-  ['Spannung'] = 'Voltage', ['Strom'] = 'Current', ['Rest (FC)'] = 'Left (FC)',
+  ['Spannung'] = 'Voltage', ['Strom'] = 'Curr.', ['Rest (FC)'] = 'Left (FC)',
   ['Verbrauch'] = 'Used', ['Höhe (GAlt)'] = 'Alt. (GAlt)',
   ['Breite'] = 'Latitude', ['Laenge'] = 'Longitude', ['GPS-Kurs'] = 'GPS course',
   ['Enter: speichern'] = 'ENTER: save RTN:cancel',
@@ -44,8 +47,9 @@ local english = {
   ['Höhe (GPS Altitude)'] = 'Height (GPS Altitude)',
   ['H-Tempo GPS'] = 'GPS horiz. speed',
   ['Richtung'] = 'Direction',
-  ['Steigen'] = 'Climb rate',
+  ['Steigen'] = 'Climb rate', ['Vario'] = 'Climb',
   ['Ja'] = 'Yes', ['Nein'] = 'No', ['Kein GPS'] = 'No GPS',
+  ['Keins'] = 'None',
   ['Ja 2D'] = 'Yes 2D', ['Ja 3D'] = 'Yes 3D', ['Ja DGPS'] = 'Yes DGPS',
   ['Ja RTK flt'] = 'Yes RTK flt', ['Ja RTK fix'] = 'Yes RTK fix',
   ['API fehlt: getSourceValue'] = 'Missing getSourceValue API',
@@ -57,6 +61,7 @@ local english = {
 -- Missing translations fall back to English. German source labels remain keys.
 local german = {}
 for key in pairs(english) do german[key] = key end
+german['ENT: Menu'] = 'ENT: Menü'
 local languages = {
   { code = 'en', name = 'English', texts = english,
     directions = { 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW' } },

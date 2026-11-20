@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/TELEMETRY/APMon.lua
 -- Purpose: Render the GX12/Boxer telemetry UI with two pages, menus and saved language choice.
--- Project version: 0.1.0
--- Updated: 2026-11-17
+-- Project version: 0.2.0
+-- Updated: 2026-11-20
 -- Authors: APMon contributors
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- Copyright (c) 2026 APMon contributors
@@ -21,9 +21,12 @@ local function module(name)
 end
 local core, config = module('core'), module('config')
 local receiver, i18n = module('pass'), module('i18n')
+local project = module('project')
 local monitor = core.new(config, receiver)
-local page, language, selection, settings, saveFailed = 1, 1, 1, false, false
-local messages = false
+local page, language, menuItem, languageItem, saveFailed = 1, 1, 1, 1, false
+local view = 'data'
+local radioLanguage = type(getGeneralSettings) == 'function' and getGeneralSettings().language
+local nativeUmlauts = not radioLanguage or radioLanguage == 'DE'
 local preference = '/SCRIPTS/APMON/mono.cfg'
 local function readLanguage()
   if not io or not io.open then return end
@@ -54,20 +57,109 @@ local function match(event, ...)
   end
   return false
 end
--- Trim UTF-8 as whole characters; labels are deliberately short on this LCD.
-local function fit(value, width)
-  local flags = SMLSIZE or 0
-  local function size(v)
-    if lcd.sizeText then return lcd.sizeText(v, flags) end
-    return #v * 5
+local small = SMLSIZE or 0
+local medium, large = MIDSIZE or small, DBLSIZE or MIDSIZE or small
+local function textWidth(value, flags)
+  if lcd.sizeText then return (lcd.sizeText(value, flags)) end
+  -- EdgeTX 2.x monochrome has no sizeText. Budget glyph advances including
+  -- spacing, with exceptions for common wide and narrow SMLSIZE glyphs.
+  local _, count = string.gsub(value, '[^\128-\191]', '')
+  if flags == small and small ~= 0 then
+    local _, wide = string.gsub(value, '[#$+MWmw]', '')
+    local _, spaces = string.gsub(value, ' ', '')
+    local _, narrow = string.gsub(value, "[.!':|]", '')
+    return count * 5 + wide - spaces * 2 - narrow * 3
   end
-  while #value > 0 and size(value) > width do
+  local advance = flags == large and large ~= medium and 11 or flags == medium and medium ~= small and 9 or 6
+  return count * advance
+end
+-- Trim UTF-8 as whole characters; labels are deliberately short on this LCD.
+local function fit(value, width, flags)
+  local size = textWidth(value, flags)
+  while #value > 0 and size > width do
     local start = #value
     while start > 1 and string.byte(value, start) >= 128
         and string.byte(value, start) < 192 do start = start - 1 end
     value = string.sub(value, 1, start - 1)
+    size = textWidth(value, flags)
   end
-  return value, size(value)
+  return value, size
+end
+local function rightText(x, y, value, flags, inverse)
+  local style = flags + (inverse and (INVERS or 0) or 0)
+  if RIGHT then
+    lcd.drawText(x, y, value, style + RIGHT)
+  else
+    lcd.drawText(x - textWidth(value, flags), y, value, style)
+  end
+end
+local function filled(x, y, w, h)
+  lcd.drawFilledRectangle(x, y, w, h, FORCE or 0)
+end
+local function dataHeader(width, title, counter)
+  local right = width - 2
+  local counterWidth = textWidth(counter, small)
+  local headerStyle = small + (INVERS or 0)
+  filled(0, 0, width, 9)
+  if not nativeUmlauts and string.sub(title, 1, 2) == 'Ü' then
+    -- Monochrome EdgeTX fonts follow the radio language, not APMon's.
+    -- Compose the uppercase Ü on firmware that lacks the German font.
+    lcd.drawText(2, 2, 'APMon', headerStyle)
+    local x = 2 + textWidth('APMon ', small)
+    lcd.drawText(x, 2, fit('U' .. string.sub(title, 3), right - counterWidth - x - 2, small), headerStyle)
+    lcd.drawFilledRectangle(x, 0, 1, 1, ERASE or 0)
+    lcd.drawFilledRectangle(x + 3, 0, 1, 1, ERASE or 0)
+  else
+    lcd.drawText(2, 2, fit('APMon ' .. title, right - counterWidth - 5, small), headerStyle)
+  end
+  rightText(right, 2, counter, small, true)
+end
+local function instrument(x, right, key, alignRight)
+  local value = string.match(monitor:format(key), '^%S+')
+  local unit, unitWidth = fit(config.sensors[key].unit or '', math.floor((right - x) / 3), small)
+  local numberRight = right - (unitWidth > 0 and unitWidth + 2 or 0)
+  local available = numberRight - x
+  local flags, y = large, 18
+  if flags == medium or textWidth(value, flags) > available then flags, y = medium, 22 end
+  if flags == small or textWidth(value, flags) > available then flags, y = small, 27 end
+  if textWidth(value, flags) > available then value = '--' end
+  if alignRight then
+    rightText(numberRight, y, value, flags)
+    if unitWidth > 0 then rightText(right, 27, unit, small) end
+  else
+    lcd.drawText(x, y, value, flags)
+    if unitWidth > 0 then
+      local endX = lcd.getLastRightPos and lcd.getLastRightPos() or x + textWidth(value, flags)
+      lcd.drawText(endX + 2, 27, unit, small)
+    end
+  end
+end
+local function field(x, right, y, label, value)
+  local valueWidth = textWidth(value, small)
+  if valueWidth > right - x then value, valueWidth = '--', textWidth('--', small) end
+  label = fit(tr(label), right - x - valueWidth - 1, small)
+  if label ~= '' then lcd.drawText(x, y, label, small) end
+  rightText(right, y, value, small)
+end
+local function menuOption(width, y, label, selected)
+  if selected then
+    filled(2, y, width - 4, 7)
+    lcd.drawText(4, y, '>', small + (INVERS or 0))
+  end
+  lcd.drawText(12, y, fit(label, width - 15, small), small + (selected and (INVERS or 0) or 0))
+end
+local function projectMenu(width)
+  filled(0, 0, width, 9)
+  lcd.drawText(2, 1, fit(project.title[1], width - 4, small), small + (INVERS or 0))
+  for i = 2, #project.title do
+    lcd.drawText(2, 10 + (i - 2) * 7, fit(project.title[i], width - 4, small), small)
+  end
+  for i, line in ipairs(project.repo) do
+    lcd.drawText(2, 33 + (i - 1) * 7, fit(line, width - 4, small), small)
+  end
+  filled(2, 47, width - 4, 1)
+  menuOption(width, 49, tr('Sprache') .. ': ' .. i18n.language(language).name, menuItem == 1)
+  menuOption(width, 57, tr('FC-Meldungen'), menuItem == 2)
 end
 local function background() monitor:sample() end
 local function run(event)
@@ -76,93 +168,126 @@ local function run(event)
   local prevEvent = match(event, EVT_VIRTUAL_PREV, EVT_MINUS_FIRST, EVT_ROT_LEFT)
   local enterEvent = match(event, EVT_VIRTUAL_ENTER or EVT_ENTER_BREAK or EVT_ENTER_FIRST)
   local exitEvent = match(event, EVT_VIRTUAL_EXIT or EVT_EXIT_BREAK)
-  local menuCount = #i18n.languages + 1
-  if messages then
-    if enterEvent or exitEvent then messages = false end
-  elseif settings then
-    if nextEvent then selection = selection % menuCount + 1 end
-    if prevEvent then selection = (selection - 2) % menuCount + 1 end
-    if exitEvent then settings = false end
+  if view == 'messages' then
+    if enterEvent or exitEvent then view = 'menu' end
+  elseif view == 'language' then
+    local count = #i18n.languages
+    if nextEvent then languageItem = languageItem % count + 1 end
+    if prevEvent then languageItem = (languageItem - 2) % count + 1 end
+    if exitEvent then view = 'menu' end
     if enterEvent then
-      if selection == menuCount then
-        messages = true
-      else
-        language = selection
-        saveFailed = not saveLanguage()
-      end
-      settings = false
+      language = languageItem
+      saveFailed = not saveLanguage()
+      view = 'menu'
     end
+  elseif view == 'menu' then
+    if nextEvent or prevEvent then menuItem = 3 - menuItem end
+    if exitEvent then view = 'data' end
+    if enterEvent then view, languageItem = menuItem == 1 and 'language' or 'messages', language end
   elseif enterEvent then
-    settings, selection = true, language
+    view, menuItem = 'menu', 1
   elseif nextEvent then page = page % 2 + 1
   elseif prevEvent then page = (page - 2) % 2 + 1 end
   local width = LCD_W or 128
   lcd.clear()
   local function text(y, value, inverse)
-    lcd.drawText(0, y, fit(value, width), (SMLSIZE or 0) + (inverse and (INVERS or 0) or 0))
+    lcd.drawText(0, y, fit(value, width, small), small + (inverse and (INVERS or 0) or 0))
   end
-  if settings then
-    text(0, 'APMon / Menu', true)
-    local top = math.max(1, selection - 3)
-    for i = top, math.min(menuCount, top + 3) do
-      text(12 + (i - top) * 10, i == menuCount and tr('FC-Meldungen') or i18n.languages[i].name, selection == i)
+  if view == 'menu' then
+    projectMenu(width)
+    return 0
+  end
+  if view == 'language' then
+    text(0, 'APMon / ' .. tr('Sprache'), true)
+    local top = math.max(1, languageItem - 3)
+    for i = top, math.min(#i18n.languages, top + 3) do
+      menuOption(width, 12 + (i - top) * 10, i18n.languages[i].name, languageItem == i)
     end
     text(54, tr('Enter: waehlen'), false)
     return 0
   end
   local v = monitor.values
   local function fmt(key) return monitor:format(key) end
-  local function armed() return v.armed == 1 and 'ARMED' or v.armed == 0 and 'DISARMED' or '--' end
-  local function fix()
-    local names = {[0]='Kein GPS', 'Nein', 'Ja 2D', 'Ja 3D', 'Ja DGPS', 'Ja RTK flt', 'Ja RTK fix'}
-    if monitor.fix ~= nil then return tr(names[monitor.fix] or '--') end
-    return v.gpsfix == 1 and tr('Ja') or v.gpsfix == 0 and tr('Nein') or '--'
-  end
-  local yaw = v.yaw
-  local directions = i18n.language(language).directions or i18n.language(1).directions
-  local direction = yaw and directions[math.floor(((yaw % 360) + 22.5) / 45) % 8 + 1] or '--'
-  if messages then
+  if view == 'messages' then
     text(0, tr('FC-Meldungen'), true)
     local age = receiver.age(receiver.message)
     text(11, age and string.format(tr('FC-Meldung / vor %ds'),age) or '--')
     local value = receiver.message and receiver.message.value or '--'
     for i = 1, 4 do
-      local part = fit(value,width)
+      local part = fit(value, width, small)
       text(20 + (i-1)*9,part)
       value = string.sub(value,#part+1)
     end
     return 0
   end
-  text(0, 'AP ' .. tr(page == 1 and 'Uebersicht' or 'Flugwerte') .. ' ' .. page .. '/2', true)
-  local rows
+
+  local right, split = width - 2, math.floor(width / 2)
+  dataHeader(width, tr(page == 1 and 'Übersicht' or 'Flugwerte'), page .. '/2')
+
+  -- The voltage card keeps the same position and size on both data pages.
+  local boxLeft, legendX = split - 2, split + 4
+  local legend, legendWidth = fit(tr('Akku'), right - legendX - 3, small)
+  local topRight = legendX + legendWidth + 2
+  filled(boxLeft, 13, legendX - boxLeft - 2, 1)
+  filled(topRight, 13, width - topRight, 1)
+  filled(boxLeft, 14, 1, 20)
+  filled(width - 1, 14, 1, 20)
+  filled(2, 34, width - 2, 1)
+  lcd.drawText(legendX, 10, legend, small)
+  instrument(boxLeft + 2, right, 'voltage', true)
+
+  local leftRight, rightX = split - 3, split - 1
+  local function compact(key) return (string.gsub(fmt(key), ' ', '')) end
   if page == 1 then
-    -- Same ten values as the GX15 left column, arranged for the small display.
-    rows = {{'FM',fmt('mode')},{'Arm',armed()},
-      {'V',fmt('voltage')},{'A',fmt('current')},{'Rest',fmt('remaining')},
-      {'Verbr.',fmt('used')},{'RC LQ',fmt('lq')},{'Fix',fix()},
-      {'Sats',fmt('satellites')},{'EKF*',receiver.ekf and tostring(receiver.ekf.value)
-        .. '/' .. tostring(receiver.age(receiver.ekf) or 0) .. 's' or '--'}}
+    lcd.drawText(2, 10, fit(tr('Flugmodus'), leftRight - 2, small), small)
+    local mode = fmt('mode')
+    local modeFont = textWidth(mode, 0) <= leftRight - 2 and 0 or small
+    lcd.drawText(2, 18, fit(mode, leftRight - 2, modeFont), modeFont)
+    lcd.drawText(2, 27, v.armed == 1 and 'ARMED' or v.armed == 0 and 'DISARMED' or '--', small)
+    local fixes = {[0]='Keins', 'Nein', '2D', '3D', 'DGPS', 'RTKflt', 'RTKfix'}
+    local fix = monitor.fix ~= nil and tr(fixes[monitor.fix] or '--')
+      or v.gpsfix == 1 and tr('Ja') or v.gpsfix == 0 and tr('Nein') or '--'
+    local ekf = receiver.ekf and tostring(receiver.ekf.value) .. '/'
+      .. tostring(receiver.age(receiver.ekf) or 0) .. 's' or '--'
+    field(2, leftRight, 35, 'Strom', compact('current'))
+    field(2, leftRight, 42, 'Rest', compact('remaining'))
+    field(2, leftRight, 49, 'Verbr.', compact('used'))
+    field(rightX, right, 35, 'LQ', compact('lq'))
+    field(rightX, right, 42, 'GPS', fix .. '/' .. fmt('satellites'))
+    field(rightX, right, 49, 'EKF', ekf)
   else
-    rows = {{v.altitude ~= nil and 'Alt' or 'GAlt',
-      v.altitude ~= nil and fmt('altitude') or fmt('gpsaltitude')},
-      {'Roll',fmt('roll')},{'Pitch',fmt('pitch')},{'Yaw',fmt('yaw')},
-      {'H-V',fmt('speed')},{'Dir',direction},{'V-V',fmt('climb')}}
-  end
-  local cellWidth = math.floor(width / 2)
-  for i, field in ipairs(rows) do
-    local x = i <= 5 and 0 or cellWidth + 2
-    local y = 11 + ((i-1) % 5) * 9
-    local raw = field[2]
-    if string.match(raw, '^%-?%d') then raw = string.gsub(raw, ' ', '') end
-    local value, vw = fit(raw,cellWidth - 4)
-    local label = fit(tr(field[1]),cellWidth - vw - 6)
-    lcd.drawText(x,y,label,SMLSIZE or 0)
-    lcd.drawText(x + cellWidth - 2 - vw,y,value,SMLSIZE or 0)
+    local altitude = tr('Höhe')
+    if not nativeUmlauts and altitude == 'Höhe' then altitude = 'Hoehe' end
+    lcd.drawText(2, 10, v.altitude == nil and v.gpsaltitude ~= nil and 'GAlt' or altitude, small)
+    instrument(2, leftRight, v.altitude ~= nil and 'altitude' or 'gpsaltitude', false)
+    local function angle(key) return (string.gsub(compact(key), 'deg$', '°')) end
+    field(2, leftRight, 35, 'GPS', compact('speed'))
+    field(2, leftRight, 42, 'Vario', compact('climb'))
+    field(rightX, right, 35, 'Roll', angle('roll'))
+    field(rightX, right, 42, 'Pitch', angle('pitch'))
+    local yaw = angle('yaw')
+    if v.yaw then
+      local directions = i18n.language(language).directions or i18n.language(1).directions
+      local direction = directions[math.floor(((v.yaw % 360) + 22.5) / 45) % 8 + 1]
+      local combined = yaw .. ' ' .. direction
+      if textWidth('Yaw', small) + textWidth(combined, small) + 1 <= right - rightX then
+        yaw = combined
+      else
+        field(2, leftRight, 49, 'Dir', direction)
+      end
+    end
+    field(rightX, right, 49, 'Yaw', yaw)
   end
   local _, severity = monitor:status()
   local footer = saveFailed and tr('Sprache nicht gespeichert')
-    or severity == 'warn' and tr('FC-Daten fehlen') or tr('Rad: Seite ENTER:Menu')
-  text(56,footer,saveFailed or severity == 'warn')
+    or severity == 'warn' and tr('FC-Daten fehlen')
+  if footer then
+    text(57, footer, true)
+  else
+    lcd.drawText(2, 57, tr('Rad: Seite'), small)
+    local menu = tr('ENT: Menu')
+    rightText(right, 57, not nativeUmlauts and menu == 'ENT: Menü' and 'ENT: Menue' or menu, small)
+  end
   return 0
 end
 return { run = run, background = background }
