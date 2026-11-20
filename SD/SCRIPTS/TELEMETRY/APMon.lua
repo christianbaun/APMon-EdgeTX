@@ -148,9 +148,18 @@ local function menuOption(width, y, label, selected)
   end
   lcd.drawText(12, y, fit(label, width - 15, small), small + (selected and (INVERS or 0) or 0))
 end
-local function projectMenu(width)
+-- The same telemetry pulse as the color logo, reduced to a 14-pixel path.
+local pulse = {0, 4, 3, 4, 5, 1, 7, 6, 9, 3, 10, 4, 13, 4}
+local function menuHeader(width, title)
+  local x, y = width - 18, 1
   filled(0, 0, width, 9)
-  lcd.drawText(2, 1, fit(project.title[1], width - 4, small), small + (INVERS or 0))
+  lcd.drawText(2, y, fit(title, x - 4, small), small + (INVERS or 0))
+  for i = 1, #pulse - 2, 2 do
+    lcd.drawLine(x + pulse[i], y + pulse[i + 1], x + pulse[i + 2], y + pulse[i + 3], SOLID or 255, ERASE or 0)
+  end
+end
+local function projectMenu(width)
+  menuHeader(width, project.title[1])
   for i = 2, #project.title do
     lcd.drawText(2, 10 + (i - 2) * 7, fit(project.title[i], width - 4, small), small)
   end
@@ -198,7 +207,7 @@ local function run(event)
     return 0
   end
   if view == 'language' then
-    text(0, 'APMon / ' .. tr('Sprache'), true)
+    menuHeader(width, 'APMon / ' .. tr('Sprache'))
     local top = math.max(1, languageItem - 3)
     for i = top, math.min(#i18n.languages, top + 3) do
       menuOption(width, 12 + (i - top) * 10, i18n.languages[i].name, languageItem == i)
@@ -209,7 +218,7 @@ local function run(event)
   local v = monitor.values
   local function fmt(key) return monitor:format(key) end
   if view == 'messages' then
-    text(0, tr('FC-Meldungen'), true)
+    menuHeader(width, tr('FC-Meldungen'))
     local age = receiver.age(receiver.message)
     text(11, age and string.format(tr('FC-Meldung / vor %ds'),age) or '--')
     local value = receiver.message and receiver.message.value or '--'

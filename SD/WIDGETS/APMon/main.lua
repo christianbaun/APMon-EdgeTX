@@ -25,6 +25,14 @@ local receiver = module('pass')
 local i18n = module('i18n')
 local project = module('project')
 local options = { { 'Language', CHOICE, 1, i18n.choices } }
+local logo
+local function drawMenuLogo(width)
+  if not (Bitmap and Bitmap.open and lcd.drawBitmap) then return end
+  -- Load once across instances, only when a menu is opened. EdgeTX draws
+  -- nothing for a missing/invalid bitmap, so older SD installs still work.
+  if logo == nil then logo = Bitmap.open('/WIDGETS/APMon/logo.png') or false end
+  if logo then lcd.drawBitmap(logo, width - 44, 3) end
+end
 local function create(zone, opts)
   return { zone = zone, options = opts, monitor = core.new(config, receiver) }
 end
@@ -136,7 +144,8 @@ local function refresh(widget, event, touch)
     rect(0, 0, z.w, 38, info)
     local heading = widget.view == 'menu' and project.title[1]
       or widget.view == 'language' and 'Sprache' or 'FC-Meldungen'
-    text(left, 8, heading, bg, inner, MIDSIZE)
+    text(left, 8, heading, bg, inner - 40, MIDSIZE)
+    drawMenuLogo(z.w)
     if widget.view == 'menu' then
       for i = 2, #project.title do
         text(left, 44 + (i - 2) * 20, project.title[i], normal, inner)

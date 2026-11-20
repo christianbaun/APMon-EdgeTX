@@ -1,3 +1,5 @@
+<img align="right" src="images/apmon-logo.svg" width="88" height="88" alt="APMon-Logo mit Telemetrie-Puls">
+
 # APMon — EdgeTX Monitor for ArduPilot
 
 [English](README.md) | **Deutsch**
@@ -157,7 +159,8 @@ SCRIPTS/
     └── APDiag.lua
 WIDGETS/                   # nur im COLOR-Paket
 └── APMon/
-    └── main.lua
+    ├── main.lua
+    └── logo.png           # Builds aus dem Quellcode nach v0.2.0
 ```
 
 **Keinen zusätzlichen Paketordner anlegen:**
@@ -220,8 +223,7 @@ Modelldateien werden nicht verändert.
 Sensorzuordnungen deshalb vor einem Update in
 [SD/SCRIPTS/APMON/config.lua](SD/SCRIPTS/APMON/config.lua) übernehmen.
 Die gespeicherte SW-Sprachwahl in `mono.cfg` bleibt erhalten.
-Die Lizenz liegt in beiden ZIP-Paketen; beim direkten Deployment werden nur
-die Lua-Dateien kopiert.
+Die Lizenz liegt in beiden ZIP-Paketen; das direkte Deployment kopiert sie nicht.
 
 ## Bedienung
 

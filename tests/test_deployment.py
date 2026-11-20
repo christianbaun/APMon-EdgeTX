@@ -19,9 +19,10 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+from zipfile import ZipFile
 
 import deploy
-from package_sd import files_for
+from package_sd import COLOR_LOGO, build_all, files_for
 
 
 class DeploymentTests(unittest.TestCase):
@@ -33,9 +34,21 @@ class DeploymentTests(unittest.TestCase):
         self.assertIn(Path('SCRIPTS/TELEMETRY/APMon.lua'), sw)
         self.assertNotIn(Path('WIDGETS/APMon/main.lua'), sw)
         self.assertIn(Path('WIDGETS/APMon/main.lua'), color)
+        self.assertIn(COLOR_LOGO, color)
+        self.assertNotIn(COLOR_LOGO, sw)
         self.assertFalse(any('TELEMETRY' in p.parts for p in color))
         with self.assertRaises(ValueError):
             files_for('unknown')
+
+    def test_logo_only_in_color_archive(self):
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()):
+            output = Path(tmp)
+            build_all(output)
+            with ZipFile(output / 'APMon-COLOR.zip') as archive:
+                self.assertEqual(archive.read(COLOR_LOGO.as_posix()),
+                                 (deploy.ROOT / 'SD' / COLOR_LOGO).read_bytes())
+            with ZipFile(output / 'APMon-SW.zip') as archive:
+                self.assertNotIn(COLOR_LOGO.as_posix(), archive.namelist())
 
     def test_display_is_required(self):
         with patch.object(sys, 'argv', ['deploy.py']), contextlib.redirect_stderr(io.StringIO()):
@@ -59,6 +72,10 @@ class DeploymentTests(unittest.TestCase):
                 other.write_text('unrelated script')
                 model = card / 'MODELS/test.yml'
                 model.write_text('model settings')
+                if display == 'color':
+                    unrelated = (card / COLOR_LOGO).with_suffix('.luac')
+                    unrelated.parent.mkdir(parents=True)
+                    unrelated.write_bytes(b'unrelated Lua cache')
                 args = ['deploy.py', '--display', display, '--sd', tmp]
                 with patch.object(sys, 'argv', args), contextlib.redirect_stdout(io.StringIO()), \
                         patch.object(deploy.subprocess, 'run') as run, \
@@ -85,6 +102,7 @@ class DeploymentTests(unittest.TestCase):
                     self.assertFalse((card / 'WIDGETS').exists())
                 else:
                     self.assertFalse((card / 'SCRIPTS/TELEMETRY').exists())
+                    self.assertEqual(unrelated.read_bytes(), b'unrelated Lua cache')
 
 
 if __name__ == '__main__':

@@ -17,6 +17,7 @@ debug.setmetatable('', nil)
 local root = 'SD'
 local now, data, calls, colorDisplay = 100, {}, {}, false
 local draws, rectangles = {}, {}
+local lines, bitmaps, bitmapLoads = {}, {}, 0
 getTime = function() return now end
 getFieldInfo = function(name) if data[name] then return { id = name } end end
 getSourceValue = function(id)
@@ -45,7 +46,7 @@ local function measure(text, flags)
   return glyphs * 6, 8
 end
 lcd = {
-  clear = function() calls, draws, rectangles = {}, {}, {} end,
+  clear = function() calls, draws, rectangles, lines = {}, {}, {}, {} end,
   RGB = function(r, g, b) return r * 65536 + g * 256 + b end,
   setColor = function() end,
   drawText = function(x, y, text, flags)
@@ -61,7 +62,20 @@ lcd = {
     assert(x >= 0 and y >= 0 and x + w <= LCD_W and y + h <= LCD_H)
     rectangles[#rectangles + 1] = {x=x, y=y, w=w, h=h, flags=flags}
   end,
+  drawLine = function(x1, y1, x2, y2, pattern, flags)
+    assert(not colorDisplay and x1 >= 0 and x2 < LCD_W and y1 >= 0 and y2 >= 0 and y1 < LCD_H and y2 < LCD_H)
+    lines[#lines + 1] = { x1=x1, y1=y1, x2=x2, y2=y2, pattern=pattern, flags=flags }
+  end,
+  drawBitmap = function(bitmap, x, y)
+    assert(colorDisplay and bitmap == 'APMon logo' and x >= 0 and x + 32 <= LCD_W and y >= 0 and y + 32 <= 38)
+    bitmaps[#bitmaps + 1] = {x=x, y=y}
+  end,
 }
+Bitmap = { open = function(path)
+  assert(colorDisplay and path == '/WIDGETS/APMon/logo.png')
+  bitmapLoads = bitmapLoads + 1
+  return 'APMon logo'
+end }
 local function drawOf(text, y)
   for _, draw in ipairs(draws) do
     if draw.text == text and (y == nil or y == draw.y) then return draw end
@@ -72,15 +86,25 @@ local function assertPage(title, counter)
   assert(rectangles[1].x == 0 and rectangles[1].w == LCD_W)
   assert(draws[1].flags & INVERS ~= 0 and draws[2].flags & INVERS ~= 0)
   assert(draws[2].x + draws[2].w == LCD_W - 2)
+  assert(#lines == 0) -- menus only
 end
 local function assertProjectTitle()
   local title = table.concat(calls, ' ', 1, 4)
   assert(title == 'APMon - ArduPilot telemetry monitor for EdgeTX monochrome and color radios', title)
 end
+local function assertMonoLogo()
+  assert(#lines == 6 and lines[1].x1 == 110 and lines[6].x2 == 123)
+  for _, line in ipairs(lines) do
+    assert(line.x1 >= 110 and line.x2 <= 123 and line.y1 >= 1 and line.y1 <= 8
+      and line.y2 >= 1 and line.y2 <= 8 and line.pattern == 255 and line.flags == ERASE)
+  end
+  assert(draws[1].x + draws[1].w < lines[1].x1)
+end
 local function assertMonoMenu(language, messages)
   assertProjectTitle()
   assert(drawOf('github.com/christianbaun/', 33) and drawOf('APMon-EdgeTX', 40))
   assert(drawOf(language, 49) and drawOf(messages, 57))
+  assertMonoLogo()
 end
 -- Any attempt to write or transmit fails the test.
 model = setmetatable({}, { __index = function() error('Model mutation/access not allowed') end })
@@ -188,6 +212,7 @@ assertMonoMenu('Language: English', 'FC messages')
 assert(drawOf('Language: English', 49).flags & INVERS ~= 0)
 mono.run(EVT_VIRTUAL_ENTER)
 assert(calls[1] == 'APMon / Language')
+assertMonoLogo()
 assert(drawOf('English') and drawOf('Deutsch'))
 mono.run(EVT_ROT_RIGHT); mono.run(EVT_VIRTUAL_ENTER)
 assert(savedLanguage == 'de')
@@ -275,20 +300,23 @@ visible = table.concat(calls, '|')
 assert(string.find(visible, 'Flugmodus', 1, true))
 assert(string.find(visible, '|O|', 1, true))
 local function colorFrame(w, event, x, y)
-  calls, draws, rectangles = {}, {}, {}
+  calls, draws, rectangles, bitmaps = {}, {}, {}, {}
   widget.refresh(w, event, x and {x=x,y=y})
 end
 local function assertColorMenu(language, messages)
   assertProjectTitle()
   assert(drawOf('github.com/christianbaun/APMon-EdgeTX', 108))
   assert(drawOf(language, 146) and drawOf(messages, 174))
+  assert(#bitmaps == 1 and bitmaps[1].x == LCD_W - 44 and bitmaps[1].y == 3)
 end
 colorFrame(full, EVT_TOUCH_TAP, 30, 275)
 assert(drawOf('ARDUPILOT MONITOR')) -- unrelated touches do not open the menu
+assert(bitmapLoads == 0 and #bitmaps == 0)
 colorFrame(full, EVT_TOUCH_TAP, 460, 275)
 assertColorMenu('> Sprache: Deutsch', 'FC-Meldungen')
 colorFrame(full, EVT_VIRTUAL_ENTER)
 assert(drawOf('Sprache') and drawOf('Nur für diese Sitzung'))
+assert(bitmapLoads == 1 and #bitmaps == 1)
 colorFrame(full, EVT_TOUCH_TAP, 30, 55)
 assertColorMenu('> Language: English', 'FC messages')
 assert(full.options.Language == 2)
@@ -296,6 +324,7 @@ colorFrame(full, EVT_VIRTUAL_NEXT)
 assertColorMenu('Language: English', '> FC messages')
 colorFrame(full, EVT_VIRTUAL_ENTER)
 assert(drawOf('FC messages') and drawOf('FC message: --'))
+assert(bitmapLoads == 1 and #bitmaps == 1)
 colorFrame(full, EVT_VIRTUAL_EXIT)
 assertColorMenu('Language: English', '> FC messages')
 colorFrame(full, EVT_VIRTUAL_EXIT)
@@ -319,7 +348,19 @@ colorFrame(smallZone)
 assert(not drawOf('ARDUPILOT MONITOR'))
 colorFrame(smallZone, EVT_VIRTUAL_ENTER)
 assertColorMenu('> Language: English', 'FC messages')
+assert(bitmapLoads == 1) -- menu refreshes and widget instances share the bitmap
 LCD_W, LCD_H = 480, 320
+-- An unavailable bitmap must not interfere with the menu.
+local openBitmap, failedLoads = Bitmap.open, 0
+Bitmap.open = function() failedLoads = failedLoads + 1 end
+local logoMissing = loadScript('/WIDGETS/APMon/main.lua')()
+local withoutLogo = logoMissing.create({x=0,y=0,w=480,h=272}, {})
+bitmaps, calls = {}, {}
+logoMissing.refresh(withoutLogo, EVT_VIRTUAL_ENTER)
+assertProjectTitle()
+logoMissing.refresh(withoutLogo, 0)
+assert(#bitmaps == 0 and failedLoads == 1)
+Bitmap.open = openBitmap
 local translated = loadScript('/SCRIPTS/APMON/i18n.lua')()
 assert(translated.text(1, 'Ja DGPS') == 'Yes DGPS')
 assert(translated.text(1, 'Keine aktuellen FC-Daten') == 'No current FC data')
@@ -475,6 +516,7 @@ assert(drawOf('DGPS/--', 42))
 small.run(EVT_VIRTUAL_ENTER)
 small.run(EVT_ROT_RIGHT); small.run(EVT_VIRTUAL_ENTER)
 assert(string.find(table.concat(calls,'|'),'Using EKF Source Set 2',1,true))
+assertMonoLogo()
 small.run(EVT_VIRTUAL_EXIT)
 assertMonoMenu('Language: English', 'FC messages')
 small.run(EVT_VIRTUAL_EXIT)

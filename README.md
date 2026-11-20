@@ -1,3 +1,5 @@
+<img align="right" src="images/apmon-logo.svg" width="88" height="88" alt="APMon telemetry pulse logo">
+
 # APMon — EdgeTX Monitor for ArduPilot
 
 **English** | [Deutsch](README.de.md)
@@ -145,7 +147,8 @@ SCRIPTS/
     └── APDiag.lua
 WIDGETS/                   # COLOR package only
 └── APMon/
-    └── main.lua
+    ├── main.lua
+    └── logo.png           # source builds after v0.2.0
 ```
 
 Do not add an enclosing package directory:
@@ -208,7 +211,7 @@ are left untouched. `config.lua` is replaced: keep custom sensor mappings in
 `SD/SCRIPTS/APMON/config.lua` before deploying. The saved SW language file,
 `mono.cfg`, is preserved.
 
-The ZIP packages include the license; direct deployment copies Lua files only.
+The ZIP packages include the license; direct deployment does not copy it.
 Safely eject the card and restart the radio after deployment.
 
 ## Operation

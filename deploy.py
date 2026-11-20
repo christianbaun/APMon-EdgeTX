@@ -51,16 +51,16 @@ def main():
         target = candidates.pop()
 
     files = files_for(args.display)
+    caches = {rel: (target / rel).with_suffix('.luac') for rel in files if rel.suffix == '.lua'}
     # Resolve every destination before writing; reject redirected paths.
-    for rel in files:
-        for dest in (target / rel, (target / rel).with_suffix('.luac')):
-            if not dest.resolve().is_relative_to(target):
-                parser.error('Destination escapes SD card: ' + str(dest))
+    for dest in [target / rel for rel in files] + list(caches.values()):
+        if not dest.resolve().is_relative_to(target):
+            parser.error('Destination escapes SD card: ' + str(dest))
     print('SD card:', target)
     for rel in files:
         print('Copy:', rel)
-        compiled = (target / rel).with_suffix('.luac')
-        if compiled.exists():
+        compiled = caches.get(rel)
+        if compiled and compiled.exists():
             print('Remove compiled cache:', compiled.relative_to(target))
     if not args.apply:
         print('Preview only. Add --apply to run tests and deploy.')
@@ -74,7 +74,8 @@ def main():
         shutil.copyfile(source, dest)
         if source.read_bytes() != dest.read_bytes():
             raise RuntimeError('Verification failed: ' + str(dest))
-        dest.with_suffix('.luac').unlink(missing_ok=True)
+        if rel in caches:
+            caches[rel].unlink(missing_ok=True)
     subprocess.run(['sync'], check=True)
     print('Deployment verified. Eject the SD card safely, then restart the radio.')
 

@@ -19,6 +19,7 @@ import sys
 from zipfile import ZipFile, ZIP_DEFLATED
 
 ROOT = Path(__file__).resolve().parent
+COLOR_LOGO = Path('WIDGETS/APMon/logo.png')
 
 
 def files_for(display):
@@ -26,14 +27,14 @@ def files_for(display):
     if display == 'sw':
         return [p for p in files if p.parts[0] == 'SCRIPTS']
     if display == 'color':
-        return [p for p in files if 'TELEMETRY' not in p.parts]
+        return sorted([p for p in files if 'TELEMETRY' not in p.parts] + [COLOR_LOGO])
     raise ValueError('Display must be sw or color')
 
 
-def build_all():
+def build_all(output_dir=ROOT):
     for display, name in [('sw', 'APMon-SW.zip'), ('color', 'APMon-COLOR.zip')]:
         files = files_for(display)
-        path = ROOT / name
+        path = output_dir / name
         with ZipFile(path, 'w', ZIP_DEFLATED) as archive:
             for rel in files:
                 archive.write(ROOT / 'SD' / rel, rel)
