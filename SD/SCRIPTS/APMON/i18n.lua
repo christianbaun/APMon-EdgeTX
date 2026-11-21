@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/i18n.lua
 -- Purpose: Provide the extensible GUI language registry, translations and fallback rules.
--- Project version: 0.2.1
--- Updated: 2026-11-20
+-- Project version: 0.3.0
+-- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -27,6 +27,13 @@ local english = {
   ['Breite'] = 'Latitude', ['Laenge'] = 'Longitude', ['GPS-Kurs'] = 'GPS course',
   ['Enter: speichern'] = 'ENTER: save RTN:cancel',
   ['Sprache nicht gespeichert'] = 'Language not saved',
+  ['Uhr nicht gespeichert'] = 'Clock not saved',
+  ['Uhr'] = 'Clock', ['An'] = 'On', ['Aus'] = 'Off',
+  ['ENT: Details'] = 'ENT: details', ['RTN: Liste'] = 'RTN: list',
+  ['Keine FC-Meldungen'] = 'No FC messages',
+  ['Schweregrad %d'] = 'Severity %d',
+  ['Neuere'] = 'Newer', ['Ältere'] = 'Older',
+  ['vor %ds'] = '%ds ago',
   ['FC-Daten fehlen'] = 'FC data missing',
   ['Rad: Ansicht ENTER:Sprache'] = 'Wheel: view ENTER:language',
   ['RC-Linkqualität'] = 'RC link quality',

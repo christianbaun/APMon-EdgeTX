@@ -2,8 +2,8 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: tests/test_deployment.py
 # Purpose: Verify display selection, deployment preview and SD-card file isolation.
-# Project version: 0.2.1
-# Updated: 2026-11-20
+# Project version: 0.3.0
+# Updated: 2026-11-21
 # Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)
 # SPDX-License-Identifier: Apache-2.0
@@ -21,14 +21,14 @@ from unittest.mock import patch
 from zipfile import ZipFile
 
 import deploy
-from package_sd import COLOR_LOGO, build_all, files_for
+from package_sd import COLOR_LOGO, SD_VERSION, build_all, files_for, source_for
 
 
 class DeploymentTests(unittest.TestCase):
     def test_display_file_sets(self):
         sw, color = set(files_for('sw')), set(files_for('color'))
         shared = {Path('SCRIPTS/APMON/config.lua'), Path('SCRIPTS/APMON/pass.lua'),
-                  Path('SCRIPTS/APMON/project.lua')}
+                  Path('SCRIPTS/APMON/project.lua'), SD_VERSION}
         self.assertTrue(shared <= sw & color)
         self.assertIn(Path('SCRIPTS/TELEMETRY/APMon.lua'), sw)
         self.assertNotIn(Path('WIDGETS/APMon/main.lua'), sw)
@@ -44,9 +44,11 @@ class DeploymentTests(unittest.TestCase):
             output = Path(tmp)
             build_all(output)
             with ZipFile(output / 'APMon-COLOR.zip') as archive:
+                self.assertEqual(archive.read(SD_VERSION.as_posix()), (deploy.ROOT / 'VERSION').read_bytes())
                 self.assertEqual(archive.read(COLOR_LOGO.as_posix()),
                                  (deploy.ROOT / 'SD' / COLOR_LOGO).read_bytes())
             with ZipFile(output / 'APMon-SW.zip') as archive:
+                self.assertEqual(archive.read(SD_VERSION.as_posix()), (deploy.ROOT / 'VERSION').read_bytes())
                 self.assertNotIn(COLOR_LOGO.as_posix(), archive.namelist())
 
     def test_display_is_required(self):
@@ -92,7 +94,7 @@ class DeploymentTests(unittest.TestCase):
                     build.assert_called_once()
                     self.assertEqual(run.call_count, 2)  # Lua validation and sync
                 for rel in files_for(display):
-                    self.assertEqual((card / rel).read_bytes(), (deploy.ROOT / 'SD' / rel).read_bytes())
+                    self.assertEqual((card / rel).read_bytes(), source_for(rel).read_bytes())
                 self.assertFalse(compiled.exists())
                 self.assertEqual(preference.read_text(), 'de')
                 self.assertEqual(other.read_text(), 'unrelated script')

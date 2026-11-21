@@ -3,8 +3,8 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: deploy.py
 # Purpose: Preview or deploy APMon files to a mounted SD card after running validation.
-# Project version: 0.2.1
-# Updated: 2026-11-20
+# Project version: 0.3.0
+# Updated: 2026-11-21
 # Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)
 # SPDX-License-Identifier: Apache-2.0
@@ -18,7 +18,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from package_sd import files_for, build_all
+from package_sd import files_for, source_for, build_all
 
 ROOT = Path(__file__).resolve().parent
 
@@ -72,7 +72,7 @@ def main():
     subprocess.run([sys.executable, str(ROOT / 'tests/run.py')], cwd=ROOT, check=True)
     build_all()
     for rel in files:
-        source, dest = ROOT / 'SD' / rel, target / rel
+        source, dest = source_for(rel), target / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, dest)
         if source.read_bytes() != dest.read_bytes():

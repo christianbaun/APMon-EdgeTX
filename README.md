@@ -11,8 +11,8 @@ displays battery readings, flight attitude, GPS status and flight-controller
 messages. It runs as Lua scripts on the radio's SD card: no laptop or
 additional flight-controller script is required during use.
 
-Current project version: **0.2.1**, recorded in [VERSION](VERSION).
-See the [v0.2.1 release notes](releases/v0.2.1.md).
+Current project version: **0.3.0**, recorded in [VERSION](VERSION).
+See the [v0.3.0 release notes](releases/v0.3.0.md).
 
 The GUI supports **English and German**, with English as the default.
 
@@ -50,29 +50,40 @@ does not mean the hardware has been tested.
 
 ## Screenshots
 
-Actual captures from the GX12, GX15 and TX16S MK3, including the project menu
-on each radio. The GX12 images are enlarged 4×. The readings show the captured
-state and are not an indication of flight readiness.
+Actual captures from the GX12, GX15 and TX16S MK3. The readings show the
+captured state and are not an indication of flight readiness.
+
+**Monochrome — GX12 (128 × 64, APMon v0.3.0)**
+
+The images are enlarged 4×. The radio clock is enabled on both telemetry pages.
 
 | Overview | Flight data |
 | --- | --- |
-| ![APMon monochrome overview in English](images/screenshots/apmon-sw-gx12-overview-en-v0.2.0-2000-02-23-212903-4x.png) | ![APMon monochrome flight data in English](images/screenshots/apmon-sw-gx12-flight-en-v0.2.0-2000-02-23-212832-4x.png) |
+| ![APMon overview in English with the radio clock on the GX12](images/screenshots/apmon-sw-gx12-overview-en-v0.3.0-2026-11-21-141247-4x.png) | ![APMon flight data in English with the radio clock on the GX12](images/screenshots/apmon-sw-gx12-flight-en-v0.3.0-2026-11-21-141243-4x.png) |
 
-**Monochrome project menu — GX12**
-
-![APMon monochrome project menu in English](images/screenshots/apmon-sw-gx12-menu-en-v0.2.0-2000-02-23-212826-4x.png)
-
-**Color dashboard and project menu — GX15 (480 × 320)**
-
-| Dashboard in full screen | Project menu |
+| Project menu | FC message list |
 | --- | --- |
-| ![APMon color dashboard in English with the full title and telemetry pulse logo on RadioMaster GX15](images/screenshots/apmon-color-gx15-overview-en-v0.2.0-2000-04-24-102152.png) | ![APMon color project menu in English with the same header on RadioMaster GX15](images/screenshots/apmon-color-gx15-menu-en-v0.2.0-2000-04-24-102151.png) |
+| ![APMon project menu in English with version and clock setting](images/screenshots/apmon-sw-gx12-menu-en-v0.3.0-2000-02-24-225239-4x.png) | ![Scrollable FC message list in English on the GX12](images/screenshots/apmon-sw-gx12-messages-en-v0.3.0-2000-02-24-225259-4x.png) |
 
-**Color dashboard and project menu — TX16S MK3 (800 × 480)**
+**Color display — GX15 (480 × 320, APMon v0.3.0)**
 
-| Dashboard | Project menu |
+| Dashboard with radio clock | Project menu |
 | --- | --- |
-| ![APMon color dashboard in English with the full title and telemetry pulse logo on RadioMaster TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.2.0-2000-06-21-111002.png) | ![APMon color project menu in English with the same header on RadioMaster TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.2.0-2000-06-21-110921.png) |
+| ![APMon color dashboard in English with a large radio clock centered in the GX15 header](images/screenshots/apmon-color-gx15-overview-en-v0.3.0-2026-11-21-142647.png) | ![APMon project menu in English with the version and clock setting on the GX15](images/screenshots/apmon-color-gx15-menu-en-v0.3.0-2026-11-21-142657.png) |
+
+**FC message list — GX15**
+
+![Scrollable FC message list with severity and age on the GX15](images/screenshots/apmon-color-gx15-messages-en-v0.3.0-2026-11-21-142705.png)
+
+**Color display — TX16S MK3 (800 × 480, APMon v0.3.0)**
+
+| Dashboard with radio clock | Project menu |
+| --- | --- |
+| ![APMon color dashboard in English with a large radio clock centered in the TX16S MK3 header](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.3.0-2026-11-21-143508.png) | ![APMon project menu in English with the version and clock setting on the TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.3.0-2026-11-21-143522.png) |
+
+**FC message list — TX16S MK3**
+
+![FC message list with severity, repeat count and age on the TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-messages-en-v0.3.0-2026-11-21-143526.png)
 
 **Change language:** On SW, press **ENTER** and select **Language / Sprache**.
 On COLOR, open APMon in full screen and select **Menu → Language**. For a
@@ -228,7 +239,7 @@ With `--apply`, the script runs the Lua tests, builds both ZIP packages, copies
 only the selected variant, verifies file contents and removes matching old
 APMon `.luac` files. **No backup is created.** Other scripts and model settings
 are left untouched. `config.lua` is replaced: keep custom sensor mappings in
-`SD/SCRIPTS/APMON/config.lua` before deploying. The saved SW language file,
+`SD/SCRIPTS/APMON/config.lua` before deploying. The saved SW preferences file,
 `mono.cfg`, is preserved.
 
 The ZIP packages include the license; direct deployment does not copy it.
@@ -275,13 +286,18 @@ The latest FC message appears at the bottom with its age; long text is clipped.
 
 - **Open the project menu:** double-tap APMon, or choose **Full screen** from
   the widget's context menu. In full screen, tap **Menu** or press **ENTER**.
-- The menu shows the full project title and GitHub address. Open **Language**
-  or **FC messages** by tapping an item or using the wheel and **ENTER**.
+- Below **APMon**, the menu shows **ArduPilot Telemetry Monitor for EdgeTX radios**,
+  followed by the GitHub address and installed version. Open **Language** or
+  **FC messages** by tapping an item or using
+  the wheel and **ENTER**.
   **RTN** goes back; hold **RTN** to leave full screen.
 - The menu language change applies to this widget for the current session.
   To save it in the model, long-press APMon in the main view and choose
   **Widget settings → Language → English / Deutsch**. If the old English
   checkbox remains after an update, restart and re-add the widget if needed.
+- **Menu → Clock** toggles the larger radio clock centered in the dashboard
+  header for the current session. Use **Widget settings → Clock** to save
+  the default per widget.
 
 ### SW
 
@@ -293,15 +309,16 @@ The latest FC message appears at the bottom with its age; long text is clipped.
 - **Battery voltage is in the upper right on both pages**. Without a valid
   reading it shows `--`.
 - **Rotary wheel, Plus/Minus or NEXT/PREV:** change pages manually; no automatic rotation.
-- **ENTER / press the wheel:** open the menu with the full project title and
-  GitHub address.
+- **ENTER / press the wheel:** open the menu with the project title, GitHub
+  address and installed APMon version.
 - Select **Language** to choose **English / Deutsch**, or **FC messages** to
-  see the latest message. **RTN** returns one level without changing the selection.
+  open the history. Select **Clock: Off/On** directly below and press **ENTER**
+  to toggle the clock. The time appears next to the page
+  number on both telemetry pages. **RTN** goes back one level.
 
-The latest FC message is wrapped over several lines. Language is saved as a
-code in `/SCRIPTS/APMON/mono.cfg`, shared by all models on that SD card. If
-saving fails, a warning is displayed and the language remains active for the
-current session.
+Language and clock preferences are saved in `/SCRIPTS/APMON/mono.cfg`, shared by
+all models on that SD card. If a write fails, APMon shows a warning and keeps the
+change for the current session.
 
 Short labels keep readings on the same line on the small display:
 
@@ -316,6 +333,19 @@ Short labels keep readings on the same line on the small display:
 | Climb / Vario | Climb rate |
 | Dir | Compass direction derived from yaw, when it does not fit next to the angle |
 | EKF | Last source-set message; `2/30s` means set 2 was reported 30 seconds ago |
+
+### Radio clock and FC message history
+
+The clock is off by default. It shows the EdgeTX radio's time in 24-hour `HH:MM`
+format, even without a connection to the model and regardless of the calendar
+date. If EdgeTX cannot supply a valid hour or minute, it shows `--:--`.
+
+**FC messages** shows a list, newest first. Use the wheel or **NEXT/PREV** to
+browse, or tap **Older/Newer** on COLOR. Press **ENTER** or tap a row on
+COLOR to open the full message with its severity, age since it was last
+received and any consecutive repeat count (`x3`). **RTN** returns to the list.
+`S4` means MAVLink severity 4. The history keeps **12 entries on SW** and
+**32 on COLOR** in memory and clears when APMon reloads.
 
 ## Sensor configuration
 
@@ -452,7 +482,9 @@ listed under `Authors`; Codex CLI is credited separately for development
 assistance. Dates describe the recorded change state, not an assumed original
 creation date.
 
-[VERSION](VERSION) is the central project version. When releasing a new version,
+[VERSION](VERSION) is the central project version. Both SD packages and
+`deploy.py` copy it to `SCRIPTS/APMON/VERSION` for the menu. When releasing a
+new version,
 update source-header versions and both READMEs together. Update each changed
 file's header date and rebuild the archives before publishing.
 

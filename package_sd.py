@@ -2,8 +2,8 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: package_sd.py
 # Purpose: Build and verify separate monochrome and color SD-card distribution archives.
-# Project version: 0.2.1
-# Updated: 2026-11-20
+# Project version: 0.3.0
+# Updated: 2026-11-21
 # Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)
 # SPDX-License-Identifier: Apache-2.0
@@ -19,10 +19,15 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 ROOT = Path(__file__).resolve().parent
 COLOR_LOGO = Path('WIDGETS/APMon/logo.png')
+SD_VERSION = Path('SCRIPTS/APMON/VERSION')
+
+
+def source_for(rel):
+    return ROOT / 'VERSION' if rel == SD_VERSION else ROOT / 'SD' / rel
 
 
 def files_for(display):
-    files = sorted(p.relative_to(ROOT / 'SD') for p in (ROOT / 'SD').rglob('*.lua'))
+    files = sorted([p.relative_to(ROOT / 'SD') for p in (ROOT / 'SD').rglob('*.lua')] + [SD_VERSION])
     if display == 'sw':
         return [p for p in files if p.parts[0] == 'SCRIPTS']
     if display == 'color':
@@ -36,12 +41,12 @@ def build_all(output_dir=ROOT):
         path = output_dir / name
         with ZipFile(path, 'w', ZIP_DEFLATED) as archive:
             for rel in files:
-                archive.write(ROOT / 'SD' / rel, rel)
+                archive.write(source_for(rel), rel)
             archive.write(ROOT / 'LICENSE', 'SCRIPTS/APMON/LICENSE.txt')
         with ZipFile(path) as archive:
             assert archive.testzip() is None
             for rel in files:
-                assert archive.read(rel.as_posix()) == (ROOT / 'SD' / rel).read_bytes()
+                assert archive.read(rel.as_posix()) == source_for(rel).read_bytes()
             assert archive.read('SCRIPTS/APMON/LICENSE.txt') == (ROOT / 'LICENSE').read_bytes()
         print('Verified:', name)
 

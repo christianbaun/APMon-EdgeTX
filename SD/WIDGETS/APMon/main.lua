@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/WIDGETS/APMon/main.lua
 -- Purpose: Render the color dashboard, full-screen project menu and language selection.
--- Project version: 0.2.1
--- Updated: 2026-11-20
+-- Project version: 0.3.0
+-- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -12,18 +12,18 @@
 -- =============================================================================
 
 -- Color widget, classic EdgeTX LCD API (2.x).
-local function module(name)
+local function module(name, ...)
   local path = '/SCRIPTS/APMON/' .. name .. '.lua'
   local chunk, reason = loadScript(path)
   if not chunk then error('APMon: ' .. path .. ': ' .. tostring(reason or 'nicht ladbar')) end
-  return chunk()
+  return chunk(...)
 end
 local core = module('core')
 local config = module('config')
-local receiver = module('pass')
+local receiver = module('pass', 32)
 local i18n = module('i18n')
 local project = module('project')
-local options = { { 'Language', CHOICE, 1, i18n.choices } }
+local options = { { 'Language', CHOICE, 1, i18n.choices }, { 'Clock', BOOL, 0 } }
 local logo
 local function drawLogo(zone, headerHeight)
   if not (Bitmap and Bitmap.open and lcd.drawBitmap) then return end
@@ -36,12 +36,16 @@ local function create(zone, opts)
   return { zone = zone, options = opts, monitor = core.new(config, receiver) }
 end
 local function update(widget, opts)
-  widget.options, widget.sessionLanguage = opts, nil
+  widget.options, widget.sessionLanguage, widget.sessionClock = opts, nil, nil
 end
 local function background(widget) widget.monitor:sample() end
 local function languageOf(widget)
   local index = widget.sessionLanguage or (widget.options and widget.options.Language)
   return i18n.languages[index] and index or 1
+end
+local function clockEnabled(widget)
+  if widget.sessionClock ~= nil then return widget.sessionClock end
+  return widget.options and widget.options.Clock == 1
 end
 local function setView(widget, view, focus)
   widget.view, widget.focus = view, focus
@@ -49,9 +53,9 @@ end
 local menuW = 148
 local regularFont = SMLSIZE or 0
 local headingFont = MIDSIZE or regularFont
-local menuTitle = 'APMon - ArduPilot Telemetry Monitor'
-local menuSubtitle = 'for EdgeTX monochrome and color radios'
+local menuSubtitle = project.subtitle[1] .. ' ' .. project.subtitle[2]
 local repoAddress = project.repo[1] .. project.repo[2]
+local versionLabel = 'APMon ' .. project.version
 local function layoutFor(widget, z)
   local layout = widget.menuLayout
   if layout and layout.width == z.w and layout.height == z.h then return layout end
@@ -60,33 +64,40 @@ local function layoutFor(widget, z)
   local headingFlags = headingFont + CUSTOM_COLOR
   local _, smallHeight = lcd.sizeText('Ag', regularFlags)
   local _, largeHeight = lcd.sizeText('Ag', headingFlags)
-  local titleWidth = z.w - 64 -- reserve space for the logo and side padding
-  local titles, titleFont, titleHeight = {menuTitle}, headingFont, largeHeight
-  if lcd.sizeText(menuTitle, headingFlags) > titleWidth then
-    titleFont, titleHeight = regularFont, smallHeight
-    if lcd.sizeText(menuTitle, regularFlags) > titleWidth then
-      titles = {'APMon - ArduPilot', 'Telemetry Monitor'}
-    end
-  end
   local inner = z.w - 24
-  local subtitles = lcd.sizeText(menuSubtitle, regularFlags) <= inner and {menuSubtitle}
-    or {'for EdgeTX monochrome', 'and color radios'}
+  local subtitles = lcd.sizeText(menuSubtitle, regularFlags) <= inner and {menuSubtitle} or project.subtitle
   local repo = lcd.sizeText(repoAddress, regularFlags) <= inner and {repoAddress} or project.repo
   -- EdgeTX devices can use different pixel sizes for the same font flag.
   -- Keep the full font box on the colored bar, with padding above and below.
-  local header = math.max(38, math.max(largeHeight, #titles * titleHeight) + 16)
+  local header = math.max(38, largeHeight + 16)
+  local clockFont = DBLSIZE or headingFont
+  local clockWidth, clockHeight = lcd.sizeText('88:88', clockFont + CUSTOM_COLOR)
+  local titleWidth = lcd.sizeText(project.title, headingFlags)
+  local clockMaxWidth = z.w - 2 * (math.max(12 + titleWidth, 44) + 8)
+  -- Allow a few extra header pixels, but prefer a smaller font over moving the telemetry rows down further.
+  if clockHeight > header or clockWidth > clockMaxWidth then
+    clockFont = headingFont
+    _, clockHeight = lcd.sizeText('88:88', headingFlags)
+  end
+  header = math.max(header, clockHeight + 6)
   local subtitleY, step = header + 6, smallHeight + 4
   local repoY = math.max(108, subtitleY + #subtitles * step + 4)
-  local divider = math.max(132, repoY + #repo * step + 4)
+  local versionWidth = lcd.sizeText(versionLabel, regularFlags)
+  local versionInline = lcd.sizeText(repo[#repo], regularFlags) + versionWidth + 12 <= inner
+  local versionY = repoY + (#repo - (versionInline and 1 or 0)) * step
+  local divider = math.max(132, versionY + step + 4)
   local rowHeight = math.max(28, smallHeight + 9)
+  local menuTop = divider + 10
   local languageTop = header + 14
   local messageStep = math.max(20, smallHeight + 2)
   layout = {
     width = z.w, height = z.h, header = header,
-    titles = titles, titleFont = titleFont, titleHeight = titleHeight,
+    clockFont = clockFont,
     subtitles = subtitles, subtitleY = subtitleY, repo = repo, repoY = repoY,
-    divider = divider, menuTop = divider + 10, languageTop = languageTop,
+    versionY = versionY, versionWidth = versionWidth,
+    divider = divider, menuTop = menuTop, languageTop = languageTop,
     smallHeight = smallHeight, step = step, rowHeight = rowHeight,
+    menuRows = math.max(1, math.min(4, math.floor((z.h - menuTop + 3) / rowHeight))),
     languageRows = math.max(1, math.min(5, math.floor((z.h - smallHeight - 16 - languageTop) / rowHeight))),
     footerY = z.h - messageStep - smallHeight - 6, messageStep = messageStep,
     buttonHeight = math.max(24, smallHeight + 6),
@@ -94,14 +105,25 @@ local function layoutFor(widget, z)
   widget.menuLayout = layout
   return layout
 end
-local function rows(widget, z, layout)
-  if widget.view == 'menu' then return layout.menuTop, 1, 3, 3 end
-  if widget.view == 'messages' then return z.h - layout.rowHeight - 16, 1, 1, 1 end
+local function rows(widget, layout)
+  if widget.view == 'menu' then
+    return layout.menuTop, math.max(1, widget.focus - layout.menuRows + 1), 4, layout.menuRows
+  end
   local count = #i18n.languages + 1
   return layout.languageTop, math.max(1, widget.focus - layout.languageRows + 1), count, layout.languageRows
 end
+local function messagePage(widget)
+  return widget.view == 'messages' or widget.view == 'messageDetail'
+end
+local function messageWindow(widget, z, layout)
+  local top, back = layout.header + 9, z.h - layout.rowHeight - 16
+  local visible = math.floor((back - layout.rowHeight - top) / layout.rowHeight)
+  local _, index, count = receiver.browse(widget.selectedMessage)
+  local first = math.max(1, index - visible + 1)
+  return top, back, first, index, count, math.min(visible, count - first + 1)
+end
 local function handleInput(widget, z, layout, event, touch)
-  if event == nil then setView(widget); return end
+  if event == nil then setView(widget); widget.messageDetail = nil; return end
   if event == 0 then return end
   local enter = event == EVT_VIRTUAL_ENTER
   local exit = event == EVT_VIRTUAL_EXIT
@@ -116,13 +138,47 @@ local function handleInput(widget, z, layout, event, touch)
     end
     return
   end
-  if exit then
-    if widget.view == 'menu' then setView(widget)
-    else setView(widget, 'menu', widget.view == 'messages' and 2 or 1) end
+  local rowHeight = layout.rowHeight
+  if messagePage(widget) then
+    local top, back, first, _, _, visible = messageWindow(widget, z, layout)
+    if widget.view == 'messageDetail' then
+      if enter or exit or inButton(back, rowHeight - 3) then
+        widget.messageDetail = nil
+        setView(widget, 'messages', 1)
+      end
+      return
+    end
+    if exit or inButton(back, rowHeight - 3) then
+      setView(widget, 'menu', 2)
+      return
+    end
+    local step = 0
+    if event == EVT_VIRTUAL_NEXT then step = 1
+    elseif event == EVT_VIRTUAL_PREV then step = -1
+    elseif inButton(back - rowHeight, rowHeight - 3) then
+      step = tap.x < z.w / 2 and -1 or 1
+    end
+    local message, index = receiver.browse(widget.selectedMessage, step)
+    if inButton(top, visible * rowHeight) then
+      local row = tap.y - top
+      if row % rowHeight < rowHeight - 3 then
+        index = first + math.floor(row / rowHeight)
+        message, enter = receiver.messageAt(index), true
+      end
+    end
+    widget.selectedMessage = index > 1 and message or nil
+    if enter and message then
+      widget.messageDetail, widget.selectedMessage = message, message
+      setView(widget, 'messageDetail', 1)
+    end
     return
   end
-  local top, first, count, visibleChoices = rows(widget, z, layout)
-  local rowHeight = layout.rowHeight
+  if exit then
+    if widget.view == 'menu' then setView(widget)
+    else setView(widget, 'menu', 1) end
+    return
+  end
+  local top, first, count, visibleChoices = rows(widget, layout)
   if event == EVT_VIRTUAL_NEXT then widget.focus = widget.focus % count + 1
   elseif event == EVT_VIRTUAL_PREV then widget.focus = (widget.focus - 2) % count + 1 end
   if tap then
@@ -134,14 +190,17 @@ local function handleInput(widget, z, layout, event, touch)
   if not enter then return end
   if widget.view == 'menu' then
     if widget.focus == 1 then setView(widget, 'language', languageOf(widget))
-    elseif widget.focus == 2 then setView(widget, 'messages', 1)
+    elseif widget.focus == 2 then
+      widget.selectedMessage = nil
+      setView(widget, 'messages', 1)
+    elseif widget.focus == 3 then
+      -- Like the language menu, this overrides the saved widget setting for this session.
+      widget.sessionClock = not clockEnabled(widget)
     else setView(widget) end
   elseif widget.view == 'language' then
     -- EdgeTX persists widget options only via its own settings screen.
     if widget.focus <= #i18n.languages then widget.sessionLanguage = widget.focus end
     setView(widget, 'menu', 1)
-  else
-    setView(widget, 'menu', 2)
   end
 end
 local function refresh(widget, event, touch)
@@ -188,15 +247,73 @@ local function refresh(widget, event, touch)
   language = languageOf(widget)
   local left, inner = z.x + 12, z.w - 24
   rect(z.x, z.y, z.w, layout.header, info)
-  if widget.view == 'language' or widget.view == 'messages' then
-    local heading = widget.view == 'language' and 'Sprache' or 'FC-Meldungen'
-    text(left, z.y + 8, heading, bg, inner - 40, headingFont)
-  else
-    for i, line in ipairs(layout.titles) do
-      text(left, z.y + 8 + (i - 1) * layout.titleHeight, line, bg, inner - 40, layout.titleFont)
-    end
+  local heading = widget.view == 'language' and 'Sprache'
+    or messagePage(widget) and 'FC-Meldungen' or project.title
+  text(left, z.y + 8, heading, bg, inner - 40, headingFont)
+  if not widget.view and clockEnabled(widget) then
+    local clock = project.clock()
+    local w, h = lcd.sizeText(clock, layout.clockFont + CUSTOM_COLOR)
+    text(z.x + math.floor((z.w - w) / 2), z.y + math.floor((layout.header - h) / 2),
+      clock, bg, w, layout.clockFont)
   end
   drawLogo(z, layout.header)
+  if messagePage(widget) then
+    local top, back, first, index, total, visible = messageWindow(widget, z, layout)
+    local height = layout.rowHeight
+    local flags = regularFont + CUSTOM_COLOR
+    local function messageText(x, y, value, color)
+      lcd.setColor(CUSTOM_COLOR, color)
+      lcd.drawText(x, y, value, flags)
+    end
+    local function button(x, y, w, label)
+      rect(x, y, w, height - 3, panel)
+      text(x + 8, y + 4, label, info, w - 16)
+    end
+    if widget.view == 'messageDetail' then
+      local message = widget.messageDetail
+      local age = receiver.age(message)
+      local label = string.format(tr('Schweregrad %d'), message.severity)
+      if age then label = label .. '  |  ' .. string.format(tr('vor %ds'), age) end
+      if message.repeats > 1 then label = label .. '  |  x' .. message.repeats end
+      text(left, top, label, message.severity <= 4 and warn or info, inner)
+      local value = message.value
+      for y = top + layout.smallHeight + 9, back - layout.smallHeight - 8, layout.step do
+        if value == '' then break end
+        local part = fit(value, inner, flags)
+        messageText(left, y, part, message.severity <= 4 and warn or normal)
+        value = string.sub(value, #part + 1)
+      end
+    elseif total == 0 then
+      text(left, top, 'Keine FC-Meldungen', info, inner)
+    else
+      for i = first, first + visible - 1 do
+        local entry = receiver.messageAt(i)
+        local y, selected = top + (i - first) * height, i == index
+        local age = receiver.age(entry)
+        local meta = 'S' .. entry.severity .. (entry.repeats > 1 and ' x' .. entry.repeats or '')
+          .. (age and ' ' .. age .. 's' or '')
+        local metaWidth = math.min(lcd.sizeText(meta, flags), math.floor(inner / 2))
+        rect(left, y, inner, height - 3, selected and info or panel)
+        local fg = selected and bg or entry.severity <= 4 and warn or normal
+        local preview, available = (selected and '> ' or '') .. entry.value, inner - metaWidth - 24
+        if lcd.sizeText(preview, flags) > available then
+          preview = fit(preview, available - lcd.sizeText('...', flags), flags) .. '...'
+        end
+        messageText(left + 8, y + 4, preview, fg)
+        text(left + inner - metaWidth - 8, y + 4, meta, fg, metaWidth)
+      end
+      local half, nav = math.floor(inner / 2), back - height
+      if index > 1 then button(left, nav, half - 2, 'Neuere') end
+      if index < total then button(left + half + 2, nav, inner - half - 2, 'Ältere') end
+    end
+    button(left, back, inner, 'Zurück')
+    if widget.view == 'messages' and total > 0 then
+      local position = index .. '/' .. total
+      local w = lcd.sizeText(position, flags)
+      text(left + inner - w - 8, back + 4, position, info, w)
+    end
+    return
+  end
   if widget.view then
     if widget.view == 'menu' then
       for i, line in ipairs(layout.subtitles) do
@@ -205,32 +322,21 @@ local function refresh(widget, event, touch)
       for i, line in ipairs(layout.repo) do
         text(left, layout.repoY + (i - 1) * layout.step, line, info, inner)
       end
+      text(left + inner - layout.versionWidth, layout.versionY, versionLabel, normal, layout.versionWidth)
       rect(left, layout.divider, inner, 1, info)
     end
-    local top, first, count, visibleChoices = rows(widget, z, layout)
+    local top, first, count, visibleChoices = rows(widget, layout)
+    local rowHeight = layout.rowHeight
     if widget.view == 'language' then
       text(left, z.h - layout.smallHeight - 8, 'Nur für diese Sitzung', info, inner)
-    elseif widget.view == 'messages' then
-      local message, age = receiver.message, receiver.age(receiver.message)
-      local label = message and string.format(tr('FC-Meldung / vor %ds'), age or 0) or tr('FC-Meldung: --')
-      local labelY = layout.header + 9
-      text(left, labelY, label, info, inner)
-      local value = message and message.value or ''
-      local flags = regularFont + CUSTOM_COLOR
-      for y = labelY + layout.smallHeight + 9, top - layout.smallHeight - 8, layout.step do
-        if #value == 0 then break end
-        local part = fit(value, inner, flags)
-        lcd.setColor(CUSTOM_COLOR, message.severity <= 4 and warn or normal)
-        lcd.drawText(left, y, part, flags)
-        value = string.sub(value, #part + 1)
-      end
     end
-    local rowHeight = layout.rowHeight
     for i = first, math.min(count, first + visibleChoices - 1) do
       local label
       if widget.view == 'menu' then
         label = i == 1 and tr('Sprache') .. ': ' .. i18n.language(language).name
-          or i == 2 and 'FC-Meldungen' or 'Zurück'
+          or i == 2 and 'FC-Meldungen'
+          or i == 3 and tr('Uhr') .. ': ' .. tr(clockEnabled(widget) and 'An' or 'Aus')
+          or 'Zurück'
       else
         label = widget.view == 'language' and i <= #i18n.languages and i18n.languages[i].name or 'Zurück'
       end

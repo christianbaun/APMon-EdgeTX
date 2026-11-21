@@ -2,7 +2,7 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: tests/run.py
 # Purpose: Execute the Lua regression suite through a local Lua 5.3/5.4 shared library.
-# Project version: 0.2.1
+# Project version: 0.3.0
 # Updated: 2026-11-20
 # Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)

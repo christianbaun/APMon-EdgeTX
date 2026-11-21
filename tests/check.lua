@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 0.2.1
--- Updated: 2026-11-20
+-- Project version: 0.3.0
+-- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -17,6 +17,7 @@ local root = 'SD'
 local now, data, calls, colorDisplay = 100, {}, {}, false
 local draws, rectangles = {}, {}
 local lines, bitmaps, bitmapLoads = {}, {}, 0
+local versionLabel
 getTime = function() return now end
 getFieldInfo = function(name) if data[name] then return { id = name } end end
 getSourceValue = function(id)
@@ -35,6 +36,11 @@ local function measure(text, flags)
   if colorDisplay then
     local font = (flags or 0) & 0xF00
     if font == TINSIZE then return #text * 6, 12 end
+    if font == DBLSIZE then
+      if LCD_W == 800 then return #text * 23, 48 end
+      if LCD_W == 440 then return #text * 17, 48 end -- oversized font on a compact display
+      return #text * 17, 32
+    end
     local medium = font == MIDSIZE
     -- Simulate the larger fonts on the 800x480 TX16S MK3.
     if LCD_W == 800 then return medium and #text * 16 or #text * 10, medium and 36 or 24 end
@@ -96,8 +102,8 @@ local function assertPage(title, counter)
   assert(#lines == 0) -- menus only
 end
 local function assertProjectTitle()
-  local title = table.concat(calls, ' ', 1, 4)
-  assert(title == 'APMon - ArduPilot telemetry monitor for EdgeTX monochrome and color radios', title)
+  assert(calls[1] == 'APMon')
+  assert(drawOf('ArduPilot Telemetry', 10) and drawOf('Monitor for EdgeTX radios', 17))
 end
 local function assertMonoLogo()
   assert(#lines == 6 and lines[1].x1 == 110 and lines[6].x2 == 123)
@@ -109,8 +115,11 @@ local function assertMonoLogo()
 end
 local function assertMonoMenu(language, messages)
   assertProjectTitle()
-  assert(drawOf('github.com/christianbaun/', 33) and drawOf('APMon-EdgeTX', 40))
-  assert(drawOf(language, 49) and drawOf(messages, 57))
+  assert(drawOf('github.com/christianbaun/', 24) and drawOf('APMon-EdgeTX', 31))
+  assert(drawOf(language, 41) and drawOf(messages, 49))
+  assert(drawOf(language == 'Sprache: Deutsch' and 'Uhr: Aus' or 'Clock: Off', 57))
+  local repo, version = drawOf('APMon-EdgeTX', 31), assert(drawOf(versionLabel, 31))
+  assert(repo.x + repo.w < version.x)
   assertMonoLogo()
 end
 -- Any attempt to write or transmit fails the test.
@@ -167,16 +176,30 @@ getSourceValue = saved
 -- GX12 and Boxer share a 128x64 UI; test rotation, manual-only views and language.
 LCD_W, LCD_H = 128, 64
 local realIO, savedLanguage, writeFailure = io, nil, false
+local versionFile = assert(realIO.open('VERSION', 'r'))
+versionLabel = 'v' .. versionFile:read('*l')
+versionFile:close()
+local sdIO = {
+  open = function(path, mode)
+    if path == '/SCRIPTS/APMON/VERSION' then return realIO.open('VERSION', mode) end
+  end,
+  read = function(f, n) return f:read(n) end,
+  close = function(f) return f:close() end,
+}
 io = {
   open = function(path, mode)
+    if path == '/SCRIPTS/APMON/VERSION' then return sdIO.open(path, mode) end
     assert(path == '/SCRIPTS/APMON/mono.cfg')
     if mode == 'w' and writeFailure then return nil end
     if mode == 'r' and not savedLanguage then return nil end
     return { mode = mode }
   end,
-  read = function() return savedLanguage end,
+  read = function(f, n)
+    if type(f) == 'userdata' then return sdIO.read(f, n) end
+    return savedLanguage
+  end,
   write = function(f, value) savedLanguage = value; return f end,
-  close = function() end,
+  close = function(f) if type(f) == 'userdata' then return sdIO.close(f) end end,
 }
 data.RxBt, data.GAlt = { value = 15.5 }, { value = 24.6 }
 data.Yaw, data.Sats = { value = 0 }, { value = 12 }
@@ -216,7 +239,7 @@ now = 1000; mono.run(0); assert(calls[1] == selected)
 now = 5000; mono.run(0); assert(calls[1] == selected)
 mono.run(EVT_VIRTUAL_ENTER)
 assertMonoMenu('Language: English', 'FC messages')
-assert(drawOf('Language: English', 49).flags & INVERS ~= 0)
+assert(drawOf('Language: English', 41).flags & INVERS ~= 0)
 mono.run(EVT_VIRTUAL_ENTER)
 assert(calls[1] == 'APMon / Language')
 assertMonoLogo()
@@ -225,7 +248,7 @@ mono.run(EVT_ROT_RIGHT); mono.run(EVT_VIRTUAL_ENTER)
 assert(savedLanguage == 'de')
 assertMonoMenu('Sprache: Deutsch', 'FC-Meldungen')
 mono.run(EVT_ROT_RIGHT)
-assert(drawOf('FC-Meldungen', 57).flags & INVERS ~= 0)
+assert(drawOf('FC-Meldungen', 49).flags & INVERS ~= 0)
 mono.run(EVT_ROT_LEFT); mono.run(EVT_VIRTUAL_ENTER)
 mono.run(EVT_ROT_LEFT); mono.run(EVT_VIRTUAL_EXIT)
 assert(savedLanguage == 'de')
@@ -255,14 +278,46 @@ assertMonoMenu('Language: English', 'FC messages')
 reloaded.run(EVT_VIRTUAL_EXIT)
 assertPage('Overview', '1/2')
 assert(calls[#calls] == 'Language not saved')
-io = realIO
+writeFailure = false
+local rtc = { year = 2026, mon = 11, day = 21, hour = 7, min = 5 }
+getDateTime = function() return rtc end
+reloaded.run(EVT_VIRTUAL_ENTER); reloaded.run(EVT_ROT_LEFT)
+assert(drawOf('Clock: Off', 57).flags & INVERS ~= 0)
+assert(drawOf('Language: English', 41) and drawOf('FC messages', 49))
+reloaded.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Clock: On', 57) and savedLanguage == 'en\n1')
+reloaded.run(EVT_VIRTUAL_EXIT)
+assertPage('Overview', '1/2')
+local clock = assert(drawOf('07:05', 2))
+assert(draws[1].x + draws[1].w < clock.x and clock.x + clock.w < draws[2].x)
+local clockReload = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
+clockReload.run(EVT_ROT_RIGHT)
+assertPage('Flight', '2/2')
+assert(drawOf('07:05', 2))
+rtc.year = 2000
+clockReload.run(0)
+assert(drawOf('07:05', 2)) -- valid time with an unset calendar
+rtc.hour, rtc.min = 0, 0
+clockReload.run(0)
+assert(drawOf('00:00', 2)) -- midnight is a valid time
+rtc.hour = 24
+clockReload.run(0)
+assert(drawOf('--:--', 2))
+getDateTime = nil
+clockReload.run(0)
+assert(drawOf('--:--', 2))
+clockReload.run(EVT_VIRTUAL_ENTER); clockReload.run(EVT_ROT_LEFT)
+clockReload.run(EVT_VIRTUAL_ENTER); clockReload.run(EVT_VIRTUAL_EXIT)
+assert(savedLanguage == 'en' and not drawOf('--:--', 2))
+io = sdIO
 -- Color lifecycle at target resolution, zones and every configured page.
 colorDisplay, LCD_W, LCD_H = true, 480, 320
 lcd.sizeText = measure
 local widget = loadScript('/WIDGETS/APMon/main.lua')()
-assert(#widget.options == 1 and widget.options[1][1] == 'Language')
+assert(#widget.options == 2 and widget.options[1][1] == 'Language')
 assert(widget.options[1][2] == CHOICE and widget.options[1][3] == 1)
 assert(widget.options[1][4][1] == 'English' and widget.options[1][4][2] == 'Deutsch')
+assert(widget.options[2][1] == 'Clock' and widget.options[2][2] == BOOL and widget.options[2][3] == 0)
 data.RxBt, data.Curr = { value = 15.5 }, { value = 0 }
 data['Bat%'], data.Capa, data.RQly = { value = 75 }, { value = 123 }, { value = 99 }
 data.Roll, data.Ptch, data.Yaw = { value = math.pi / 2 }, { value = 0 }, { value = -math.pi / 2 }
@@ -310,10 +365,61 @@ local function colorFrame(w, event, x, y)
   calls, draws, rectangles, bitmaps = {}, {}, {}, {}
   widget.refresh(w, event, x and {x=x,y=y})
 end
-local colorTitle = 'APMon - ArduPilot Telemetry Monitor'
+local function assertColorClock(time, font)
+  local title, shown, logo = assert(drawOf('APMon')), assert(drawOf(time)), assert(bitmaps[1])
+  local header = rectangles[2]
+  assert(shown.flags & 0xF00 == font)
+  assert(shown.x == header.x + math.floor((header.w - shown.w) / 2))
+  assert(shown.y == header.y + math.floor((header.h - shown.h) / 2))
+  assert(shown.y > header.y and shown.y + shown.h < header.y + header.h)
+  assert(title.x + title.w < shown.x and shown.x + shown.w < logo.x)
+  local n = 0
+  for _, draw in ipairs(draws) do if draw.text == time then n = n + 1 end end
+  assert(n == 1)
+end
+rtc = { hour = 7, min = 5 } -- no date required
+getDateTime = function() return rtc end
+colorFrame(full)
+assert(not drawOf('07:05'))
+widget.update(full, { Language = 2, Clock = 1 })
+colorFrame(full)
+assertColorClock('07:05', DBLSIZE)
+assert(drawOf('FLUG').y >= rectangles[2].h)
+rtc.min = 60
+colorFrame(full)
+assertColorClock('--:--', DBLSIZE)
+rtc.min = 5
+colorFrame(full, EVT_VIRTUAL_ENTER)
+local colorClock = assert(drawOf('Uhr: An'))
+assert(not drawOf('07:05')) -- dashboard clock does not appear in the menu
+colorFrame(full, EVT_TOUCH_TAP, colorClock.x, colorClock.y)
+assert(drawOf('> Uhr: Aus') and full.options.Clock == 1)
+colorFrame(full, EVT_VIRTUAL_EXIT)
+assert(not drawOf('07:05'))
+colorFrame(full)
+assert(not drawOf('07:05')) -- session override also applies outside full screen
+widget.update(full, { Language = 2, Clock = 1 })
+colorFrame(full)
+assert(drawOf('07:05')) -- reapplying widget settings restores the saved default
+widget.update(full, { Language = 2, Clock = 0 })
+colorFrame(full, EVT_VIRTUAL_ENTER)
+colorFrame(full, EVT_VIRTUAL_NEXT)
+colorFrame(full, EVT_VIRTUAL_NEXT)
+assert(drawOf('> Uhr: Aus'))
+colorFrame(full, EVT_VIRTUAL_ENTER)
+assert(drawOf('> Uhr: An') and full.options.Clock == 0)
+colorFrame(full, EVT_VIRTUAL_EXIT)
+assert(drawOf('07:05'))
+local otherClock = widget.create({x=0,y=0,w=480,h=272}, { Clock = 0 })
+colorFrame(otherClock)
+assert(not drawOf('07:05')) -- the menu changes only this widget
+widget.update(full, { Language = 2, Clock = 0 })
+getDateTime = nil
+local colorTitle = 'APMon'
 local function assertColorHeader(x, y, width)
   x, y, width = x or 0, y or 0, width or LCD_W
-  local title = assert(drawOf(colorTitle), 'Full color title was not drawn')
+  local title = assert(drawOf(colorTitle), 'Expected color title was not drawn')
+  assert(not drawOf('APMon - ArduPilot Telemetry Monitor'))
   local header, logo = rectangles[2], bitmaps[1]
   assert(header.x == x and header.y == y and header.w == width)
   assert(title.x == x + 12 and title.y == y + 8 and title.y + title.h < y + header.h)
@@ -323,8 +429,11 @@ local function assertColorHeader(x, y, width)
 end
 local function assertColorMenu(language, messages)
   local header, logo = assertColorHeader()
-  assert(assert(drawOf('for EdgeTX monochrome and color radios')).y > header.h)
-  assert(drawOf('github.com/christianbaun/APMon-EdgeTX'))
+  local subtitle = assert(drawOf('ArduPilot Telemetry Monitor for EdgeTX radios'))
+  local repo = assert(drawOf('github.com/christianbaun/APMon-EdgeTX'))
+  assert(subtitle.y > header.h and subtitle.y + subtitle.h <= repo.y)
+  local version = assert(drawOf('APMon ' .. versionLabel))
+  assert(repo.y + repo.h <= version.y or (repo.y == version.y and repo.x + repo.w < version.x))
   assert(drawOf(language) and drawOf(messages))
   return header, logo
 end
@@ -344,7 +453,7 @@ assert(full.options.Language == 2)
 colorFrame(full, EVT_VIRTUAL_NEXT)
 assertColorMenu('Language: English', '> FC messages')
 colorFrame(full, EVT_VIRTUAL_ENTER)
-assert(drawOf('FC messages') and drawOf('FC message: --'))
+assert(drawOf('FC messages') and drawOf('No FC messages'))
 assert(bitmapLoads == 1 and #bitmaps == 1)
 colorFrame(full, EVT_VIRTUAL_EXIT)
 assertColorMenu('Language: English', '> FC messages')
@@ -361,10 +470,16 @@ assertColorHeader()
 local offset = widget.create({x=8,y=20,w=464,h=280}, { Language = 2 })
 colorFrame(offset)
 assertColorHeader(8, 20, 464)
+getDateTime = function() return rtc end
+widget.update(offset, { Language = 2, Clock = 1 })
+colorFrame(offset)
+assertColorClock('07:05', DBLSIZE)
+getDateTime = nil
 widget.update(full, { Language = 2 })
 colorFrame(full, EVT_VIRTUAL_ENTER)
 assertColorMenu('> Sprache: Deutsch', 'FC-Meldungen')
-colorFrame(full, EVT_TOUCH_TAP, 100, 204)
+local back = assert(drawOf('Zurück'))
+colorFrame(full, EVT_TOUCH_TAP, back.x, back.y)
 assert(drawOf('Flugmodus'))
 -- Small normal zones still show the dashboard warning; full screen uses LCD dimensions.
 LCD_W, LCD_H = 440, 252
@@ -372,7 +487,14 @@ local smallZone = widget.create({x=10,y=10,w=90,h=50}, { Language = 0 })
 colorFrame(smallZone)
 assert(not drawOf(colorTitle) and #bitmaps == 0)
 colorFrame(smallZone, 0)
+assert(drawOf(colorTitle).flags & 0xF00 == MIDSIZE)
 assertColorHeader()
+local compactClock = widget.create({x=0,y=0,w=440,h=252}, {Clock=1})
+getDateTime = function() return rtc end
+colorFrame(compactClock)
+assertColorClock('07:05', MIDSIZE)
+getDateTime = nil
+colorFrame(smallZone, 0)
 local lastRow = assert(drawOf('Last EKF set'))
 assert(lastRow.flags & 0xF00 == TINSIZE and lastRow.y + lastRow.h < assert(drawOf('FC message: --')).y)
 getSourceValue = nil
@@ -383,17 +505,19 @@ assert(warning.y > rectangles[2].h and warning.y + warning.h < assert(drawOf('FC
 getSourceValue = saved
 colorFrame(smallZone, EVT_VIRTUAL_ENTER)
 assertColorMenu('> Language: English', 'FC messages')
-assert(drawOf(colorTitle).flags & 0xF00 == SMLSIZE) -- long heading fits on a narrower display
+assert(drawOf('Clock: Off') and drawOf('Back')) -- all options fit the minimum full screen
+assert(drawOf('APMon').flags & 0xF00 == MIDSIZE)
 assert(bitmapLoads == 1) -- menu refreshes and widget instances share the bitmap
 -- Same menu on the TX16S MK3: large glyphs fit; touch follows moved rows.
 LCD_W, LCD_H = 800, 480
-local mk3 = widget.create({x=0,y=0,w=800,h=440}, { Language = 1 })
+local mk3 = widget.create({x=0,y=0,w=800,h=440}, { Language = 1, Clock = 1 })
 colorFrame(mk3, 0)
+assertColorClock('--:--', DBLSIZE)
 local mk3DashboardHeader, mk3DashboardLogo = assertColorHeader()
 colorFrame(mk3, EVT_VIRTUAL_ENTER)
 local mk3MenuHeader, mk3MenuLogo = assertColorMenu('> Language: English', 'FC messages')
 assert(mk3DashboardHeader.h == mk3MenuHeader.h and mk3DashboardLogo.y == mk3MenuLogo.y)
-assert(rectangles[2].h > 38 and drawOf(colorTitle).flags & 0xF00 == MIDSIZE)
+assert(rectangles[2].h > 38 and drawOf('APMon').flags & 0xF00 == MIDSIZE)
 local messages = assert(drawOf('FC messages'))
 colorFrame(mk3, EVT_TOUCH_TAP, messages.x + 1, messages.y + 1)
 local messageTitle = assert(drawOf('FC messages', 8))
@@ -412,7 +536,7 @@ local logoMissing = loadScript('/WIDGETS/APMon/main.lua')()
 local withoutLogo = logoMissing.create({x=0,y=0,w=480,h=272}, {})
 bitmaps, calls = {}, {}
 logoMissing.refresh(withoutLogo, EVT_VIRTUAL_ENTER)
-assert(drawOf(colorTitle))
+assert(drawOf('APMon'))
 logoMissing.refresh(withoutLogo, 0)
 assert(#bitmaps == 0 and failedLoads == 1)
 Bitmap.open = openBitmap
@@ -469,8 +593,8 @@ local function single(id, value)
   for _, byte in ipairs(tuple(id, value)) do p[#p+1] = byte end
   return p
 end
-local function message(value)
-  local p = {0xF1, 6}
+local function message(value, severity)
+  local p = {0xF1, severity or 6}
   for i=1,#value do p[#p+1] = string.byte(value,i) end
   p[#p+1] = 0
   return p
@@ -521,6 +645,27 @@ assert(receiverMonitor.values.armed == nil and receiverMonitor.values.gpsfix == 
 assert(pass.age(pass.ekf) == 3) -- history remains explicitly aged
 now = 1; pass.poll()
 assert(pass.ekf == nil and pass.message == nil) -- timer reset clears history
+assert(select(3, pass.browse()) == 0)
+for _, limit in ipairs({12, 32}) do
+  local history = loadScript('/SCRIPTS/APMON/pass.lua')(limit)
+  local function add(value, severity, time)
+    history.decode(0x80, message(value, severity), time or now)
+  end
+  for n = 1, limit + 2 do add('Message ' .. n) end
+  local oldest, index, count = history.browse(nil, limit)
+  assert(index == limit and count == limit and oldest.value == 'Message 3')
+  local latest = history.browse()
+  add(latest.value, 6, now + 100)
+  assert(history.browse() == latest and latest.repeats == 2 and latest.time == now + 100)
+  add(latest.value, 4)
+  assert(history.message.severity == 4 and history.message.repeats == 1)
+  assert(history.browse(latest) == latest and select(2, history.browse(latest)) == 2)
+  add('Another')
+  assert(history.browse(latest) == latest and select(2, history.browse(latest)) == 3)
+  assert(history.browse(oldest).value == 'Message 5') -- evicted selection clamps
+  add(latest.value, 6)
+  assert(history.message ~= latest and history.message.repeats == 1) -- not adjacent
+end
 -- Exercise the actual widget's receiver, merging, and final rendering together.
 colorDisplay, LCD_W, LCD_H = true, 480, 320
 lcd.sizeText = measure
@@ -553,7 +698,45 @@ assert(string.find(visible,'Using EKF Source Set 3',1,true)) -- original FC text
 calls, draws, rectangles = {}, {}, {}
 liveWidget.refresh(live, EVT_VIRTUAL_ENTER)
 liveWidget.refresh(live, EVT_TOUCH_TAP, {x=30,y=174})
-assert(drawOf('FC messages', 8) and drawOf('Using EKF Source Set 3', 72))
+assert(drawOf('FC messages', 8) and drawOf('> Using EKF Source Set 3'))
+incoming = {message('New FC warning', 4), message('New FC warning', 4)}
+now = now + 100
+calls, draws, rectangles = {}, {}, {}
+liveWidget.refresh(live, 0)
+assert(drawOf('1/2') and drawOf('> New FC warning') and drawOf('S4 x2 0s'))
+assert(drawOf('Using EKF Source Set 3').y > drawOf('> New FC warning').y)
+local older = assert(drawOf('Older'))
+calls, draws, rectangles = {}, {}, {}
+liveWidget.refresh(live, EVT_TOUCH_TAP, {x=older.x,y=older.y})
+assert(drawOf('2/2') and drawOf('> Using EKF Source Set 3') and drawOf('S6 1s'))
+incoming = {message('Newest FC text')}
+now = now + 100
+calls, draws, rectangles = {}, {}, {}
+liveWidget.refresh(live, 0)
+assert(drawOf('3/3') and drawOf('> Using EKF Source Set 3')) -- selection does not jump
+calls, draws, rectangles = {}, {}, {}
+liveWidget.refresh(live, EVT_VIRTUAL_PREV)
+local warningRow = assert(drawOf('> New FC warning'))
+calls, draws, rectangles = {}, {}, {}
+liveWidget.refresh(live, EVT_TOUCH_TAP, {x=warningRow.x,y=warningRow.y})
+assert(drawOf('Severity 4  |  1s ago  |  x2') and drawOf('New FC warning'))
+assert(not drawOf('Newest FC text'))
+calls, draws, rectangles = {}, {}, {}
+liveWidget.refresh(live, EVT_VIRTUAL_EXIT)
+assert(drawOf('> New FC warning') and drawOf('Newest FC text'))
+incoming = {}
+for i = 1, 10 do incoming[i] = message('Extra ' .. i) end
+now = now + 100
+for i = 1, 11 do
+  calls, draws, rectangles = {}, {}, {}
+  liveWidget.refresh(live, EVT_VIRTUAL_PREV)
+end
+assert(drawOf('1/13') and drawOf('> Extra 10') and not drawOf('Using EKF Source Set 3'))
+for i = 1, 12 do
+  calls, draws, rectangles = {}, {}, {}
+  liveWidget.refresh(live, EVT_VIRTUAL_NEXT)
+end
+assert(drawOf('13/13') and drawOf('> Using EKF Source Set 3') and not drawOf('Extra 10'))
 now = now + 301
 calls = {}; liveWidget.refresh(live)
 visible = table.concat(calls,'|')
@@ -570,8 +753,37 @@ assertPage('Overview', '1/2')
 assert(drawOf('DGPS/--', 42))
 small.run(EVT_VIRTUAL_ENTER)
 small.run(EVT_ROT_RIGHT); small.run(EVT_VIRTUAL_ENTER)
+small.run(EVT_VIRTUAL_ENTER)
 assert(string.find(table.concat(calls,'|'),'Using EKF Source Set 2',1,true))
 assertMonoLogo()
+small.run(EVT_VIRTUAL_EXIT)
+incoming = {message('A warning that wraps onto more than one line', 4),
+  message('A warning that wraps onto more than one line', 4)}
+now = now + 100
+small.background()
+small.run(0)
+small.run(EVT_ROT_LEFT) -- focus the newest entry
+assert(drawOf('1/2', 57) and drawOf('ENT: details', 57))
+assert(string.find(table.concat(calls,'|'),'S4 A warning',1,true))
+assert(string.find(table.concat(calls,'|'),'S6 Using EKF',1,true))
+small.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('S4 x2 0s', 11) and drawOf('RTN: list', 57))
+assert(draws[4].y == 29) -- second line of the wrapped message
+small.run(EVT_VIRTUAL_EXIT)
+small.run(EVT_ROT_RIGHT)
+assert(drawOf('2/2', 57))
+small.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('S6 1s', 11) and drawOf('Using EKF Source Set 2'))
+small.run(EVT_VIRTUAL_EXIT)
+small.run(EVT_ROT_LEFT)
+assert(drawOf('1/2', 57))
+incoming = {}
+for i = 1, 6 do incoming[i] = message('Extra ' .. i) end
+now = now + 100
+small.run(0)
+assert(drawOf('S6 Extra 6', 10) and not drawOf('S6 Extra 1'))
+for i = 1, 5 do small.run(EVT_ROT_RIGHT) end
+assert(drawOf('S6 Extra 1', 46) and drawOf('6/8', 57) and not drawOf('S6 Extra 6'))
 small.run(EVT_VIRTUAL_EXIT)
 assertMonoMenu('Language: English', 'FC messages')
 small.run(EVT_VIRTUAL_EXIT)
@@ -598,6 +810,7 @@ assert(drawOf('DGPS/--', 42))
 restrictedMono.run(EVT_VIRTUAL_ENTER)
 assertMonoMenu('Language: English', 'FC messages')
 restrictedMono.run(EVT_ROT_RIGHT)
+restrictedMono.run(EVT_VIRTUAL_ENTER)
 restrictedMono.run(EVT_VIRTUAL_ENTER)
 assert(string.find(table.concat(calls,'|'),'Using EKF Source Set 1',1,true))
 print('OK: sensor validity, stale data, read-only, layouts, bilingual menus, diagnostics, passthrough, restricted mono Lua')

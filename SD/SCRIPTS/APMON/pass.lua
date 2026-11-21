@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/pass.lua
 -- Purpose: Decode ELRS ArduPilot passthrough frames, status text and data freshness.
--- Project version: 0.2.1
--- Updated: 2026-11-20
+-- Project version: 0.3.0
+-- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -14,6 +14,34 @@
 -- ELRS 4.1.0 ArduPilot response frames (0x80), little-endian payload.
 -- One shared receiver per loaded widget script; never transmits requests.
 local M = { data = {}, message = nil, ekf = nil }
+local log, head, count, capacity = {}, 0, 0, ... or 12
+local function at(index)
+  return log[(head - index) % capacity + 1]
+end
+function M.messageAt(index)
+  if index >= 1 and index <= count then return at(index) end
+end
+-- nil follows the newest entry; an older entry stays selected until evicted.
+function M.browse(selected, step)
+  if count == 0 then return nil, 0, 0 end
+  local index = 1
+  if selected then
+    while index < count and at(index) ~= selected do index = index + 1 end
+  end
+  index = math.max(1, math.min(count, index + (step or 0)))
+  return at(index), index, count
+end
+local function remember(value, severity, now)
+  local latest = M.message
+  if latest and latest.value == value and latest.severity == severity then
+    latest.time, latest.repeats = now, latest.repeats + 1
+  else
+    head = head % capacity + 1
+    count = math.min(count + 1, capacity)
+    M.message = { value = value, time = now, severity = severity, repeats = 1 }
+    log[head] = M.message
+  end
+end
 local function le(p, start, count)
   local v = 0
   for i = 0, count - 1 do v = v + p[start + i] * 256 ^ i end
@@ -50,7 +78,7 @@ function M.decode(command, p, now)
       if p[i] >= 32 and p[i] <= 126 then value = value .. string.char(p[i]) end
     end
     if #value > 0 then
-      M.message = { value = value, time = now, severity = p[2] }
+      remember(value, p[2], now)
       local source = string.match(value, '^Using EKF Source Set ([123])$')
       if source then M.ekf = { value = tonumber(source), time = now } end
     end
@@ -60,7 +88,9 @@ function M.poll()
   if type(crossfireTelemetryPop) ~= 'function' then return end
   local now = getTime()
   if M.last == now then return end
-  if M.last and now < M.last then M.data, M.message, M.ekf = {}, nil, nil end
+  if M.last and now < M.last then
+    M.data, M.message, M.ekf, log, head, count = {}, nil, nil, {}, 0, 0
+  end
   M.last = now
   for i = 1, 12 do
     local command, payload = crossfireTelemetryPop()

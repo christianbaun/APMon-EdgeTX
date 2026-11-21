@@ -12,8 +12,8 @@ auf der Fernsteuerung an. Die Anwendung besteht aus Lua-Skripten auf der
 SD-Karte und benötigt zur Laufzeit weder einen Laptop noch ein zusätzliches
 Skript im Flugcontroller.
 
-Der aktuelle Projektstand ist **Version 0.2.1**; die Versionsnummer steht in
-[VERSION](VERSION). Siehe [Release-Notizen zu v0.2.1](releases/v0.2.1.md).
+Der aktuelle Projektstand ist **Version 0.3.0**; die Versionsnummer steht in
+[VERSION](VERSION). Siehe [Release-Notizen zu v0.3.0](releases/v0.3.0.md).
 
 Die GUI unterstützt **Englisch und Deutsch**. Englisch ist die Standardsprache.
 
@@ -51,30 +51,41 @@ Ein passendes Display allein bedeutet nicht, dass der Sender getestet wurde.
 
 ## Screenshots
 
-Echte Aufnahmen von GX12, GX15 und TX16S MK3, jeweils mit Projektmenü.
-Die GX12-Bilder sind vierfach vergrößert: Die Telemetrieseiten sind auf
-Englisch, das Projektmenü auf Deutsch.
+Echte Aufnahmen von GX12, GX15 und TX16S MK3.
 Die Werte zeigen den Aufnahmezustand und sind keine Aussage zur Flugbereitschaft.
+
+**Schwarzweiß — GX12 (128 × 64, APMon v0.3.0)**
+
+Die Bilder sind vierfach vergrößert. Die Senderuhr ist auf beiden
+Telemetrieseiten eingeschaltet.
 
 | Übersicht | Flugwerte |
 | --- | --- |
-| ![APMon-Schwarzweißübersicht auf Englisch](images/screenshots/apmon-sw-gx12-overview-en-v0.2.0-2000-02-23-212903-4x.png) | ![APMon-Schwarzweiß-Flugwerte auf Englisch](images/screenshots/apmon-sw-gx12-flight-en-v0.2.0-2000-02-23-212832-4x.png) |
+| ![APMon-Übersicht auf Deutsch mit Senderuhr auf der GX12](images/screenshots/apmon-sw-gx12-overview-de-v0.3.0-2026-11-21-141401-4x.png) | ![APMon-Flugwerte auf Deutsch mit Senderuhr auf der GX12](images/screenshots/apmon-sw-gx12-flight-de-v0.3.0-2026-11-21-141403-4x.png) |
 
-**Schwarzweiß-Projektmenü — GX12**
-
-![APMon-Schwarzweiß-Projektmenü auf Deutsch](images/screenshots/apmon-sw-gx12-menu-de-v0.2.0-2000-02-23-212824-4x.png)
-
-**Farbübersicht und Projektmenü — GX15 (480 × 320)**
-
-| Übersicht | Projektmenü |
+| Projektmenü | FC-Meldungsliste (Englisch) |
 | --- | --- |
-| ![APMon-Farbübersicht auf Deutsch mit vollständigem Titel und Telemetrie-Puls-Logo auf der RadioMaster GX15](images/screenshots/apmon-color-gx15-overview-de-v0.2.0-2000-04-24-102130.png) | ![APMon-Farbmenü auf Deutsch mit derselben Kopfzeile auf der RadioMaster GX15](images/screenshots/apmon-color-gx15-menu-de-v0.2.0-2000-04-24-102159.png) |
+| ![APMon-Projektmenü auf Deutsch mit Version und eingeschalteter Uhr](images/screenshots/apmon-sw-gx12-menu-de-v0.3.0-2026-11-21-141400-4x.png) | ![Scrollbare FC-Meldungsliste auf Englisch auf der GX12](images/screenshots/apmon-sw-gx12-messages-en-v0.3.0-2000-02-24-225259-4x.png) |
 
-**Farbübersicht und Projektmenü — TX16S MK3 (800 × 480)**
+**Farbdisplay — GX15 (480 × 320, APMon v0.3.0)**
 
-| Übersicht im Vollbild | Projektmenü |
+| Übersicht mit Senderuhr | Projektmenü |
 | --- | --- |
-| ![APMon-Farbübersicht auf Deutsch mit vollständigem Titel und Telemetrie-Puls-Logo auf der RadioMaster TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-de-v0.2.0-2000-06-21-110938.png) | ![APMon-Farbmenü auf Deutsch mit derselben Kopfzeile auf der RadioMaster TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-menu-de-v0.2.0-2000-06-21-110917.png) |
+| ![APMon-Farbübersicht auf Deutsch mit großer Senderuhr mittig in der Kopfzeile der GX15](images/screenshots/apmon-color-gx15-overview-de-v0.3.0-2026-11-21-142731.png) | ![APMon-Projektmenü auf Deutsch mit Version und Uhr-Schalter auf der GX15](images/screenshots/apmon-color-gx15-menu-de-v0.3.0-2026-11-21-142712.png) |
+
+**FC-Meldungsliste — GX15 (Englisch)**
+
+![Scrollbare FC-Meldungsliste mit Schweregrad und Alter auf der GX15](images/screenshots/apmon-color-gx15-messages-en-v0.3.0-2026-11-21-142705.png)
+
+**Farbdisplay — TX16S MK3 (800 × 480, APMon v0.3.0)**
+
+| Übersicht im Vollbild (Uhr aus) | Projektmenü |
+| --- | --- |
+| ![APMon-Farbübersicht auf Deutsch mit ausgeschalteter Senderuhr auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-de-v0.3.0-2026-11-21-143541.png) | ![APMon-Projektmenü auf Deutsch mit Version und Uhr-Schalter auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-menu-de-v0.3.0-2026-11-21-143531.png) |
+
+**FC-Meldungsliste — TX16S MK3 (Englisch)**
+
+![FC-Meldungsliste mit Schweregrad, Wiederholungszähler und Alter auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-messages-en-v0.3.0-2026-11-21-143526.png)
 
 **Sprache wechseln:** Auf SW-Displays **ENTER** drücken und **Sprache /
 Language** auswählen. Auf COLOR-Displays APMon im Vollbild öffnen und
@@ -236,7 +247,7 @@ Modelldateien werden nicht verändert.
 `config.lua` wird ebenfalls durch die Projektversion ersetzt. Eigene
 Sensorzuordnungen deshalb vor einem Update in
 [SD/SCRIPTS/APMON/config.lua](SD/SCRIPTS/APMON/config.lua) übernehmen.
-Die gespeicherte SW-Sprachwahl in `mono.cfg` bleibt erhalten.
+Die gespeicherten SW-Einstellungen für Sprache und Uhr in `mono.cfg` bleiben erhalten.
 Die Lizenz liegt in beiden ZIP-Paketen; das direkte Deployment kopiert sie nicht.
 
 ### Screenshots importieren
@@ -284,13 +295,17 @@ gekürzt.
 
 - **Projektmenü öffnen:** APMon doppelt antippen oder im Kontextmenü
   **Vollbild** wählen. Im Vollbild auf **Menü** tippen oder **ENTER** drücken.
-- Das Menü zeigt den vollständigen Projekttitel und die GitHub-Adresse.
+- Unter **APMon** steht **ArduPilot Telemetry Monitor for EdgeTX radios**.
+  Darunter stehen die GitHub-Adresse und die installierte APMon-Version.
   **Sprache** und **FC-Meldungen** lassen sich per Touch oder mit Drehgeber
   und **ENTER** öffnen. **RTN** geht eine Ebene zurück; **RTN** lang gedrückt
   verlässt das Vollbild.
 - Die Sprachwahl im APMon-Menü gilt für dieses Widget in der aktuellen
   Sitzung. Dauerhaft speichert EdgeTX sie im Modell: APMon in der Hauptansicht
   lange antippen → **Widget-Einstellungen → Language → English oder Deutsch**.
+- **Menü → Uhr** schaltet die größere Senderuhr mittig in der Kopfzeile des
+  Dashboards für die aktuelle Sitzung ein oder aus. Den dauerhaften Standard
+  pro Widget legt **Widget-Einstellungen → Clock** fest.
 
 ### Schwarzweißdisplay / SW
 
@@ -303,14 +318,16 @@ Die **Akkuspannung in Volt steht auf beiden Seiten oben rechts**.
 Ohne gültigen Wert zeigt das Feld `--`.
 
 - **Drehgeber, Plus/Minus oder NEXT/PREV:** Seite wechseln; kein automatisches Blättern.
-- **ENTER / Drehgeber drücken:** Menü mit vollständigem Projekttitel und
-  GitHub-Adresse öffnen.
+- **ENTER / Drehgeber drücken:** Menü mit Projekttitel, GitHub-Adresse und
+  installierter APMon-Version öffnen.
 - Unter **Sprache** zwischen **Deutsch** und **English** wählen. **FC-Meldungen**
-  öffnet die zuletzt empfangene Meldung. **RTN** geht ohne Änderung eine Ebene zurück.
+  öffnet den Verlauf. Mit **Uhr: Aus/An** direkt darunter und **ENTER** lässt
+  sich die Uhr umschalten. Sie steht auf beiden Telemetrieseiten
+  links neben der Seitennummer. **RTN** geht eine Ebene zurück.
 
-Die Sprache wird als Sprachcode in `/SCRIPTS/APMON/mono.cfg` gespeichert und
-gilt für alle Modelle dieser SD-Karte. Bei einem Schreibfehler erscheint ein
-Hinweis; die Auswahl bleibt für die aktuelle Sitzung aktiv.
+Sprache und Uhr werden in `/SCRIPTS/APMON/mono.cfg` gespeichert und gelten
+für alle Modelle dieser SD-Karte. Bei einem Schreibfehler erscheint ein Hinweis;
+die Änderung bleibt für die aktuelle Sitzung aktiv.
 
 Für das kleine Display werden kurze Labels verwendet:
 
@@ -325,6 +342,20 @@ Für das kleine Display werden kurze Labels verwendet:
 | Vario / Climb | Steigen |
 | Dir | Himmelsrichtung aus Yaw, falls sie nicht neben dem Winkel Platz findet |
 | EKF | letzte EKF-Umschaltmeldung, z. B. `2/30s` = Set 2 vor 30 Sekunden gemeldet |
+
+### Senderuhr und FC-Meldungsverlauf
+
+Die Uhr ist standardmäßig aus. Sie zeigt die EdgeTX-Senderzeit im 24-Stunden-Format
+`HH:MM` auch ohne Verbindung zum Modell und unabhängig vom Kalenderdatum.
+Wenn EdgeTX keine gültige Stunde oder Minute liefert, erscheint `--:--`.
+
+**FC-Meldungen** zeigt eine Liste mit den neuesten Einträgen zuerst. Mit dem
+Drehgeber oder **NEXT/PREV** blättern, auf COLOR auch mit **Ältere/Neuere**.
+**ENTER** oder ein Tipp auf die Zeile (COLOR) öffnet den vollständigen Text
+mit Schweregrad, Alter seit dem letzten Empfang und ggf. Wiederholungszähler
+(`x3`). **RTN** führt zurück zur Liste. `S4` bedeutet MAVLink-Schweregrad 4.
+Der Verlauf hält **12 Einträge auf SW** und **32 auf COLOR** im Arbeitsspeicher
+und wird beim Neuladen von APMon geleert.
 
 ## Sensoren konfigurieren
 
@@ -468,9 +499,10 @@ steht Christian Baun; Codex CLI wird separat als Entwicklungsunterstützung
 aufgeführt. Das Datum beschreibt den dokumentierten Änderungsstand, nicht ein
 nachträglich angenommenes Erstellungsdatum.
 
-[VERSION](VERSION) ist die zentrale Projektversionsnummer. Bei einer neuen
-Projektversion die Versionsangaben in allen Quellcode-Headern und in dieser
-beiden READMEs gemeinsam aktualisieren. Bei Dateiänderungen das jeweilige Headerdatum
+[VERSION](VERSION) ist die zentrale Projektversionsnummer. Beide SD-Pakete und
+`deploy.py` übernehmen sie als `SCRIPTS/APMON/VERSION` für die Menüanzeige.
+Bei einer neuen Projektversion die Versionsangaben in den Quellcode-Headern
+und in beiden READMEs gemeinsam aktualisieren. Bei Dateiänderungen das jeweilige Headerdatum
 anpassen. Vor der Veröffentlichung beide Pakete mit `python3 package_sd.py`
 neu bauen, damit sie die aktuellen Header enthalten.
 

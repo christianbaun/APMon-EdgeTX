@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/TELEMETRY/APMon.lua
 -- Purpose: Render the GX12/Boxer telemetry UI with two pages, menus and saved language choice.
--- Project version: 0.2.1
--- Updated: 2026-11-20
+-- Project version: 0.3.0
+-- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -12,39 +12,42 @@
 -- =============================================================================
 
 -- GX12 / Boxer: 128x64 telemetry application, classic EdgeTX 2.x LCD API.
-local function module(name)
+local function module(name, ...)
   local path = '/SCRIPTS/APMON/' .. name .. '.lua'
   local chunk, reason = loadScript(path)
   if not chunk then error('APMon: ' .. path .. ': ' .. tostring(reason or 'not loadable')) end
-  return chunk()
+  return chunk(...)
 end
 local core, config = module('core'), module('config')
-local receiver, i18n = module('pass'), module('i18n')
+local receiver, i18n = module('pass', 12), module('i18n')
 local project = module('project')
 local monitor = core.new(config, receiver)
-local page, language, menuItem, languageItem, saveFailed = 1, 1, 1, 1, false
+local page, language, menuItem, languageItem = 1, 1, 1, 1
+local showClock, saveError, selectedMessage, messageDetail = false, nil, nil, nil
 local view = 'data'
 local radioLanguage = type(getGeneralSettings) == 'function' and getGeneralSettings().language
 local nativeUmlauts = not radioLanguage or radioLanguage == 'DE'
 local preference = '/SCRIPTS/APMON/mono.cfg'
-local function readLanguage()
+local function readPreferences()
   if not io or not io.open then return end
   local f = io.open(preference, 'r')
   if not f then return end
   local ok, code = pcall(io.read, f, 16)
   io.close(f)
-  if ok then
+  if ok and type(code) == 'string' then
+    local languageCode, clockFlag = string.match(code, '^(%a+)%s*(1?)%s*$')
+    showClock = clockFlag == '1'
     for i, entry in ipairs(i18n.languages) do
-      if code == entry.code then language = i; return end
+      if languageCode == entry.code then language = i; return end
     end
   end
 end
-readLanguage()
-local function saveLanguage()
+readPreferences()
+local function savePreferences()
   if not io or not io.open then return false end
   local f = io.open(preference, 'w')
   if not f then return false end
-  local ok, result = pcall(io.write, f, i18n.language(language).code)
+  local ok, result = pcall(io.write, f, i18n.language(language).code .. (showClock and '\n1' or ''))
   io.close(f)
   return ok and result ~= nil
 end
@@ -98,6 +101,9 @@ end
 local function dataHeader(width, title, counter)
   local right = width - 2
   local counterWidth = textWidth(counter, small)
+  local clock = showClock and project.clock()
+  local clockRight = right - counterWidth - 4
+  local titleRight = clock and clockRight - textWidth(clock, small) - 4 or right - counterWidth - 2
   local headerStyle = small + (INVERS or 0)
   filled(0, 0, width, 9)
   if not nativeUmlauts and string.sub(title, 1, 2) == 'Ü' then
@@ -105,13 +111,14 @@ local function dataHeader(width, title, counter)
     -- Compose the uppercase Ü on firmware that lacks the German font.
     lcd.drawText(2, 2, 'APMon', headerStyle)
     local x = 2 + textWidth('APMon ', small)
-    lcd.drawText(x, 2, fit('U' .. string.sub(title, 3), right - counterWidth - x - 2, small), headerStyle)
+    lcd.drawText(x, 2, fit('U' .. string.sub(title, 3), titleRight - x, small), headerStyle)
     lcd.drawFilledRectangle(x, 0, 1, 1, ERASE or 0)
     lcd.drawFilledRectangle(x + 3, 0, 1, 1, ERASE or 0)
   else
-    lcd.drawText(2, 2, fit('APMon ' .. title, right - counterWidth - 5, small), headerStyle)
+    lcd.drawText(2, 2, fit('APMon ' .. title, titleRight - 2, small), headerStyle)
   end
   rightText(right, 2, counter, small, true)
+  if clock then rightText(clockRight, 2, clock, small, true) end
 end
 local function instrument(x, right, key, alignRight)
   local value = string.match(monitor:format(key), '^%S+')
@@ -158,16 +165,19 @@ local function menuHeader(width, title)
   end
 end
 local function projectMenu(width)
-  menuHeader(width, project.title[1])
-  for i = 2, #project.title do
-    lcd.drawText(2, 10 + (i - 2) * 7, fit(project.title[i], width - 4, small), small)
+  menuHeader(width, project.title)
+  for i, line in ipairs(project.subtitle) do
+    lcd.drawText(2, 10 + (i - 1) * 7, fit(line, width - 4, small), small)
   end
   for i, line in ipairs(project.repo) do
-    lcd.drawText(2, 33 + (i - 1) * 7, fit(line, width - 4, small), small)
+    lcd.drawText(2, 24 + (i - 1) * 7, fit(line, width - 4, small), small)
   end
-  filled(2, 47, width - 4, 1)
-  menuOption(width, 49, tr('Sprache') .. ': ' .. i18n.language(language).name, menuItem == 1)
-  menuOption(width, 57, tr('FC-Meldungen'), menuItem == 2)
+  local version = fit(project.version, width - textWidth(project.repo[2], small) - 8, small)
+  rightText(width - 2, 31, version, small)
+  filled(2, 39, width - 4, 1)
+  menuOption(width, 41, tr('Sprache') .. ': ' .. i18n.language(language).name, menuItem == 1)
+  menuOption(width, 49, tr('FC-Meldungen'), menuItem == 2)
+  menuOption(width, 57, tr('Uhr') .. ': ' .. tr(showClock and 'An' or 'Aus'), menuItem == 3)
 end
 local function background() monitor:sample() end
 local function run(event)
@@ -176,8 +186,14 @@ local function run(event)
   local prevEvent = match(event, EVT_VIRTUAL_PREV, EVT_MINUS_FIRST, EVT_ROT_LEFT)
   local enterEvent = match(event, EVT_VIRTUAL_ENTER or EVT_ENTER_BREAK or EVT_ENTER_FIRST)
   local exitEvent = match(event, EVT_VIRTUAL_EXIT or EVT_EXIT_BREAK)
-  if view == 'messages' then
-    if enterEvent or exitEvent then view = 'menu' end
+  local step = nextEvent and 1 or prevEvent and -1 or 0
+  if view == 'messageDetail' then
+    if enterEvent or exitEvent then view, messageDetail = 'messages', nil end
+  elseif view == 'messages' then
+    local message, index = receiver.browse(selectedMessage, step)
+    selectedMessage = index > 1 and message or nil
+    if exitEvent then view = 'menu' end
+    if enterEvent and message then view, messageDetail, selectedMessage = 'messageDetail', message, message end
   elseif view == 'language' then
     local count = #i18n.languages
     if nextEvent then languageItem = languageItem % count + 1 end
@@ -185,13 +201,20 @@ local function run(event)
     if exitEvent then view = 'menu' end
     if enterEvent then
       language = languageItem
-      saveFailed = not saveLanguage()
+      saveError = not savePreferences() and 'Sprache nicht gespeichert' or nil
       view = 'menu'
     end
   elseif view == 'menu' then
-    if nextEvent or prevEvent then menuItem = 3 - menuItem end
+    if step ~= 0 then menuItem = (menuItem - 1 + step) % 3 + 1 end
     if exitEvent then view = 'data' end
-    if enterEvent then view, languageItem = menuItem == 1 and 'language' or 'messages', language end
+    if enterEvent then
+      if menuItem == 1 then view, languageItem = 'language', language
+      elseif menuItem == 2 then view, selectedMessage = 'messages', nil
+      else
+        showClock = not showClock
+        saveError = not savePreferences() and 'Uhr nicht gespeichert' or nil
+      end
+    end
   elseif enterEvent then
     view, menuItem = 'menu', 1
   elseif nextEvent then page = page % 2 + 1
@@ -216,16 +239,39 @@ local function run(event)
   end
   local v = monitor.values
   local function fmt(key) return monitor:format(key) end
-  if view == 'messages' then
+  if view == 'messages' or view == 'messageDetail' then
     menuHeader(width, tr('FC-Meldungen'))
-    local age = receiver.age(receiver.message)
-    text(11, age and string.format(tr('FC-Meldung / vor %ds'),age) or '--')
-    local value = receiver.message and receiver.message.value or '--'
+    local message, index, count = receiver.browse(selectedMessage)
+    if view == 'messages' then
+      if not message then
+        text(11, tr('Keine FC-Meldungen'))
+        return 0
+      end
+      local first = math.max(1, index - 4)
+      for i = first, math.min(count, first + 4) do
+        local entry = receiver.messageAt(i)
+        local label = 'S' .. entry.severity .. ' ' .. entry.value
+        if textWidth(label, small) > width - 15 then
+          label = fit(label, width - 15 - textWidth('...', small), small) .. '...'
+        end
+        menuOption(width, 10 + (i - first) * 9, label, i == index)
+      end
+      text(57, tr('ENT: Details'))
+      rightText(width - 2, 57, index .. '/' .. count, small)
+      return 0
+    end
+    message = messageDetail
+    local age = receiver.age(message)
+    local repeats = message.repeats > 1 and ' x' .. message.repeats or ''
+    text(11, string.format('S%d%s %s', message.severity, repeats, age and age .. 's' or '--'))
+    local value = message.value
     for i = 1, 4 do
+      if value == '' then break end
       local part = fit(value, width, small)
       text(20 + (i-1)*9,part)
       value = string.sub(value,#part+1)
     end
+    text(57, tr('RTN: Liste'))
     return 0
   end
 
@@ -287,14 +333,22 @@ local function run(event)
     field(rightX, right, 49, 'Yaw', yaw)
   end
   local _, severity = monitor:status()
-  local footer = saveFailed and tr('Sprache nicht gespeichert')
+  local footer = saveError and tr(saveError)
     or severity == 'warn' and tr('FC-Daten fehlen')
   if footer then
     text(57, footer, true)
   else
     lcd.drawText(2, 57, tr('Rad: Seite'), small)
     local menu = tr('ENT: Menu')
-    rightText(right, 57, not nativeUmlauts and menu == 'ENT: Menü' and 'ENT: Menue' or menu, small)
+    if not nativeUmlauts and menu == 'ENT: Menü' then menu = 'ENT: Menue' end
+    rightText(right, 57, menu, small)
+    if receiver.message then
+      local badge = receiver.message.severity <= 4 and 'FC!' or 'FC'
+      local x = math.floor((width - textWidth(badge, small)) / 2)
+      if x > 2 + textWidth(tr('Rad: Seite'), small) and x + textWidth(badge, small) < right - textWidth(menu, small) then
+        lcd.drawText(x, 57, badge, small)
+      end
+    end
   end
   return 0
 end
