@@ -1,14 +1,16 @@
 <img align="right" src="images/apmon-logo.svg" width="88" height="88" alt="APMon telemetry pulse logo">
 
-# APMon — EdgeTX Monitor for ArduPilot
+# APMon — ArduPilot Telemetry Monitor for EdgeTX radios
 
 **English** | [Deutsch](README.de.md)
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
-**ArduPilot telemetry on RadioMaster transmitters running EdgeTX.** APMon
-displays battery readings, flight attitude, GPS status and flight-controller
-messages. It runs as Lua scripts on the radio's SD card: no laptop or
+**ArduPilot telemetry on RadioMaster transmitters running EdgeTX.** APMon is
+designed for **ExpressLRS in MAVLink mode**. It displays battery readings,
+flight attitude, GPS status and flight-controller messages by reading EdgeTX
+sensors and selected ArduPilot passthrough data, not the full MAVLink stream.
+It runs as Lua scripts on the radio's SD card: no laptop or
 additional flight-controller script is required during use.
 
 Current project version: **0.4.0**, recorded in [VERSION](VERSION).
@@ -17,8 +19,8 @@ See the [v0.4.0 release notes](releases/v0.4.0.md).
 The GUI supports **English and German**, with English as the default.
 
 **AI-assisted development:** OpenAI Codex CLI helped write and revise the
-source, tests and documentation. This does not replace hardware testing;
-see the compatibility section for the current validation status.
+source, tests and documentation. This does not replace hardware testing.
+See the compatibility section for the current validation status.
 
 ## Contents
 
@@ -39,13 +41,13 @@ see the compatibility section for the current validation status.
 
 | Package | Display / interface | Reference radios |
 | --- | --- | --- |
-| [APMon-SW.zip](APMon-SW.zip) | Monochrome, 128 × 64; telemetry script with two data pages | RadioMaster GX12, Boxer |
-| [APMon-COLOR.zip](APMon-COLOR.zip) | Color LCD; dashboard widget, minimum zone 440 × 252 | RadioMaster GX15 and TX15 (480 × 320), TX16S MK3 (800 × 480) |
+| [APMon-SW.zip](APMon-SW.zip) | Telemetry script with two data pages for 128 × 64 monochrome displays | RadioMaster GX12, Boxer |
+| [APMon-COLOR.zip](APMon-COLOR.zip) | Dashboard widget for color displays (minimum zone 440 × 252) | RadioMaster GX15 and TX15 (480 × 320), TX16S MK3 (800 × 480) |
 
 **SW** means *Schwarzweiß* (German for monochrome). Choose the package and
 deployment option by **display type**, not radio model: `--display sw` installs
 the telemetry script, `--display color` the color widget. Other RadioMaster
-radios may work if they meet the requirements below; a matching display alone
+radios may work if they meet the requirements below. A matching display alone
 does not mean the hardware has been tested.
 
 ## Screenshots
@@ -124,7 +126,7 @@ monitor, not a flight-readiness check or a replacement for FC pre-arm checks.
 ## Compatibility and requirements
 
 APMon targets the **classic EdgeTX 2.x LCD API**, not EdgeTX 3.x/LVGL.
-SW is designed for 128 × 64 pixels; COLOR needs a widget zone of at least
+SW is designed for 128 × 64 pixels. COLOR needs a widget zone of at least
 440 × 252 pixels. Other resolutions, key mappings, memory budgets and firmware
 versions require separate testing.
 
@@ -198,7 +200,7 @@ WIDGETS/                   # COLOR package only
 ```
 
 Do not add an enclosing package directory:
-`/SCRIPTS/TELEMETRY/APMon.lua` is correct;
+`/SCRIPTS/TELEMETRY/APMon.lua` is correct.
 `/APMon-SW/SCRIPTS/TELEMETRY/APMon.lua` is not.
 
 ### Color display: add the widget
@@ -257,15 +259,15 @@ are left untouched. `config.lua` is replaced: keep custom sensor mappings in
 `SD/SCRIPTS/APMON/config.lua` before deploying. The saved SW preferences file,
 `mono.cfg`, is preserved.
 
-The ZIP packages include the license; direct deployment does not copy it.
+The ZIP packages include the license. Direct deployment does not copy it.
 Safely eject the card and restart the radio after deployment.
 
 ### Import screenshots
 
 Take a screenshot with the EdgeTX **Screenshot** special function, then
 connect the radio in USB storage mode. `import_screenshots.py` uses the same
-card detection as `deploy.py`; use `--sd PATH` if more than one card is mounted.
-Preview and import need Pillow 9.1+ (`python3-pil` on Debian); listing does not.
+card detection as `deploy.py`. Use `--sd PATH` if more than one card is mounted.
+Preview and import need Pillow 9.1+ (`python3-pil` on Debian). Listing does not.
 
 ```bash
 python3 import_screenshots.py --list
@@ -287,7 +289,7 @@ The importer reads BMP and PNG files and writes PNGs such as
 `images/screenshots/apmon-sw-gx12-overview-de-v0.2.1-2026-11-20-090305-4x.png`.
 It uses the EdgeTX filename timestamp, or local file modification time for
 renamed captures. Images keep their native size unless `--scale` is given.
-Identical imports are skipped; different captures with the same name get
+Identical imports are skipped. Different captures with the same name get
 a numeric suffix. The SD card and existing README screenshots are untouched.
 
 ## Operation
@@ -297,7 +299,7 @@ a numeric suffix. The SD card and existing README screenshots are untouched.
 The single view groups flight mode, motors, battery, RC link quality, GPS fix,
 satellites and the last EKF source-set message on the left. Flight attitude,
 altitude, horizontal GPS speed, direction and climb rate are on the right.
-The latest FC message appears at the bottom with its age; long text is clipped.
+The latest FC message appears at the bottom with its age. Long text is clipped.
 
 - **Open the project menu:** double-tap APMon, or choose **Full screen** from
   the widget's context menu. In full screen, tap **Menu** or press **ENTER**.
@@ -305,7 +307,7 @@ The latest FC message appears at the bottom with its age; long text is clipped.
   followed by the GitHub address and installed version. Open **Language** or
   **FC messages** by tapping an item or using
   the wheel and **ENTER**.
-  **RTN** goes back; hold **RTN** to leave full screen.
+  **RTN** goes back. Hold **RTN** to leave full screen.
 - The menu language change applies to this widget for the current session.
   To save it in the model, long-press APMon in the main view and choose
   **Widget settings → Language → English / Deutsch**. If the old English
@@ -323,7 +325,7 @@ The latest FC message appears at the bottom with its age; long text is clipped.
   roll, pitch and yaw with compass direction below.
 - **Battery voltage is in the upper right on both pages**. Without a valid
   reading it shows `--`.
-- **Rotary wheel, Plus/Minus or NEXT/PREV:** change pages manually; no automatic rotation.
+- **Rotary wheel, Plus/Minus or NEXT/PREV:** change pages manually.
 - **ENTER / press the wheel:** open the menu with the project title, GitHub
   address and installed APMon version.
 - Select **Language** to choose **English / Deutsch**, or **FC messages** to
@@ -344,10 +346,10 @@ Short labels keep readings on the same line on the small display:
 | Verbr. / Used | Consumed mAh |
 | LQ | RC link quality |
 | GAlt | Altitude from the GAlt sensor |
-| GPS | Fix/satellite count on Overview (e.g. `3D/12`); horizontal GPS speed on Flight |
+| GPS | Fix and satellite count on Overview (e.g. `3D/12`), horizontal GPS speed on Flight |
 | Climb / Vario | Climb rate |
 | Dir | Compass direction derived from yaw, when it does not fit next to the angle |
-| EKF | Last source-set message; `2/30s` means set 2 was reported 30 seconds ago |
+| EKF | Last source-set message. `2/30s` means set 2 was reported 30 seconds ago. |
 
 ### Radio clock and FC message history
 
@@ -367,7 +369,7 @@ received and any consecutive repeat count (`x3`). **RTN** returns to the list.
 Open **Telemetry diagnostics** in the project menu. On SW, scroll past
 **Clock** to reveal it. On COLOR, you can also tap the entry. The overview
 separates RC link quality, EdgeTX sensors, FC status packets and FC text
-messages. Only an ArduPilot status packet resets the FC status age; GPS and
+messages. Only an ArduPilot status packet resets the FC status age. GPS and
 text updates do not count as status packets.
 
 **Sensors** shows each source's name, status and last value accepted by APMon.
@@ -390,7 +392,7 @@ and [sensor list (German)](images/screenshots/apmon-color-tx16s-mk3-sensors-de-v
 ### Post-disarm summary
 
 Open **Project menu → Last armed period** to review the last completed summary.
-On SW, scroll past **Telemetry diagnostics** to find it; on COLOR, select or
+On SW, scroll past **Telemetry diagnostics** to find it. On COLOR, select or
 tap the entry. The page never opens automatically on disarm. The summary stays
 in memory until APMon reloads.
 
@@ -409,7 +411,7 @@ in memory until APMon reloads.
   or estimate ground clearance.
 
 If the summary is **Incomplete**, open **Details** to see why. Observed readings
-remain visible; loss of telemetry is never treated as disarming.
+remain visible. Loss of telemetry is never treated as disarming.
 
 | GX12 | GX15 |
 | --- | --- |
@@ -425,16 +427,16 @@ before relying on them.
 
 | Reading | Default source | Expected unit / meaning |
 | --- | --- | --- |
-| Battery voltage | `RxBt` | V; verify this is flight-battery voltage, not receiver/BEC voltage |
+| Battery voltage | `RxBt` | Voltage in V. Verify that the sensor measures the flight battery, not the receiver or BEC. |
 | Battery current | `Curr` | A |
-| Battery remaining | `Bat%` | Percentage reported by the FC; no voltage-based estimate |
+| Battery remaining | `Bat%` | Percentage reported by the FC, not estimated from voltage |
 | Battery used | `Capa` | Consumed mAh |
-| Altitude | `Alt`, falling back to `GAlt` | m; verify the altitude reference |
+| Altitude | `Alt`, falling back to `GAlt` | Meters. Verify the altitude reference. |
 | Climb rate | `VSpd` | m/s |
 | Horizontal GPS speed | `GSpd` | km/h |
 | Roll / pitch / yaw | `Roll` / `Ptch` / `Yaw` | Standard CRSF radians, converted to degrees |
 | Satellites | `Sats` | Count, not proof of a fix |
-| GPS course | `Hdg` | Degrees; course over ground, not necessarily nose direction |
+| GPS course | `Hdg` | Course over ground in degrees, not necessarily nose direction |
 | Flight mode | `FM` | FC mode text |
 | RC link quality | `RQly` | Percentage of received control packets |
 | GPS position | `GPS` | Table containing `lat` and `lon` |
@@ -449,7 +451,7 @@ voltage = { names = { 'FlightBat' }, unit = 'V', decimals = 2, min = 0.1 },
 ```
 
 `names` can contain ordered aliases. Adjust `scale` when source units differ:
-for example, `3.6` converts m/s to km/h; use `1` for an angle sensor already in
+for example, `3.6` converts m/s to km/h. Use `1` for an angle sensor already in
 degrees. Standard CRSF attitude sources use `180 / math.pi`.
 
 Use real downlink telemetry sources. Channel and switch positions do not confirm
@@ -463,7 +465,7 @@ Armed, the active EKF source set or VTX settings.
 
 | Source | Validity |
 | --- | --- |
-| EdgeTX sensors | EdgeTX `isCurrent`; last readings can remain visible for about 20 seconds after a loss in the target firmware |
+| EdgeTX sensors | EdgeTX `isCurrent`. In the target firmware, last readings can remain visible for about 20 seconds after a loss. |
 | Passthrough GPS fix / Armed | About 3 seconds since the last corresponding frame |
 | FC text / last EKF source-set message | Historical message with age, not a continuously confirmed state |
 
@@ -486,7 +488,7 @@ confirmation that the aircraft is ready to fly.
 ### Flight mode and EKF
 
 `STAB`, `LOIT` and `GUID` are expanded to `STABILIZE`, `LOITER` and `GUIDED`.
-A trailing asterisk is removed from mode text; Armed/Disarmed is read separately
+A trailing asterisk is removed from mode text. Armed/Disarmed is read separately
 from feedback.
 
 The EKF field only recognizes the FC text `Using EKF Source Set 1/2/3`. An old
@@ -497,12 +499,12 @@ FC restart.
 
 | Problem | What to check |
 | --- | --- |
-| APMon is missing from the selection | Verify SD layout and restart. SW: `/SCRIPTS/TELEMETRY/APMon.lua`; COLOR: `/WIDGETS/APMon/main.lua`. |
-| Module load error | Install the complete matching package, not just its main file; remove old APMon `.luac` files. |
+| APMon is missing from the selection | Verify SD layout and restart. SW: `/SCRIPTS/TELEMETRY/APMon.lua`. COLOR: `/WIDGETS/APMon/main.lua`. |
+| Module load error | Install the complete matching package, not just its main file. Remove old APMon `.luac` files. |
 | SW reports `not enough memory` | Install the complete latest SW package, remove old APMon `.luac` files and restart the radio. If it still happens, temporarily disable other Lua scripts in the model and retest. |
 | Only mode and RC link quality work | Check EdgeTX's Telemetry screen first. If readings are absent there too, investigate the upstream telemetry path. |
 | GPS fix / Armed remain unknown | Check ELRS version, MAVLink mode and passthrough reception. |
-| Language option missing on COLOR | Restart; remove and re-add APMon if needed. |
+| Language option missing on COLOR | Restart. Remove and re-add APMon if needed. |
 | SW reports “Language not saved” | Check SD write access and free space. |
 | “Waiting for home” or GPS/AHRS discrepancy | Inspect FC/EKF status. These originate from the FC, not APMon. |
 
@@ -514,7 +516,7 @@ message intervals.
 
 For the MAVLink channel associated with the ELRS receiver, ExpressLRS recommends
 SR/MAV stream groups at 1 Hz, except `ADSB`, `PARAMS` and `RAW_CTRL` at 0.
-Check the correct channel mapping; do not assume an SR index always equals a
+Check the correct channel mapping. Do not assume an SR index always equals a
 SERIAL port number. After configuration, restart without a GCS and check the
 readings. See the [ELRS MAVLink setup guide](https://www.expresslrs.org/software/mavlink/).
 
@@ -549,7 +551,7 @@ README.de.md            German documentation
 
 All Lua and Python source files have headers recording purpose, project version,
 update date, authorship and the `Apache-2.0` SPDX identifier. Christian Baun is
-listed under `Authors`; Codex CLI is credited separately for development
+listed under `Authors`. Codex CLI is credited separately for development
 assistance. Dates describe the recorded change state, not an assumed original
 creation date.
 
@@ -614,7 +616,7 @@ Append an entry to `languages` in [i18n.lua](SD/SCRIPTS/APMON/i18n.lua):
 Selection menus are generated from the registry. Missing translations or
 compass directions fall back to English. Preserve format placeholders such as
 `%ds` and check long labels on both displays. Do not reorder existing entries:
-EdgeTX saves COLOR choices by index; SW saves a language code. Original FC
+EdgeTX saves COLOR choices by index, while SW saves a language code. Original FC
 messages are not translated.
 
 ## Contributing

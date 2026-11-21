@@ -1,25 +1,27 @@
 <img align="right" src="images/apmon-logo.svg" width="88" height="88" alt="APMon-Logo mit Telemetrie-Puls">
 
-# APMon — EdgeTX Monitor for ArduPilot
+# APMon — ArduPilot Telemetry Monitor for EdgeTX radios
 
 [English](README.md) | **Deutsch**
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
 **Telemetrie für ArduPilot auf RadioMaster-Fernsteuerungen mit EdgeTX.**
-APMon zeigt Akkudaten, Fluglage, GPS-Status und Meldungen des Flugcontrollers
-auf der Fernsteuerung an. Die Anwendung besteht aus Lua-Skripten auf der
+APMon ist für **ExpressLRS im MAVLink-Modus** ausgelegt. Es zeigt Akkudaten,
+Fluglage, GPS-Status und Meldungen des Flugcontrollers an. Dazu liest es die
+EdgeTX-Sensoren und ausgewählte ArduPilot-Passthrough-Daten, nicht den
+vollständigen MAVLink-Datenstrom. Die Anwendung besteht aus Lua-Skripten auf der
 SD-Karte und benötigt zur Laufzeit weder einen Laptop noch ein zusätzliches
 Skript im Flugcontroller.
 
-Der aktuelle Projektstand ist **Version 0.4.0**; die Versionsnummer steht in
+Der aktuelle Projektstand ist **Version 0.4.0**. Die Versionsnummer steht in
 [VERSION](VERSION). Siehe [Release-Notizen zu v0.4.0](releases/v0.4.0.md).
 
 Die GUI unterstützt **Englisch und Deutsch**. Englisch ist die Standardsprache.
 
 **Entwicklung mit KI-Unterstützung:** OpenAI Codex CLI half bei der Erstellung
 und Überarbeitung von Quellcode, Tests und Dokumentation. Das ersetzt keine
-Hardwaretests; der aktuelle Prüfstand steht im Abschnitt zur Kompatibilität.
+Hardwaretests. Der aktuelle Prüfstand steht im Abschnitt zur Kompatibilität.
 
 ## Inhalt
 
@@ -40,8 +42,8 @@ Hardwaretests; der aktuelle Prüfstand steht im Abschnitt zur Kompatibilität.
 
 | Paket | Display / Oberfläche | Referenzsender |
 | --- | --- | --- |
-| [APMon-SW.zip](APMon-SW.zip) | Schwarzweiß, 128 × 64 Pixel; Telemetrieskript mit zwei Datenseiten | RadioMaster GX12 und Boxer |
-| [APMon-COLOR.zip](APMon-COLOR.zip) | Farbdisplay; Dashboard-Widget, Mindestgröße der Widget-Zone: 440 × 252 Pixel | RadioMaster GX15 und TX15 (480 × 320), TX16S MK3 (800 × 480) |
+| [APMon-SW.zip](APMon-SW.zip) | Telemetrieskript mit zwei Datenseiten für Schwarzweißdisplays (128 × 64 Pixel) | RadioMaster GX12 und Boxer |
+| [APMon-COLOR.zip](APMon-COLOR.zip) | Dashboard-Widget für Farbdisplays (Widget-Zone mindestens 440 × 252 Pixel) | RadioMaster GX15 und TX15 (480 × 320), TX16S MK3 (800 × 480) |
 
 **SW** steht für *Schwarzweiß*. Paket und Deployment-Option richten sich nach
 dem **Displaytyp**, nicht nach dem Sendernamen: `--display sw` installiert das
@@ -112,7 +114,7 @@ Language** auswählen. Auf COLOR-Displays APMon im Vollbild öffnen und
   getrennt prüfen.
 - **Letzte Armed-Phase:** Dauer und gemessene Extremwerte nach dem Entarmen
   im Projektmenü nachsehen.
-- **Sprachwahl:** direkt am Sender; weitere Sprachen können zentral ergänzt werden.
+- **Sprachwahl:** direkt am Sender. Weitere Sprachen können zentral ergänzt werden.
 
 APMon sendet **keine Flugbefehle, Parameteränderungen oder Telemetrieanfragen**.
 Es verändert keine Modell- oder FC-Einstellungen. Die SW-Version speichert
@@ -127,7 +129,7 @@ PreArm-Prüfungen des Flugcontrollers.
 ## Kompatibilität und Voraussetzungen
 
 Zielplattform ist die **klassische EdgeTX-2.x-LCD-API**. Eine Oberfläche für
-EdgeTX 3.x/LVGL ist nicht enthalten. SW ist für 128 × 64 Pixel ausgelegt;
+EdgeTX 3.x/LVGL ist nicht enthalten. SW ist für 128 × 64 Pixel ausgelegt.
 COLOR benötigt eine Widget-Zone von mindestens 440 × 252 Pixeln. Andere
 Auflösungen, Tastenbelegungen, Speicherbudgets und Firmwarestände müssen
 separat geprüft werden.
@@ -210,7 +212,7 @@ WIDGETS/                   # nur im COLOR-Paket
 
 1. In der Hauptansicht das EdgeTX-Menü öffnen und **Screen settings /
    Bildschirmeinstellungen** auswählen.
-2. Ein Layout mit einer großen Zone wählen; APMon benötigt mindestens
+2. Ein Layout mit einer großen Zone wählen. APMon benötigt mindestens
    **440 × 252 Pixel**.
 3. **Setup widgets / Widgets einrichten** öffnen, die Zone auswählen und
    **APMon** hinzufügen.
@@ -246,7 +248,7 @@ python3 deploy.py --display sw --apply
 ```
 
 `--display` ist erforderlich. Die frühere `--radio`-Option von `deploy.py`
-entfällt; eine automatische Modellfreigabe findet nicht statt.
+entfällt. Eine automatische Modellfreigabe findet nicht statt.
 Das Skript erkennt eine eingebundene EdgeTX-SD-Karte anhand der Verzeichnisse
 `MODELS`, `RADIO` und `SCRIPTS`. Bei mehreren Karten das Ziel angeben:
 
@@ -263,13 +265,13 @@ Modelldateien werden nicht verändert.
 Sensorzuordnungen deshalb vor einem Update in
 [SD/SCRIPTS/APMON/config.lua](SD/SCRIPTS/APMON/config.lua) übernehmen.
 Die gespeicherten SW-Einstellungen für Sprache und Uhr in `mono.cfg` bleiben erhalten.
-Die Lizenz liegt in beiden ZIP-Paketen; das direkte Deployment kopiert sie nicht.
+Die Lizenz liegt in beiden ZIP-Paketen. Das direkte Deployment kopiert sie nicht.
 
 ### Screenshots importieren
 
 Auf dem Sender mit der EdgeTX-Spezialfunktion **Screenshot** eine Aufnahme
 machen und den Sender dann im USB-Speichermodus anschließen.
-`import_screenshots.py` erkennt die SD-Karte wie `deploy.py`; bei mehreren
+`import_screenshots.py` erkennt die SD-Karte wie `deploy.py`. Bei mehreren
 Karten hilft `--sd PFAD`. Für Vorschau und Import wird Pillow ab 9.1
 benötigt (`python3-pil` unter Debian), für die Dateiliste nicht.
 
@@ -283,7 +285,7 @@ Ohne Dateiauswahl übernimmt das Skript **alle neuen Aufnahmen** aus
 `SCREENSHOTS`. Bereits importierte Aufnahmen erkennt es an Aufnahmezeit
 und Bildinhalt, auch bei anderen Metadaten oder anderer Vergrößerung.
 Die angegebene Ansicht und Sprache gelten für den ganzen Import. Bei
-gemischten Aufnahmen die Dateien mit `--file NAME` auswählen; die Option
+gemischten Aufnahmen die Dateien mit `--file NAME` auswählen. Die Option
 kann für mehrere Aufnahmen mit gleichen Metadaten wiederholt werden.
 Für das englische GX15-Menü beispielsweise
 `--display color --radio gx15 --view menu --lang en` angeben. Falls auf dem
@@ -305,7 +307,7 @@ README-Bilder bleiben unverändert.
 Eine Gesamtansicht zeigt links Flugmodus, Motoren, Akku, RC-Linkqualität,
 GPS-Fix, Satelliten und die letzte EKF-Umschaltmeldung. Rechts stehen Höhe,
 Fluglage, horizontales GPS-Tempo, Richtung und Steigen. Die letzte FC-Meldung
-erscheint unten mit Altersangabe; langer Text wird auf die verfügbare Breite
+erscheint unten mit Altersangabe. Langer Text wird auf die verfügbare Breite
 gekürzt.
 
 - **Projektmenü öffnen:** APMon doppelt antippen oder im Kontextmenü
@@ -313,7 +315,7 @@ gekürzt.
 - Unter **APMon** steht **ArduPilot Telemetry Monitor for EdgeTX radios**.
   Darunter stehen die GitHub-Adresse und die installierte APMon-Version.
   **Sprache** und **FC-Meldungen** lassen sich per Touch oder mit Drehgeber
-  und **ENTER** öffnen. **RTN** geht eine Ebene zurück; **RTN** lang gedrückt
+  und **ENTER** öffnen. **RTN** geht eine Ebene zurück. **RTN** lang gedrückt
   verlässt das Vollbild.
 - Die Sprachwahl im APMon-Menü gilt für dieses Widget in der aktuellen
   Sitzung. Dauerhaft speichert EdgeTX sie im Modell: APMon in der Hauptansicht
@@ -332,7 +334,7 @@ gekürzt.
 Die **Akkuspannung in Volt steht auf beiden Seiten oben rechts**.
 Ohne gültigen Wert zeigt das Feld `--`.
 
-- **Drehgeber, Plus/Minus oder NEXT/PREV:** Seite wechseln; kein automatisches Blättern.
+- **Drehgeber, Plus/Minus oder NEXT/PREV:** Seite manuell wechseln.
 - **ENTER / Drehgeber drücken:** Menü mit Projekttitel, GitHub-Adresse und
   installierter APMon-Version öffnen.
 - Unter **Sprache** zwischen **Deutsch** und **English** wählen. **FC-Meldungen**
@@ -341,8 +343,8 @@ Ohne gültigen Wert zeigt das Feld `--`.
   links neben der Seitennummer. **RTN** geht eine Ebene zurück.
 
 Sprache und Uhr werden in `/SCRIPTS/APMON/mono.cfg` gespeichert und gelten
-für alle Modelle dieser SD-Karte. Bei einem Schreibfehler erscheint ein Hinweis;
-die Änderung bleibt für die aktuelle Sitzung aktiv.
+für alle Modelle dieser SD-Karte. Bei einem Schreibfehler erscheint ein Hinweis.
+Die Änderung bleibt für die aktuelle Sitzung aktiv.
 
 Für das kleine Display werden kurze Labels verwendet:
 
@@ -353,7 +355,7 @@ Für das kleine Display werden kurze Labels verwendet:
 | Verbr. / Used | verbrauchte mAh |
 | LQ | RC-Linkqualität |
 | GAlt | Höhe aus dem gleichnamigen Sensor |
-| GPS | Auf der Übersicht Fix/Satellitenzahl (z. B. `3D/12`); auf der Flugseite horizontales GPS-Tempo |
+| GPS | Fix und Satellitenzahl auf der Übersicht (z. B. `3D/12`), horizontales GPS-Tempo auf der Flugseite |
 | Vario / Climb | Steigen |
 | Dir | Himmelsrichtung aus Yaw, falls sie nicht neben dem Winkel Platz findet |
 | EKF | letzte EKF-Umschaltmeldung, z. B. `2/30s` = Set 2 vor 30 Sekunden gemeldet |
@@ -378,10 +380,10 @@ Im Projektmenü **Telemetrie-Diagnose** öffnen. Auf SW steht der Eintrag unter
 **Uhr** und wird beim Weiterdrehen sichtbar. Auf COLOR lässt er sich auch
 antippen. Die Übersicht trennt RC-Linkqualität, EdgeTX-Sensoren, FC-Statuspakete
 und FC-Textmeldungen. Nur ein ArduPilot-Statuspaket aktualisiert das Alter des
-FC-Status; neue GPS-Daten oder Textmeldungen ersetzen kein Statuspaket.
+FC-Status. Neue GPS-Daten oder Textmeldungen ersetzen kein Statuspaket.
 
 Unter **Sensoren** stehen Name, Zustand und der zuletzt von APMon akzeptierte
-Wert des jeweiligen Sensors. **NEXT/PREV** oder der Drehgeber blättern; auf
+Wert des jeweiligen Sensors. **NEXT/PREV** oder der Drehgeber blättern. Auf
 COLOR geht das auch per Touch. Ein alter Wert bleibt nach einem Ausfall nur
 als letzter Wert sichtbar und wird nicht als Live-Wert übernommen. Nicht
 konfigurierte Sensoren zählen nicht mit. Die Werte sind keine Flugfreigabe.
@@ -419,7 +421,7 @@ nicht automatisch. Die Bilanz bleibt bis zum Neuladen von APMon im Speicher.
   keine andere Höhenquelle als Ersatz und schätzt keinen Bodenabstand.
 
 Bei **Unvollständig** zeigt **Details**, warum Werte fehlen. Bereits erfasste
-Messwerte bleiben sichtbar; ein Telemetrieausfall zählt nie als Entarmen.
+Messwerte bleiben sichtbar. Ein Telemetrieausfall zählt nie als Entarmen.
 
 | GX12 (Englisch) | GX15 |
 | --- | --- |
@@ -435,16 +437,16 @@ Werte und Einheiten mit der FC-Anzeige vergleichen.
 
 | Anzeige | Standardquelle | Erwartete Einheit / Bedeutung |
 | --- | --- | --- |
-| Akku (Spannung) | `RxBt` | V; muss die Flugakkuspannung sein, nicht BEC-/Empfängerspannung |
+| Akku (Spannung) | `RxBt` | Spannung in V. Prüfen, dass der Sensor den Flugakku und nicht das BEC oder den Empfänger misst. |
 | Akku (Strom) | `Curr` | A |
-| Akku (Rest laut FC) | `Bat%` | Prozent; keine eigene Spannungsschätzung |
+| Akku (Rest laut FC) | `Bat%` | Prozent laut FC, keine Schätzung aus der Spannung |
 | Akku (Verbrauch) | `Capa` | verbrauchte mAh |
-| Höhe | `Alt`, ersatzweise `GAlt` | m; Höhenbezug der Quelle beachten |
+| Höhe | `Alt`, ersatzweise `GAlt` | Meter. Höhenbezug der Quelle beachten. |
 | Steigen | `VSpd` | m/s |
 | Horizontales GPS-Tempo | `GSpd` | km/h |
 | Roll / Pitch / Yaw | `Roll` / `Ptch` / `Yaw` | CRSF-Standard: Radiant, von APMon in Grad umgerechnet |
-| Satelliten | `Sats` | Anzahl; kein alleiniger Fixnachweis |
-| GPS-Kurs | `Hdg` | Grad; Bewegungsrichtung, nicht zwingend Ausrichtung der Fahrzeugnase |
+| Satelliten | `Sats` | Anzahl, kein alleiniger Fixnachweis |
+| GPS-Kurs | `Hdg` | Bewegungsrichtung in Grad, nicht zwingend Ausrichtung der Fahrzeugnase |
 | Flugmodus | `FM` | FC-Modustext |
 | RC-Linkqualität | `RQly` | Prozent empfangener Steuerpakete |
 | GPS-Position | `GPS` | Tabelle mit `lat` und `lon` |
@@ -475,9 +477,9 @@ veraltete Daten. Gültige Nullwerte bleiben erhalten.
 
 | Datenquelle | Gültigkeit |
 | --- | --- |
-| EdgeTX-Sensoren | `isCurrent` von EdgeTX; in der Zielversion können letzte Werte bei Ausfall noch ungefähr 20 Sekunden sichtbar bleiben |
+| EdgeTX-Sensoren | `isCurrent` von EdgeTX. In der Zielversion können letzte Werte bei Ausfall noch ungefähr 20 Sekunden sichtbar bleiben. |
 | Passthrough: GPS-Fix und Armed | etwa 3 Sekunden nach dem letzten entsprechenden Paket |
-| FC-Text und letzte EKF-Umschaltmeldung | historische Meldung mit angezeigtem Alter; keine kontinuierliche Zustandsbestätigung |
+| FC-Text und letzte EKF-Umschaltmeldung | Historische Meldung mit angezeigtem Alter, keine kontinuierliche Zustandsbestätigung |
 
 `isFresh` wird nicht als Anzeigevoraussetzung verwendet: Sein kurzes Zeitfenster
 würde langsam eintreffende, noch aktuelle Sensoren ausblenden. APMon bietet
@@ -487,19 +489,19 @@ bestätigt weder vollständige FC-Telemetrie noch Flugbereitschaft.
 ### GPS, Höhe und Richtung
 
 - GPS-Fix wird aus Passthrough gelesen, nicht aus Satellitenzahl oder Koordinaten geschätzt.
-- „Ja“ bedeutet mindestens 2D-Fix; DGPS ist ein eigener unterstützter Fix-Typ.
+- „Ja“ bedeutet mindestens 2D-Fix. DGPS ist ein eigener unterstützter Fix-Typ.
 - **GAlt** steht für *GPS Altitude*. Im normalen ELRS-4.1.0-MAVLink-Build wird
   dieser Sensor jedoch mit `GLOBAL_POSITION_INT.relative_alt` befüllt, also
   Höhe relativ Home. Ein Build mit `USE_MAVLINK_GPS_ALTITUDE` verwendet
-  stattdessen die GPS-Höhe über Meeresspiegel. Die GUI benennt die Sensorquelle;
-  daraus darf kein Bodenabstand abgeleitet werden.
+  stattdessen die GPS-Höhe über Meeresspiegel. Die GUI benennt die Sensorquelle.
+  Daraus darf kein Bodenabstand abgeleitet werden.
 - Die Himmelsrichtung stammt aus Yaw. GPS-Kurs und Fahrzeugausrichtung sind
   unterschiedliche Größen, besonders im Stillstand.
 
 ### Flugmodus und EKF
 
 `STAB`, `LOIT` und `GUID` werden als `STABILIZE`, `LOITER` und `GUIDED`
-ausgeschrieben. Ein abschließendes Sternchen wird aus dem Modustext entfernt;
+ausgeschrieben. Ein abschließendes Sternchen wird aus dem Modustext entfernt.
 Armed/Disarmed wird separat aus der Rückmeldung gelesen.
 
 „EKF zuletzt“ wertet ausschließlich die FC-Textmeldung
@@ -510,26 +512,26 @@ Quellensatz noch aktiv ist, insbesondere nach einem FC-Neustart.
 
 | Problem | Prüfung |
 | --- | --- |
-| APMon fehlt in der Auswahl | Paketstruktur prüfen und Sender neu starten. SW: `/SCRIPTS/TELEMETRY/APMon.lua`; COLOR: `/WIDGETS/APMon/main.lua`. |
+| APMon fehlt in der Auswahl | Paketstruktur prüfen und Sender neu starten. SW: `/SCRIPTS/TELEMETRY/APMon.lua`. COLOR: `/WIDGETS/APMon/main.lua`. |
 | Fehler beim Laden eines Moduls | Gesamtes passendes Paket installieren, nicht nur die Hauptdatei. Alte APMon-`.luac`-Dateien entfernen. |
 | SW meldet `not enough memory` | Aktuelles SW-Paket vollständig installieren, alte APMon-`.luac`-Dateien entfernen und den Sender neu starten. Tritt die Meldung weiter auf, andere Lua-Skripte im Modell vorübergehend deaktivieren und erneut testen. |
 | Nur Modus und RC-Linkqualität kommen an | Zuerst Werte in EdgeTX → Telemetrie prüfen. Fehlen sie dort ebenfalls, liegt das Problem vor APMon. |
 | GPS-Fix / Armed bleiben unbekannt | ELRS-Version, MAVLink-Modus und Passthrough-Empfang prüfen. |
-| Spracheinstellung fehlt im COLOR-Widget | Nach Update neu starten; nötigenfalls Widget entfernen und erneut hinzufügen. |
+| Spracheinstellung fehlt im COLOR-Widget | Nach dem Update neu starten. Nötigenfalls das Widget entfernen und erneut hinzufügen. |
 | SW meldet „Language not saved“ | Schreibzugriff und freien Platz auf der SD-Karte prüfen. |
-| Meldung „waiting for home“ oder GPS-/AHRS-Abweichung | FC-/EKF-Problem; vollständige PreArm-Meldung mit einer GCS prüfen. APMon zeigt die Meldung nur an. |
+| Meldung „waiting for home“ oder GPS-/AHRS-Abweichung | Bei einem FC- oder EKF-Problem die vollständige PreArm-Meldung mit einer GCS prüfen. APMon zeigt die Meldung nur an. |
 
 ### Telemetrie fehlt nach FC-Neustart
 
 APMon fordert keine Nachrichtenraten an. Eine zuvor verbundene GCS kann
-Nachrichtenintervalle für eine Sitzung angefragt haben; nach einem Neustart
+Nachrichtenintervalle für eine Sitzung angefragt haben. Nach einem Neustart
 muss der FC die benötigten Daten selbstständig senden.
 
 Für den zugehörigen MAVLink-Kanal empfiehlt die
 [ExpressLRS-Anleitung](https://www.expresslrs.org/software/mavlink/#flight-controller-setup)
 SR-/MAV-Nachrichtengruppen mit 1 Hz, ausgenommen `ADSB`, `PARAMS` und
-`RAW_CTRL` mit 0. Die Zuordnung des SR-Index zum Empfängeranschluss prüfen;
-sie darf nicht pauschal mit der SERIAL-Nummer gleichgesetzt werden.
+`RAW_CTRL` mit 0. Die Zuordnung des SR-Index zum Empfängeranschluss prüfen.
+Der SR-Index entspricht nicht zwingend der SERIAL-Nummer.
 Nach der Konfiguration ohne angeschlossene GCS neu starten und prüfen.
 
 ### Andere Lua-Telemetrieprogramme
@@ -566,7 +568,7 @@ LICENSE                 Apache License 2.0
 Alle Lua- und Python-Dateien enthalten einen einheitlichen Kommentarheader mit
 Dateipfad, Zweck, Projektversion, Aktualisierungsdatum, Autorenangabe,
 Codex-CLI-Unterstützung und SPDX-Lizenzkennung `Apache-2.0`. Unter `Authors`
-steht Christian Baun; Codex CLI wird separat als Entwicklungsunterstützung
+steht Christian Baun. Codex CLI wird separat als Entwicklungsunterstützung
 aufgeführt. Das Datum beschreibt den dokumentierten Änderungsstand, nicht ein
 nachträglich angenommenes Erstellungsdatum.
 
@@ -638,7 +640,7 @@ am Ende ergänzen, beispielsweise:
 Die Auswahlmenüs entstehen automatisch aus dem Register. Fehlende Texte und
 Himmelsrichtungen verwenden Englisch. Platzhalter wie `%ds` erhalten und
 lange Texte auf beiden Displaytypen prüfen. Bestehende Einträge nicht
-umsortieren: EdgeTX speichert die COLOR-Auswahl als Index; SW speichert den
+umsortieren: EdgeTX speichert die COLOR-Auswahl als Index und SW speichert den
 Sprachcode. Empfangene FC-Meldungen bleiben in ihrer Originalsprache.
 
 ## Mitwirken
