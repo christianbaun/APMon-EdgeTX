@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/TELEMETRY/APMon.lua
 -- Purpose: Render the GX12/Boxer telemetry UI with two pages, menus and saved language choice.
--- Project version: 0.3.0
+-- Project version: 0.4.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -12,19 +12,29 @@
 -- =============================================================================
 
 -- GX12 / Boxer: 128x64 telemetry application, classic EdgeTX 2.x LCD API.
+local function reclaim()
+  if type(collectgarbage) == 'function' then pcall(collectgarbage, 'collect') end
+end
 local function module(name, ...)
+  -- Reclaim temporary bytecode/compiler objects from the preceding load.
+  reclaim()
   local path = '/SCRIPTS/APMON/' .. name .. '.lua'
   local chunk, reason = loadScript(path)
   if not chunk then error('APMon: ' .. path .. ': ' .. tostring(reason or 'not loadable')) end
   return chunk(...)
 end
+local i18n = module('i18n', 'compact')
 local core, config = module('core'), module('config')
-local receiver, i18n = module('pass', 12), module('i18n')
+local summary = module('armed_summary')
+local tracker = summary.new(config.relativeAltitudeSensor)
+local receiver = module('pass', 12, tracker)
 local project = module('project')
-local monitor = core.new(config, receiver)
+local monitor = core.new(config, receiver, tracker)
 local page, language, menuItem, languageItem = 1, 1, 1, 1
 local showClock, saveError, selectedMessage, messageDetail = false, nil, nil, nil
 local view = 'data'
+local sensorIndex = 1
+local toolRenderer, toolError
 local radioLanguage = type(getGeneralSettings) == 'function' and getGeneralSettings().language
 local nativeUmlauts = not radioLanguage or radioLanguage == 'DE'
 local preference = '/SCRIPTS/APMON/mono.cfg'
@@ -52,6 +62,15 @@ local function savePreferences()
   return ok and result ~= nil
 end
 local function tr(value) return i18n.text(language, value) end
+local function monoText(value)
+  value = tr(value)
+  if not nativeUmlauts then
+    value = string.gsub(value, 'ü', 'ue')
+    value = string.gsub(value, 'ä', 'ae')
+    value = string.gsub(value, 'ö', 'oe')
+  end
+  return value
+end
 local function match(event, ...)
   if not event or event == 0 then return false end
   for i = 1, select('#', ...) do
@@ -143,7 +162,7 @@ end
 local function field(x, right, y, label, value)
   local valueWidth = textWidth(value, small)
   if valueWidth > right - x then value, valueWidth = '--', textWidth('--', small) end
-  label = fit(tr(label), right - x - valueWidth - 1, small)
+  label = fit(monoText(label), right - x - valueWidth - 1, small)
   if label ~= '' then lcd.drawText(x, y, label, small) end
   rightText(right, y, value, small)
 end
@@ -175,9 +194,18 @@ local function projectMenu(width)
   local version = fit(project.version, width - textWidth(project.repo[2], small) - 8, small)
   rightText(width - 2, 31, version, small)
   filled(2, 39, width - 4, 1)
-  menuOption(width, 41, tr('Sprache') .. ': ' .. i18n.language(language).name, menuItem == 1)
-  menuOption(width, 49, tr('FC-Meldungen'), menuItem == 2)
-  menuOption(width, 57, tr('Uhr') .. ': ' .. tr(showClock and 'An' or 'Aus'), menuItem == 3)
+  local labels = { tr('Sprache') .. ': ' .. i18n.language(language).name, tr('FC-Meldungen'),
+    tr('Uhr') .. ': ' .. tr(showClock and 'An' or 'Aus'), tr('Telemetrie-Diagnose'), tr('Letzte Armed-Phase') }
+  local first = math.max(1, menuItem - 2)
+  for i = first, first + 2 do menuOption(width, 41 + (i - first) * 8, labels[i], menuItem == i) end
+end
+local function loadTools(isDiagnostics)
+  return module('mono_tools', {
+    tr = tr, monoText = monoText, header = menuHeader, field = field,
+    rightText = rightText, small = small, filled = filled, fit = fit, textWidth = textWidth,
+    monitor = monitor, receiver = receiver, tracker = tracker, summary = summary,
+    diagnostics = isDiagnostics and module('diagnostics') or nil,
+  })
 end
 local function background() monitor:sample() end
 local function run(event)
@@ -187,7 +215,19 @@ local function run(event)
   local enterEvent = match(event, EVT_VIRTUAL_ENTER or EVT_ENTER_BREAK or EVT_ENTER_FIRST)
   local exitEvent = match(event, EVT_VIRTUAL_EXIT or EVT_EXIT_BREAK)
   local step = nextEvent and 1 or prevEvent and -1 or 0
-  if view == 'messageDetail' then
+  if view == 'summary' then
+    if exitEvent then view = 'menu'
+    elseif enterEvent and tracker.last and toolRenderer then view = 'summaryDetail' end
+  elseif view == 'summaryDetail' then
+    if enterEvent or exitEvent then view = 'summary' end
+  elseif view == 'diagnostics' then
+    if exitEvent then view = 'menu'
+    elseif enterEvent and toolRenderer then view, sensorIndex = 'sensors', 1 end
+  elseif view == 'sensors' then
+    local count = #monitor.sensorList
+    if count > 0 then sensorIndex = (sensorIndex - 1 + step) % count + 1 end
+    if enterEvent or exitEvent then view = 'diagnostics' end
+  elseif view == 'messageDetail' then
     if enterEvent or exitEvent then view, messageDetail = 'messages', nil end
   elseif view == 'messages' then
     local message, index = receiver.browse(selectedMessage, step)
@@ -205,14 +245,18 @@ local function run(event)
       view = 'menu'
     end
   elseif view == 'menu' then
-    if step ~= 0 then menuItem = (menuItem - 1 + step) % 3 + 1 end
+    if step ~= 0 then menuItem = (menuItem - 1 + step) % 5 + 1 end
     if exitEvent then view = 'data' end
     if enterEvent then
       if menuItem == 1 then view, languageItem = 'language', language
       elseif menuItem == 2 then view, selectedMessage = 'messages', nil
-      else
+      elseif menuItem == 3 then
         showClock = not showClock
         saveError = not savePreferences() and 'Uhr nicht gespeichert' or nil
+      elseif menuItem == 4 then
+        view = 'diagnostics'
+      else
+        view = 'summary'
       end
     end
   elseif enterEvent then
@@ -224,6 +268,26 @@ local function run(event)
   local function text(y, value, inverse)
     lcd.drawText(0, y, fit(value, width, small), small + (inverse and (INVERS or 0) or 0))
   end
+  local diagnosticsPage = view == 'diagnostics' or view == 'sensors'
+  if diagnosticsPage or view == 'summary' or view == 'summaryDetail' then
+    if toolRenderer == nil then
+      local ok, render = pcall(loadTools, diagnosticsPage)
+      toolRenderer = ok and render or false
+      if not ok then
+        toolError = string.find(string.lower(tostring(render)), 'memory', 1, true)
+          and 'Speicher knapp' or 'Werkzeug nicht ladbar'
+      end
+    end
+    if toolRenderer then
+      toolRenderer(view, width, sensorIndex, text)
+    else
+      menuHeader(width, tr(diagnosticsPage and 'Telemetrie-Diagnose' or 'Letzte Armed-Phase'))
+      text(11, tr(toolError))
+      text(57, monoText('RTN: Menü'))
+    end
+    return 0
+  end
+  toolRenderer, toolError = nil, nil
   if view == 'menu' then
     projectMenu(width)
     return 0

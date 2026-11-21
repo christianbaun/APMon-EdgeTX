@@ -12,8 +12,8 @@ auf der Fernsteuerung an. Die Anwendung besteht aus Lua-Skripten auf der
 SD-Karte und benötigt zur Laufzeit weder einen Laptop noch ein zusätzliches
 Skript im Flugcontroller.
 
-Der aktuelle Projektstand ist **Version 0.3.0**; die Versionsnummer steht in
-[VERSION](VERSION). Siehe [Release-Notizen zu v0.3.0](releases/v0.3.0.md).
+Der aktuelle Projektstand ist **Version 0.4.0**; die Versionsnummer steht in
+[VERSION](VERSION). Siehe [Release-Notizen zu v0.4.0](releases/v0.4.0.md).
 
 Die GUI unterstützt **Englisch und Deutsch**. Englisch ist die Standardsprache.
 
@@ -54,38 +54,45 @@ Ein passendes Display allein bedeutet nicht, dass der Sender getestet wurde.
 Echte Aufnahmen von GX12, GX15 und TX16S MK3.
 Die Werte zeigen den Aufnahmezustand und sind keine Aussage zur Flugbereitschaft.
 
-**Schwarzweiß — GX12 (128 × 64, APMon v0.3.0)**
+**Schwarzweiß — GX12 (128 × 64, APMon v0.4.0)**
 
 Die Bilder sind vierfach vergrößert. Die Senderuhr ist auf beiden
 Telemetrieseiten eingeschaltet.
 
 | Übersicht | Flugwerte |
 | --- | --- |
-| ![APMon-Übersicht auf Deutsch mit Senderuhr auf der GX12](images/screenshots/apmon-sw-gx12-overview-de-v0.3.0-2026-11-21-141401-4x.png) | ![APMon-Flugwerte auf Deutsch mit Senderuhr auf der GX12](images/screenshots/apmon-sw-gx12-flight-de-v0.3.0-2026-11-21-141403-4x.png) |
+| ![APMon-Übersicht auf Deutsch mit Senderuhr auf der GX12](images/screenshots/apmon-sw-gx12-overview-de-v0.4.0-2026-11-21-213213-4x.png) | ![APMon-Flugwerte auf Deutsch mit Senderuhr auf der GX12](images/screenshots/apmon-sw-gx12-flight-de-v0.4.0-2026-11-21-213221-4x.png) |
 
-| Projektmenü | FC-Meldungsliste (Englisch) |
+| Projektmenü | FC-Meldungsliste |
 | --- | --- |
-| ![APMon-Projektmenü auf Deutsch mit Version und eingeschalteter Uhr](images/screenshots/apmon-sw-gx12-menu-de-v0.3.0-2026-11-21-141400-4x.png) | ![Scrollbare FC-Meldungsliste auf Englisch auf der GX12](images/screenshots/apmon-sw-gx12-messages-en-v0.3.0-2000-02-24-225259-4x.png) |
+| ![APMon-Projektmenü auf Deutsch mit Version und eingeschalteter Uhr](images/screenshots/apmon-sw-gx12-menu-de-v0.4.0-2026-11-21-213227-4x.png) | ![Scrollbare FC-Meldungsliste auf Deutsch auf der GX12](images/screenshots/apmon-sw-gx12-messages-de-v0.4.0-2026-11-21-213246-4x.png) |
 
-**Farbdisplay — GX15 (480 × 320, APMon v0.3.0)**
+Weitere GX12-Aufnahmen: [Projektmenü mit den neuen Einträgen (Englisch)](images/screenshots/apmon-sw-gx12-menu-en-v0.4.0-2026-11-21-213258-4x.png),
+[Telemetrie-Diagnose](#telemetrie-diagnose) und
+[Zusammenfassung nach dem Entarmen](#zusammenfassung-nach-dem-entarmen).
+
+**Farbdisplay — GX15 (480 × 320, APMon v0.4.0)**
 
 | Übersicht mit Senderuhr | Projektmenü |
 | --- | --- |
-| ![APMon-Farbübersicht auf Deutsch mit großer Senderuhr mittig in der Kopfzeile der GX15](images/screenshots/apmon-color-gx15-overview-de-v0.3.0-2026-11-21-142731.png) | ![APMon-Projektmenü auf Deutsch mit Version und Uhr-Schalter auf der GX15](images/screenshots/apmon-color-gx15-menu-de-v0.3.0-2026-11-21-142712.png) |
+| ![APMon-Farbübersicht mit Senderuhr auf der GX15](images/screenshots/apmon-color-gx15-overview-de-v0.4.0-2026-11-21-201646.png) | ![Projektmenü mit v0.4.0, Telemetrie-Diagnose und Letzte Armed-Phase](images/screenshots/apmon-color-gx15-menu-de-v0.4.0-2026-11-21-201641.png) |
 
 **FC-Meldungsliste — GX15 (Englisch)**
 
-![Scrollbare FC-Meldungsliste mit Schweregrad und Alter auf der GX15](images/screenshots/apmon-color-gx15-messages-en-v0.3.0-2026-11-21-142705.png)
+![Scrollbare FC-Meldungsliste mit Schweregrad und Alter auf der GX15](images/screenshots/apmon-color-gx15-messages-en-v0.4.0-2026-11-21-201609.png)
 
-**Farbdisplay — TX16S MK3 (800 × 480, APMon v0.3.0)**
+Weitere GX15-Aufnahmen: [Telemetrie-Diagnose](#telemetrie-diagnose) und
+[Zusammenfassung nach dem Entarmen](#zusammenfassung-nach-dem-entarmen).
 
-| Übersicht im Vollbild (Uhr aus) | Projektmenü |
+**Farbdisplay — TX16S MK3 (800 × 480, APMon v0.4.0)**
+
+| Übersicht im Vollbild | Projektmenü |
 | --- | --- |
-| ![APMon-Farbübersicht auf Deutsch mit ausgeschalteter Senderuhr auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-de-v0.3.0-2026-11-21-143541.png) | ![APMon-Projektmenü auf Deutsch mit Version und Uhr-Schalter auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-menu-de-v0.3.0-2026-11-21-143531.png) |
+| ![APMon-Farbübersicht auf Deutsch auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-de-v0.4.0-2026-11-21-213751.png) | ![APMon-Projektmenü auf Deutsch mit Telemetrie-Diagnose und Letzte Armed-Phase](images/screenshots/apmon-color-tx16s-mk3-menu-de-v0.4.0-2026-11-21-213723.png) |
 
-**FC-Meldungsliste — TX16S MK3 (Englisch)**
+**FC-Meldungsliste — TX16S MK3**
 
-![FC-Meldungsliste mit Schweregrad, Wiederholungszähler und Alter auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-messages-en-v0.3.0-2026-11-21-143526.png)
+![FC-Meldungsliste mit Schweregrad, Wiederholungszähler und Alter auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-messages-de-v0.4.0-2026-11-21-213728.png)
 
 **Sprache wechseln:** Auf SW-Displays **ENTER** drücken und **Sprache /
 Language** auswählen. Auf COLOR-Displays APMon im Vollbild öffnen und
@@ -101,6 +108,10 @@ Language** auswählen. Auf COLOR-Displays APMon im Vollbild öffnen und
 - **FC-Status:** letzte Textmeldung und zuletzt gemeldeter EKF-Quellensatz,
   jeweils mit Alter der Meldung.
 - **RC-Linkqualität:** Anteil empfangener Steuerpakete in Prozent.
+- **Telemetrie-Diagnose:** Zustand von RC-Link, EdgeTX-Sensoren und FC-Status
+  getrennt prüfen.
+- **Letzte Armed-Phase:** Dauer und gemessene Extremwerte nach dem Entarmen
+  im Projektmenü nachsehen.
 - **Sprachwahl:** direkt am Sender; weitere Sprachen können zentral ergänzt werden.
 
 APMon sendet **keine Flugbefehle, Parameteränderungen oder Telemetrieanfragen**.
@@ -121,14 +132,14 @@ COLOR benötigt eine Widget-Zone von mindestens 440 × 252 Pixeln. Andere
 Auflösungen, Tastenbelegungen, Speicherbudgets und Firmwarestände müssen
 separat geprüft werden.
 
-| Sender | Firmwarestand / Prüfstatus |
+| Sender | Versionen |
 | --- | --- |
-| GX15 | EdgeTX 2.12.5 und ExpressLRS 4.1.0; Oberfläche und mehrere Live-Werte im praktischen Einsatz bestätigt |
-| TX15 | EdgeTX 2.12.4 und ExpressLRS 4.1.0; Farb-Dashboard und Vollbild-Projektmenü bei 480 × 320 Pixeln mit aktuellem Quellstand auf Deutsch und Englisch getestet. Ein vollständiger Funktionstest ist nicht dokumentiert. |
-| TX16S MK3 | EdgeTX 2.12.2 und ExpressLRS 4.1.0; Farb-Dashboard und Vollbild-Projektmenü bei 800 × 480 Pixeln mit aktuellem Quellstand auf Deutsch und Englisch getestet. Ein vollständiger Funktionstest ist nicht dokumentiert. |
-| GX12 | EdgeTX 2.12.2 und ExpressLRS 4.1.0; SW-Version automatisiert geprüft, vollständiger Hardwaretest nach den Korrekturen noch offen |
-| Boxer | Gemeinsame SW-Version; Hardwaretest und konkrete Firmwareversion noch offen |
-| Andere Sender | Bei passendem Display und passender API möglicherweise kompatibel; nicht auf Hardware geprüft |
+| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
+| TX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
+| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
+| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
+| Boxer | Hardwaretest noch offen |
+| Andere Sender | Hardwaretest noch offen |
 
 Für den vollständigen Funktionsumfang werden benötigt:
 
@@ -172,11 +183,15 @@ Die Struktur auf der SD-Karte muss so aussehen:
 ```text
 SCRIPTS/
 ├── APMON/
+│   ├── armed_summary.lua
 │   ├── config.lua
 │   ├── core.lua
+│   ├── diagnostics.lua
 │   ├── i18n.lua
+│   ├── mono_tools.lua      # nur im SW-Paket
 │   ├── pass.lua
 │   ├── project.lua
+│   ├── VERSION
 │   └── LICENSE.txt
 └── TELEMETRY/             # nur im SW-Paket
     ├── APMon.lua
@@ -357,6 +372,61 @@ mit Schweregrad, Alter seit dem letzten Empfang und ggf. Wiederholungszähler
 Der Verlauf hält **12 Einträge auf SW** und **32 auf COLOR** im Arbeitsspeicher
 und wird beim Neuladen von APMon geleert.
 
+### Telemetrie-Diagnose
+
+Im Projektmenü **Telemetrie-Diagnose** öffnen. Auf SW steht der Eintrag unter
+**Uhr** und wird beim Weiterdrehen sichtbar. Auf COLOR lässt er sich auch
+antippen. Die Übersicht trennt RC-Linkqualität, EdgeTX-Sensoren, FC-Statuspakete
+und FC-Textmeldungen. Nur ein ArduPilot-Statuspaket aktualisiert das Alter des
+FC-Status; neue GPS-Daten oder Textmeldungen ersetzen kein Statuspaket.
+
+Unter **Sensoren** stehen Name, Zustand und der zuletzt von APMon akzeptierte
+Wert des jeweiligen Sensors. **NEXT/PREV** oder der Drehgeber blättern; auf
+COLOR geht das auch per Touch. Ein alter Wert bleibt nach einem Ausfall nur
+als letzter Wert sichtbar und wird nicht als Live-Wert übernommen. Nicht
+konfigurierte Sensoren zählen nicht mit. Die Werte sind keine Flugfreigabe.
+
+| Telemetrie-Diagnose auf der GX15 | Sensorliste auf der GX15 |
+| --- | --- |
+| ![Telemetrie-Diagnose mit getrenntem RC-Link, Sensorzustand und FC-Status](images/screenshots/apmon-color-gx15-diagnostics-de-v0.4.0-2026-11-21-201659.png) | ![Sensorliste mit den letzten Werten und ihrem Gültigkeitsstatus](images/screenshots/apmon-color-gx15-sensors-de-v0.4.0-2026-11-21-201702.png) |
+
+**Telemetrie-Diagnose auf der GX12 (Englisch):**
+
+![Telemetrie-Diagnose auf der GX12 mit RC-Link, Sensorzustand und FC-Status](images/screenshots/apmon-sw-gx12-diagnostics-en-v0.4.0-2026-11-21-213329-4x.png)
+
+Auf der TX16S MK3: [Diagnose-Übersicht](images/screenshots/apmon-color-tx16s-mk3-diagnostics-de-v0.4.0-2026-11-21-213731.png)
+und [Sensorliste](images/screenshots/apmon-color-tx16s-mk3-sensors-de-v0.4.0-2026-11-21-213741.png) bei 800 × 480 Pixeln.
+
+### Zusammenfassung nach dem Entarmen
+
+Unter **Projektmenü → Letzte Armed-Phase** steht die letzte abgeschlossene
+Bilanz. Auf SW über **Telemetrie-Diagnose** hinaus weiterblättern, auf COLOR
+den Eintrag auswählen oder antippen. Die Ansicht öffnet sich beim Entarmen
+nicht automatisch. Die Bilanz bleibt bis zum Neuladen von APMon im Speicher.
+
+- **Armed-Zeit:** Dauer zwischen bestätigtem Armen und Entarmen, auch am
+  Boden. Wurde der Start nicht beobachtet oder gab es eine Lücke im FC-Status,
+  steht `--` statt einer Schätzung.
+- **Messwerte:** Niedrigste Akkuspannung und Spitzenstrom aus frischen
+  Messungen während der Phase. Der Verbrauch ist die Differenz des
+  mAh-Zählers aus Messungen nahe dem Start und Ende (jeweils höchstens drei
+  Sekunden entfernt). Fehlen diese Werte, wechselt die Quelle oder sinkt
+  der Zähler, bleibt der Verbrauch unbekannt.
+- **Maximale relative Höhe:** Standardmäßig `--`. In
+  [`config.lua`](SD/SCRIPTS/APMON/config.lua) `relativeAltitudeSensor` erst
+  dann auf den exakten Sensornamen (z. B. `GAlt`) setzen, wenn der Bezug
+  **relativ zu Home** für dieses Setup geprüft ist. Die Bilanz verwendet
+  keine andere Höhenquelle als Ersatz und schätzt keinen Bodenabstand.
+
+Bei **Unvollständig** zeigt **Details**, warum Werte fehlen. Bereits erfasste
+Messwerte bleiben sichtbar; ein Telemetrieausfall zählt nie als Entarmen.
+
+| GX12 (Englisch) | GX15 |
+| --- | --- |
+| ![Letzte Armed-Phase auf der GX12 mit vier Sekunden Armed-Zeit](images/screenshots/apmon-sw-gx12-summary-en-v0.4.0-2026-11-21-213342-4x.png) | ![Letzte Armed-Phase auf der GX15 mit Armed-Zeit, Akkuspannung, Spitzenstrom und Verbrauch](images/screenshots/apmon-color-gx15-summary-de-v0.4.0-2026-11-21-201654.png) |
+
+[Letzte Armed-Phase auf der TX16S MK3 (800 × 480)](images/screenshots/apmon-color-tx16s-mk3-summary-de-v0.4.0-2026-11-21-213734.png)
+
 ## Sensoren konfigurieren
 
 Die Zuordnung liegt in [config.lua](SD/SCRIPTS/APMON/config.lua).
@@ -442,6 +512,7 @@ Quellensatz noch aktiv ist, insbesondere nach einem FC-Neustart.
 | --- | --- |
 | APMon fehlt in der Auswahl | Paketstruktur prüfen und Sender neu starten. SW: `/SCRIPTS/TELEMETRY/APMon.lua`; COLOR: `/WIDGETS/APMon/main.lua`. |
 | Fehler beim Laden eines Moduls | Gesamtes passendes Paket installieren, nicht nur die Hauptdatei. Alte APMon-`.luac`-Dateien entfernen. |
+| SW meldet `not enough memory` | Aktuelles SW-Paket vollständig installieren, alte APMon-`.luac`-Dateien entfernen und den Sender neu starten. Tritt die Meldung weiter auf, andere Lua-Skripte im Modell vorübergehend deaktivieren und erneut testen. |
 | Nur Modus und RC-Linkqualität kommen an | Zuerst Werte in EdgeTX → Telemetrie prüfen. Fehlen sie dort ebenfalls, liegt das Problem vor APMon. |
 | GPS-Fix / Armed bleiben unbekannt | ELRS-Version, MAVLink-Modus und Passthrough-Empfang prüfen. |
 | Spracheinstellung fehlt im COLOR-Widget | Nach Update neu starten; nötigenfalls Widget entfernen und erneut hinzufügen. |
@@ -558,7 +629,7 @@ am Ende ergänzen, beispielsweise:
     ['Flugmodus'] = 'Mode de vol',
     ['Satelliten'] = 'Satellites',
     ['FC-Meldung / vor %ds'] = 'Message FC / il y a %ds',
-    -- Weitere Schlüssel aus english übersetzen.
+    -- Weitere Schlüssel aus dem Übersetzungskatalog übersetzen.
   },
   directions = { 'N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO' },
 },

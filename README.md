@@ -11,8 +11,8 @@ displays battery readings, flight attitude, GPS status and flight-controller
 messages. It runs as Lua scripts on the radio's SD card: no laptop or
 additional flight-controller script is required during use.
 
-Current project version: **0.3.0**, recorded in [VERSION](VERSION).
-See the [v0.3.0 release notes](releases/v0.3.0.md).
+Current project version: **0.4.0**, recorded in [VERSION](VERSION).
+See the [v0.4.0 release notes](releases/v0.4.0.md).
 
 The GUI supports **English and German**, with English as the default.
 
@@ -53,37 +53,44 @@ does not mean the hardware has been tested.
 Actual captures from the GX12, GX15 and TX16S MK3. The readings show the
 captured state and are not an indication of flight readiness.
 
-**Monochrome — GX12 (128 × 64, APMon v0.3.0)**
+**Monochrome — GX12 (128 × 64, APMon v0.4.0)**
 
 The images are enlarged 4×. The radio clock is enabled on both telemetry pages.
 
-| Overview | Flight data |
+| Overview (German) | Flight data (German) |
 | --- | --- |
-| ![APMon overview in English with the radio clock on the GX12](images/screenshots/apmon-sw-gx12-overview-en-v0.3.0-2026-11-21-141247-4x.png) | ![APMon flight data in English with the radio clock on the GX12](images/screenshots/apmon-sw-gx12-flight-en-v0.3.0-2026-11-21-141243-4x.png) |
+| ![APMon overview in German with the radio clock on the GX12](images/screenshots/apmon-sw-gx12-overview-de-v0.4.0-2026-11-21-213218-4x.png) | ![APMon flight data in German with the radio clock on the GX12](images/screenshots/apmon-sw-gx12-flight-de-v0.4.0-2026-11-21-213221-4x.png) |
 
 | Project menu | FC message list |
 | --- | --- |
-| ![APMon project menu in English with version and clock setting](images/screenshots/apmon-sw-gx12-menu-en-v0.3.0-2000-02-24-225239-4x.png) | ![Scrollable FC message list in English on the GX12](images/screenshots/apmon-sw-gx12-messages-en-v0.3.0-2000-02-24-225259-4x.png) |
+| ![APMon project menu in English with version and clock setting](images/screenshots/apmon-sw-gx12-menu-en-v0.4.0-2026-11-21-213251-4x.png) | ![Scrollable FC message list in English on the GX12](images/screenshots/apmon-sw-gx12-messages-en-v0.4.0-2026-11-21-213253-4x.png) |
 
-**Color display — GX15 (480 × 320, APMon v0.3.0)**
+More GX12 captures: [project menu scrolled to the new entries](images/screenshots/apmon-sw-gx12-menu-en-v0.4.0-2026-11-21-213258-4x.png),
+[Telemetry diagnostics](#telemetry-diagnostics), and
+[Post-disarm summary](#post-disarm-summary).
+
+**Color display — GX15 (480 × 320, APMon v0.4.0)**
 
 | Dashboard with radio clock | Project menu |
 | --- | --- |
-| ![APMon color dashboard in English with a large radio clock centered in the GX15 header](images/screenshots/apmon-color-gx15-overview-en-v0.3.0-2026-11-21-142647.png) | ![APMon project menu in English with the version and clock setting on the GX15](images/screenshots/apmon-color-gx15-menu-en-v0.3.0-2026-11-21-142657.png) |
+| ![APMon color dashboard with the radio clock on the GX15](images/screenshots/apmon-color-gx15-overview-en-v0.4.0-2026-11-21-201623.png) | ![Project menu with v0.4.0, Telemetry diagnostics and Last armed period](images/screenshots/apmon-color-gx15-menu-en-v0.4.0-2026-11-21-201616.png) |
 
 **FC message list — GX15**
 
-![Scrollable FC message list with severity and age on the GX15](images/screenshots/apmon-color-gx15-messages-en-v0.3.0-2026-11-21-142705.png)
+![Scrollable FC message list with severity and age on the GX15](images/screenshots/apmon-color-gx15-messages-en-v0.4.0-2026-11-21-201609.png)
 
-**Color display — TX16S MK3 (800 × 480, APMon v0.3.0)**
+More GX15 captures: [Telemetry diagnostics](#telemetry-diagnostics) and
+[Post-disarm summary](#post-disarm-summary).
 
-| Dashboard with radio clock | Project menu |
+**Color display — TX16S MK3 (800 × 480, APMon v0.4.0)**
+
+| Dashboard | Project menu |
 | --- | --- |
-| ![APMon color dashboard in English with a large radio clock centered in the TX16S MK3 header](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.3.0-2026-11-21-143508.png) | ![APMon project menu in English with the version and clock setting on the TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.3.0-2026-11-21-143522.png) |
+| ![APMon color dashboard in English on the TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.4.0-2026-11-21-213638.png) | ![APMon project menu in English with Telemetry diagnostics and Last armed period](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.4.0-2026-11-21-213655.png) |
 
-**FC message list — TX16S MK3**
+**FC message list — TX16S MK3 (German)**
 
-![FC message list with severity, repeat count and age on the TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-messages-en-v0.3.0-2026-11-21-143526.png)
+![FC message list with severity, repeat count and age on the TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-messages-de-v0.4.0-2026-11-21-213728.png)
 
 **Change language:** On SW, press **ENTER** and select **Language / Sprache**.
 On COLOR, open APMon in full screen and select **Menu → Language**. For a
@@ -99,6 +106,10 @@ persistent COLOR setting, use **Widget settings → Language**.
 - **FC status:** latest text message and last reported EKF source-set change,
   both with their age.
 - **RC link quality:** percentage of received control packets.
+- **Telemetry diagnostics:** check the RC link, EdgeTX sensors and FC status
+  separately.
+- **Last armed period:** review elapsed time and recorded extremes after
+  disarming from the project menu.
 - **Language selection:** on the radio, with a central, extensible language registry.
 
 APMon sends **no flight commands, parameter changes or telemetry requests**.
@@ -117,14 +128,14 @@ SW is designed for 128 × 64 pixels; COLOR needs a widget zone of at least
 440 × 252 pixels. Other resolutions, key mappings, memory budgets and firmware
 versions require separate testing.
 
-| Reference radio | Firmware / validation status |
+| Radio | Versions |
 | --- | --- |
-| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0; UI and several live readings confirmed in practical use |
-| TX15 | EdgeTX 2.12.4, ExpressLRS 4.1.0; color dashboard and full-screen project menu tested at 480 × 320 in English and German with the current source build. Full functional validation not recorded. |
-| TX16S MK3 | EdgeTX 2.12.2, ExpressLRS 4.1.0; color dashboard and full-screen project menu tested at 800 × 480 in English and German with the current source build. Full functional validation not recorded. |
-| GX12 | EdgeTX 2.12.2, ExpressLRS 4.1.0; automated SW tests pass; complete hardware validation after recent fixes is pending |
-| Boxer | Shared SW variant; hardware validation and exact firmware version are pending |
-| Other radios | Potentially compatible when display and API requirements match; not hardware-qualified |
+| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
+| TX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
+| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
+| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
+| Boxer | Hardware testing pending |
+| Other radios | Hardware testing pending |
 
 For the complete feature set, you need:
 
@@ -167,11 +178,15 @@ Expected SD-card layout:
 ```text
 SCRIPTS/
 ├── APMON/
+│   ├── armed_summary.lua
 │   ├── config.lua
 │   ├── core.lua
+│   ├── diagnostics.lua
 │   ├── i18n.lua
+│   ├── mono_tools.lua      # SW package only
 │   ├── pass.lua
 │   ├── project.lua
+│   ├── VERSION
 │   └── LICENSE.txt
 └── TELEMETRY/             # SW package only
     ├── APMon.lua
@@ -347,6 +362,61 @@ received and any consecutive repeat count (`x3`). **RTN** returns to the list.
 `S4` means MAVLink severity 4. The history keeps **12 entries on SW** and
 **32 on COLOR** in memory and clears when APMon reloads.
 
+### Telemetry diagnostics
+
+Open **Telemetry diagnostics** in the project menu. On SW, scroll past
+**Clock** to reveal it. On COLOR, you can also tap the entry. The overview
+separates RC link quality, EdgeTX sensors, FC status packets and FC text
+messages. Only an ArduPilot status packet resets the FC status age; GPS and
+text updates do not count as status packets.
+
+**Sensors** shows each source's name, status and last value accepted by APMon.
+Browse with the wheel or **NEXT/PREV**, or use the touch controls on COLOR.
+After a sensor drops out, its cached value remains visible only as the last
+value, not as live telemetry. Unconfigured sensors are not counted. Valid
+readings are not flight clearance.
+
+| Telemetry diagnostics on the GX15 | Sensor list on the GX15 |
+| --- | --- |
+| ![Telemetry diagnostics showing radio link, sensor and FC status separately](images/screenshots/apmon-color-gx15-diagnostics-en-v0.4.0-2026-11-21-201556.png) | ![Sensor list showing the last readings and their validity](images/screenshots/apmon-color-gx15-sensors-en-v0.4.0-2026-11-21-201559.png) |
+
+**Telemetry diagnostics on the GX12:**
+
+![Telemetry diagnostics on the GX12 showing RC link, sensors and FC status](images/screenshots/apmon-sw-gx12-diagnostics-en-v0.4.0-2026-11-21-213329-4x.png)
+
+On the TX16S MK3: [diagnostics overview](images/screenshots/apmon-color-tx16s-mk3-diagnostics-en-v0.4.0-2026-11-21-213701.png)
+and [sensor list (German)](images/screenshots/apmon-color-tx16s-mk3-sensors-de-v0.4.0-2026-11-21-213741.png) at 800 × 480.
+
+### Post-disarm summary
+
+Open **Project menu → Last armed period** to review the last completed summary.
+On SW, scroll past **Telemetry diagnostics** to find it; on COLOR, select or
+tap the entry. The page never opens automatically on disarm. The summary stays
+in memory until APMon reloads.
+
+- **Time armed:** elapsed time between confirmed arming and disarming,
+  including time on the ground. If the start was not observed or FC status
+  dropped out, APMon shows `--` rather than guessing.
+- **Measurements:** minimum battery voltage and peak current from fresh
+  readings while armed. Charge used is the difference between mAh counter
+  samples within three seconds of the start and end. If those samples are
+  missing, the source changes, or the counter goes backwards, the result is
+  unknown.
+- **Max. relative altitude:** `--` by default. Set `relativeAltitudeSensor` in
+  [`config.lua`](SD/SCRIPTS/APMON/config.lua) to the exact sensor name (e.g.
+  `GAlt`) only after confirming that it reports height **relative to Home**
+  in your setup. The summary does not fall back to another altitude source
+  or estimate ground clearance.
+
+If the summary is **Incomplete**, open **Details** to see why. Observed readings
+remain visible; loss of telemetry is never treated as disarming.
+
+| GX12 | GX15 |
+| --- | --- |
+| ![Last armed period on the GX12 showing four seconds armed](images/screenshots/apmon-sw-gx12-summary-en-v0.4.0-2026-11-21-213342-4x.png) | ![Last armed period on the GX15 showing time armed, battery voltage, peak current and charge used](images/screenshots/apmon-color-gx15-summary-en-v0.4.0-2026-11-21-201634.png) |
+
+[Last armed period on the TX16S MK3 (800 × 480)](images/screenshots/apmon-color-tx16s-mk3-summary-en-v0.4.0-2026-11-21-213717.png)
+
 ## Sensor configuration
 
 Edit [config.lua](SD/SCRIPTS/APMON/config.lua). Mappings are shared across all
@@ -429,6 +499,7 @@ FC restart.
 | --- | --- |
 | APMon is missing from the selection | Verify SD layout and restart. SW: `/SCRIPTS/TELEMETRY/APMon.lua`; COLOR: `/WIDGETS/APMon/main.lua`. |
 | Module load error | Install the complete matching package, not just its main file; remove old APMon `.luac` files. |
+| SW reports `not enough memory` | Install the complete latest SW package, remove old APMon `.luac` files and restart the radio. If it still happens, temporarily disable other Lua scripts in the model and retest. |
 | Only mode and RC link quality work | Check EdgeTX's Telemetry screen first. If readings are absent there too, investigate the upstream telemetry path. |
 | GPS fix / Armed remain unknown | Check ELRS version, MAVLink mode and passthrough reception. |
 | Language option missing on COLOR | Restart; remove and re-add APMon if needed. |
@@ -534,7 +605,7 @@ Append an entry to `languages` in [i18n.lua](SD/SCRIPTS/APMON/i18n.lua):
     ['Flugmodus'] = 'Mode de vol',
     ['Satelliten'] = 'Satellites',
     ['FC-Meldung / vor %ds'] = 'Message FC / il y a %ds',
-    -- Translate additional keys from english.
+    -- Translate additional keys from the catalogue.
   },
   directions = { 'N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO' },
 },

@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/pass.lua
 -- Purpose: Decode ELRS ArduPilot passthrough frames, status text and data freshness.
--- Project version: 0.3.0
+-- Project version: 0.4.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -14,7 +14,10 @@
 -- ELRS 4.1.0 ArduPilot response frames (0x80), little-endian payload.
 -- One shared receiver per loaded widget script; never transmits requests.
 local M = { data = {}, message = nil, ekf = nil }
-local log, head, count, capacity = {}, 0, 0, ... or 12
+local capacity, armedSummary = ...
+capacity = capacity or 12
+local log, head, count = {}, 0, 0
+local statusTimeout = 300
 local function at(index)
   return log[(head - index) % capacity + 1]
 end
@@ -51,7 +54,9 @@ local function item(id, p, start, now)
   -- Extract from individual bytes: reconstructing all 32 bits through powers
   -- creates a float and can round away fix bits on embedded 32-bit Lua builds.
   if id == 0x5001 then
-    M.data.armed = { value = p[start + 1] % 2, time = now }
+    local armed = p[start + 1] % 2
+    M.data.armed = { value = armed, time = now }
+    if armedSummary then armedSummary:observe(armed, now, statusTimeout) end
   elseif id == 0x5002 then
     local base = math.floor(p[start] / 16) % 4
     local fix = base == 3 and 3 + math.floor(p[start + 1] / 64) % 4 or base
@@ -85,12 +90,14 @@ function M.decode(command, p, now)
   end
 end
 function M.poll()
-  if type(crossfireTelemetryPop) ~= 'function' then return end
   local now = getTime()
   if M.last == now then return end
   if M.last and now < M.last then
     M.data, M.message, M.ekf, log, head, count = {}, nil, nil, {}, 0, 0
+    M.last = nil
+    if armedSummary then armedSummary:reset() end
   end
+  if type(crossfireTelemetryPop) ~= 'function' then return end
   M.last = now
   for i = 1, 12 do
     local command, payload = crossfireTelemetryPop()
@@ -98,9 +105,21 @@ function M.poll()
     M.decode(command, payload, now)
   end
 end
-function M.value(key)
+local function status(key)
   local entry, now = M.data[key], getTime()
-  if entry and now >= entry.time and now - entry.time <= 300 then return entry.value end
+  if entry and now >= entry.time then
+    local elapsed = now - entry.time
+    return elapsed <= statusTimeout and 'valid' or 'stale', entry, math.floor(elapsed / 100)
+  end
+  return type(crossfireTelemetryPop) == 'function' and 'unreceived' or 'noapi'
+end
+function M.value(key)
+  local state, entry = status(key)
+  if state == 'valid' then return entry.value end
+end
+function M.status(key)
+  local state, _, age = status(key)
+  return state, age
 end
 function M.age(entry)
   if entry and getTime() >= entry.time then return math.floor((getTime() - entry.time) / 100) end

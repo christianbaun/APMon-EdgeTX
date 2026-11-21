@@ -2,7 +2,7 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: tests/test_deployment.py
 # Purpose: Verify display selection, deployment preview and SD-card file isolation.
-# Project version: 0.3.0
+# Project version: 0.4.0
 # Updated: 2026-11-21
 # Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -21,13 +21,15 @@ from unittest.mock import patch
 from zipfile import ZipFile
 
 import deploy
-from package_sd import COLOR_LOGO, SD_VERSION, build_all, files_for, source_for
+from package_sd import COLOR_LOGO, SD_VERSION, SW_TOOLS, build_all, files_for, source_for
 
 
 class DeploymentTests(unittest.TestCase):
     def test_display_file_sets(self):
         sw, color = set(files_for('sw')), set(files_for('color'))
         shared = {Path('SCRIPTS/APMON/config.lua'), Path('SCRIPTS/APMON/pass.lua'),
+                  Path('SCRIPTS/APMON/diagnostics.lua'),
+                  Path('SCRIPTS/APMON/armed_summary.lua'),
                   Path('SCRIPTS/APMON/project.lua'), SD_VERSION}
         self.assertTrue(shared <= sw & color)
         self.assertIn(Path('SCRIPTS/TELEMETRY/APMon.lua'), sw)
@@ -35,6 +37,8 @@ class DeploymentTests(unittest.TestCase):
         self.assertIn(Path('WIDGETS/APMon/main.lua'), color)
         self.assertIn(COLOR_LOGO, color)
         self.assertNotIn(COLOR_LOGO, sw)
+        self.assertIn(SW_TOOLS, sw)
+        self.assertNotIn(SW_TOOLS, color)
         self.assertFalse(any('TELEMETRY' in p.parts for p in color))
         with self.assertRaises(ValueError):
             files_for('unknown')

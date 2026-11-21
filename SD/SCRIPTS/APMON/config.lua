@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/config.lua
 -- Purpose: Define sensor names, units, conversion factors and value validation limits.
--- Project version: 0.3.0
+-- Project version: 0.4.0
 -- Updated: 2026-11-20
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -14,6 +14,9 @@
 -- Sensor names must match Model > Telemetry. Units must match the labels below.
 -- No FC parameters or model settings are written by this application.
 return {
+  -- Opt in only after confirming the active sensor really gives height above Home.
+  -- Example for the standard ELRS MAVLink build: relativeAltitudeSensor = 'GAlt'.
+  relativeAltitudeSensor = false,
   sensors = {
     voltage = { names = { 'RxBt' }, unit = 'V', decimals = 2, min = 0.1 },
     current = { names = { 'Curr' }, unit = 'A', decimals = 2, min = 0 },

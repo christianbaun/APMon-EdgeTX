@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 0.3.0
+-- Project version: 0.4.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -281,7 +281,7 @@ assert(calls[#calls] == 'Language not saved')
 writeFailure = false
 local rtc = { year = 2026, mon = 11, day = 21, hour = 7, min = 5 }
 getDateTime = function() return rtc end
-reloaded.run(EVT_VIRTUAL_ENTER); reloaded.run(EVT_ROT_LEFT)
+reloaded.run(EVT_VIRTUAL_ENTER); reloaded.run(EVT_ROT_RIGHT); reloaded.run(EVT_ROT_RIGHT)
 assert(drawOf('Clock: Off', 57).flags & INVERS ~= 0)
 assert(drawOf('Language: English', 41) and drawOf('FC messages', 49))
 reloaded.run(EVT_VIRTUAL_ENTER)
@@ -306,7 +306,7 @@ assert(drawOf('--:--', 2))
 getDateTime = nil
 clockReload.run(0)
 assert(drawOf('--:--', 2))
-clockReload.run(EVT_VIRTUAL_ENTER); clockReload.run(EVT_ROT_LEFT)
+clockReload.run(EVT_VIRTUAL_ENTER); clockReload.run(EVT_ROT_RIGHT); clockReload.run(EVT_ROT_RIGHT)
 clockReload.run(EVT_VIRTUAL_ENTER); clockReload.run(EVT_VIRTUAL_EXIT)
 assert(savedLanguage == 'en' and not drawOf('--:--', 2))
 io = sdIO
@@ -505,7 +505,9 @@ assert(warning.y > rectangles[2].h and warning.y + warning.h < assert(drawOf('FC
 getSourceValue = saved
 colorFrame(smallZone, EVT_VIRTUAL_ENTER)
 assertColorMenu('> Language: English', 'FC messages')
-assert(drawOf('Clock: Off') and drawOf('Back')) -- all options fit the minimum full screen
+assert(drawOf('Clock: Off') and drawOf('Last armed period')) -- primary options fit the minimum full screen
+colorFrame(smallZone, EVT_VIRTUAL_PREV)
+assert(drawOf('> Back')) -- Back is reachable when the menu scrolls
 assert(drawOf('APMon').flags & 0xF00 == MIDSIZE)
 assert(bitmapLoads == 1) -- menu refreshes and widget instances share the bitmap
 -- Same menu on the TX16S MK3: large glyphs fit; touch follows moved rows.
@@ -813,4 +815,279 @@ restrictedMono.run(EVT_ROT_RIGHT)
 restrictedMono.run(EVT_VIRTUAL_ENTER)
 restrictedMono.run(EVT_VIRTUAL_ENTER)
 assert(string.find(table.concat(calls,'|'),'Using EKF Source Set 1',1,true))
+
+-- Shared diagnostics: an invalid alias must not hide a valid fallback. A cached
+-- value is shown only for its own sensor name and never becomes a live reading.
+local aliases = core.new({sensors = {voltage = {names = {'A', 'B'}, unit = 'V', min = 0.1}}})
+data = {A = {value = 0}, B = {value = 14}}
+aliases:sample(true)
+local a = aliases.sensorList[1]
+assert(a.name == 'B' and a.state == 'valid' and aliases:formatSensor(a) == '14 V')
+data.A, data.B.current = nil, false
+aliases:sample(true)
+assert(a.name == 'B' and a.state == 'stale' and aliases:formatSensor(a) == '14 V')
+assert(aliases.values.voltage == nil)
+data.A = {value = 0}
+aliases:sample(true)
+assert(a.name == 'A' and a.state == 'invalid' and aliases:formatSensor(a) == '--')
+local originalSource = getSourceValue
+getSourceValue = function() return 15 end -- older API does not supply a current flag
+aliases:sample(true)
+assert(a.name == 'A' and a.state == 'unknown' and aliases.values.voltage == nil)
+getSourceValue = originalSource
+data.A, data.B = nil, nil
+aliases:sample(true)
+assert(a.name == 'B' and a.state == 'missing' and aliases:formatSensor(a) == '14 V')
+
+-- Exercise both displays against real decoder/sampler logic, not mock summaries.
+data = {
+  Alt = {value = 7.5}, GPS = {value = {lat = 49.1, lon = 8.1}},
+  RQly = {value = 98}, Curr = {value = 0},
+}
+incoming = {single(0x5001, 0), message('Sensoren')}
+now = now + 20
+restricted.crossfireTelemetryPop = nil
+local monoDiag = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
+monoDiag.run(EVT_VIRTUAL_ENTER); monoDiag.run(EVT_ROT_LEFT); monoDiag.run(EVT_ROT_LEFT)
+assert(drawOf('Telemetry diagnostics', 57).flags & INVERS ~= 0)
+monoDiag.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Telemetry diagnostics', 1) and drawOf('98 %', 11) and drawOf('4/16 valid', 19))
+assert(drawOf('Valid 0s', 27) and drawOf('Not found: VSpd', 43))
+monoDiag.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Sensors', 1) and drawOf('Alt', 11) and drawOf('7.5 m', 43))
+data.Alt.current = false
+now = now + 20
+monoDiag.run(0)
+assert(drawOf('Stale', 21) and drawOf('Last value:', 33) and drawOf('7.5 m', 43))
+for i = 1, 3 do monoDiag.run(EVT_ROT_RIGHT) end
+assert(drawOf('GPS', 11) and drawOf('Lat 49.100000', 41) and drawOf('Lon 8.100000', 49))
+incoming = {single(0x5002, 48), message('Fresh FC text')}
+now = now + 500
+monoDiag.run(EVT_VIRTUAL_EXIT)
+assert(drawOf('Stale 5s', 27) and drawOf('0s ago', 35)) -- GPS/text are not an AP_STATUS heartbeat
+monoDiag.run(EVT_VIRTUAL_EXIT)
+assert(drawOf('Telemetry diagnostics', 57) and drawOf('Clock: Off', 49))
+getGeneralSettings = function() return { language = 'EN' } end
+io = {open = function(path)
+  if path == '/SCRIPTS/APMON/mono.cfg' then return {} end
+  return sdIO.open(path, 'r')
+end, close = function(f) if type(f) == 'userdata' then sdIO.close(f) end end,
+read = function(f, n) return type(f) == 'userdata' and sdIO.read(f, n) or 'de' end}
+local monoDE = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
+crossfireTelemetryPop = nil
+monoDE.run(EVT_VIRTUAL_ENTER); monoDE.run(EVT_ROT_LEFT); monoDE.run(EVT_ROT_LEFT); monoDE.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Telemetrie-Diagnose', 1) and drawOf('3/16 gueltig', 19) and drawOf('API fehlt', 27))
+assert(drawOf('RTN: Menue', 57))
+getGeneralSettings, io = nil, sdIO
+
+local diagWidget = loadScript('/WIDGETS/APMon/main.lua')()
+local function diagFrame(w, event, x, y)
+  calls, draws, rectangles, bitmaps = {}, {}, {}, {}
+  diagWidget.refresh(w, event, x and {x=x,y=y})
+end
+local function diagTap(w, label)
+  for i = #draws, 1, -1 do
+    local d = draws[i]
+    if d.text == label then diagFrame(w, EVT_TOUCH_TAP, d.x, d.y); return end
+  end
+  error('Missing button: ' .. label)
+end
+colorDisplay, LCD_W, LCD_H, lcd.sizeText = true, 480, 320, measure
+local z = {x=0,y=0,w=480,h=272}
+incoming = {single(0x5001, 0), message('Sensoren')}
+crossfireTelemetryPop = function()
+  local p = table.remove(incoming, 1)
+  if p then return 0x80, p end
+end
+local diagColor = diagWidget.create(z, {Language = 1})
+data.Alt.current = true
+diagFrame(diagColor, EVT_VIRTUAL_ENTER)
+data.Alt.current = false
+now = now + 20
+diagTap(diagColor, 'Telemetry diagnostics')
+assert(drawOf('Telemetry diagnostics', 8) and drawOf('98 %') and drawOf('3/16 valid'))
+assert(drawOf('Valid') and drawOf('Sensoren')) -- incoming text stays unchanged
+diagTap(diagColor, 'Sensors')
+assert(drawOf('Sensors', 8) and drawOf('Alt') and drawOf('7.5 m'))
+assert(drawOf('Stale') and drawOf('Not found'))
+local oldRange = assert(drawOf('1–6 / 16'))
+diagTap(diagColor, 'Next')
+assert(not drawOf(oldRange.text) and drawOf('Previous'))
+diagTap(diagColor, 'Back')
+assert(drawOf('Telemetry diagnostics', 8))
+now = now + 301
+diagFrame(diagColor, 0)
+assert(drawOf('Stale') and drawOf('3s ago'))
+diagFrame(diagColor, EVT_VIRTUAL_EXIT)
+assert(drawOf('> Telemetry diagnostics'))
+getSourceValue = nil
+for _, dims in ipairs({{440,252}, {800,480}}) do
+  LCD_W, LCD_H = dims[1], dims[2]
+  local germanDiag = diagWidget.create(z, {Language = 2})
+  diagFrame(germanDiag, EVT_VIRTUAL_ENTER)
+  for i = 1, 3 do diagFrame(germanDiag, EVT_VIRTUAL_NEXT) end
+  diagFrame(germanDiag, EVT_VIRTUAL_ENTER)
+  assert(drawOf('Telemetrie-Diagnose', 8) and drawOf('API fehlt') and drawOf('Veraltet'))
+  diagTap(germanDiag, 'Sensoren')
+  assert(drawOf('Sensoren', 8) and drawOf('Letzter Wert') and drawOf('API fehlt'), table.concat(calls, ' | '))
+  diagFrame(germanDiag, EVT_VIRTUAL_EXIT)
+  diagTap(germanDiag, 'Zurück')
+  assert(drawOf('> Telemetrie-Diagnose'))
+end
+getSourceValue = originalSource
+
+-- Armed summaries use confirmed status edges, only fresh measurements, and a
+-- verified relative-altitude source. Neither an RC switch nor stale values count.
+local armedSummary = loadScript('/SCRIPTS/APMON/armed_summary.lua')()
+local summaryTracker = armedSummary.new('GAlt')
+local function observe(tracker, value, tick) tracker:observe(value, tick, 300) end
+local readings = {voltage = 15.8, current = 2, used = 100, altitude = 430, gpsaltitude = -2}
+local sources = {
+  voltage={name='RxBt', fresh=true}, current={name='Curr', fresh=true},
+  used={name='Capa', fresh=true}, altitude={name='Alt', fresh=true}, gpsaltitude={name='GAlt', fresh=true},
+}
+observe(summaryTracker, 0, 0)
+observe(summaryTracker, 1, 100)
+summaryTracker:sample(100, 1, readings, sources)
+readings.voltage, readings.current, readings.used, readings.gpsaltitude = 14.5, 22, 120, -1
+summaryTracker:sample(100, 1, readings, sources) -- duplicate widget callback; not another sample
+assert(summaryTracker.active.voltage == 15.8)
+observe(summaryTracker, 1, 200)
+summaryTracker:sample(200, 1, readings, sources)
+readings.voltage, readings.current, readings.used, readings.gpsaltitude = 1, 99, 140, 99
+for _, source in pairs(sources) do source.fresh = false end
+summaryTracker:sample(250, 1, readings, sources) -- still current, but held in EdgeTX
+observe(summaryTracker, 0, 300)
+local phase = assert(summaryTracker.last)
+assert(phase.duration == 2 and phase.voltage == 14.5 and phase.current == 22 and phase.used == 20)
+assert(phase.altitude == -1 and not phase.partial)
+observe(summaryTracker, 1, 320)
+assert(summaryTracker.last == phase) -- previous summary stays available during the next run
+summaryTracker:reset()
+observe(summaryTracker, 1, 400)
+summaryTracker:sample(400, 1, readings, sources)
+observe(summaryTracker, 0, 500)
+assert(summaryTracker.last.partial and summaryTracker.last.duration == nil and summaryTracker.last.started == nil)
+for _, source in pairs(sources) do source.fresh = true end
+summaryTracker:reset()
+observe(summaryTracker, 0, 500)
+observe(summaryTracker, 1, 600)
+summaryTracker:sample(600, 1, readings, sources)
+summaryTracker:sample(901, nil, readings, sources)
+assert(summaryTracker.active.statusGap and not summaryTracker.last)
+observe(summaryTracker, 0, 1000)
+assert(summaryTracker.last.partial and summaryTracker.last.duration == nil and summaryTracker.last.used == nil)
+summaryTracker:reset()
+observe(summaryTracker, 0, 0)
+observe(summaryTracker, 1, 500) -- disarmed baseline was already stale when armed first arrived
+observe(summaryTracker, 0, 600)
+assert(summaryTracker.last.partial and not summaryTracker.last.duration)
+summaryTracker:reset()
+observe(summaryTracker, 0, 0)
+observe(summaryTracker, 1, 100)
+summaryTracker:sample(100, 1, readings, sources)
+readings.used = 0
+summaryTracker:sample(200, 1, readings, sources)
+observe(summaryTracker, 0, 300)
+assert(summaryTracker.last.counterProblem and not summaryTracker.last.used and summaryTracker.last.duration == 2)
+summaryTracker:reset()
+observe(summaryTracker, 0, 0)
+observe(summaryTracker, 1, 100)
+summaryTracker:sample(100, 1, readings, sources)
+observe(summaryTracker, 0, 200)
+assert(summaryTracker.last.duration == 1 and not summaryTracker.last.used) -- no end sample
+
+-- Sweep a real disarm sequence through the SW and COLOR entry points.
+local function reportStatus(value)
+  now = now + 100
+  incoming = {single(0x5001, value == 1 and 256 or 0)}
+end
+local function prepareFlight()
+  data = {RxBt={value=15.8}, Curr={value=2}, Capa={value=0}, GAlt={value=25}}
+end
+local function changeFlight()
+  data.RxBt.value, data.Curr.value, data.Capa.value = 14.5, 22, 20
+end
+prepareFlight()
+colorDisplay, LCD_W, LCD_H, lcd.sizeText = false, 128, 64, nil
+local summarySW = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
+summarySW.run(EVT_VIRTUAL_ENTER); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Last armed period', 1) and drawOf('No summary yet'))
+summarySW.run(EVT_VIRTUAL_EXIT); summarySW.run(EVT_VIRTUAL_EXIT)
+reportStatus(0); summarySW.background()
+reportStatus(1); summarySW.background()
+changeFlight(); reportStatus(1); summarySW.background()
+reportStatus(0); summarySW.run(0)
+assert(drawOf('APMon Overview', 2) and drawOf('DISARMED', 27)) -- never opens the menu automatically
+summarySW.run(EVT_VIRTUAL_ENTER); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Last armed period') and drawOf('Time armed', 10) and drawOf('00:02', 10))
+assert(drawOf('14.50 V', 18) and drawOf('22.0 A', 26) and drawOf('--', 34) and drawOf('20 mAh', 42))
+assert(drawOf('Complete', 50)) -- height is optional and unverified GAlt is not shown
+summarySW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Summary details') and drawOf('No rel. altitude source'))
+summarySW.run(EVT_VIRTUAL_EXIT); summarySW.run(EVT_VIRTUAL_EXIT)
+summarySW.run(EVT_ROT_RIGHT); summarySW.run(EVT_VIRTUAL_ENTER)
+summarySW.run(EVT_ROT_RIGHT); summarySW.run(EVT_VIRTUAL_ENTER) -- select German
+summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Letzte Armed-Phase') and drawOf('Armed-Zeit', 10) and drawOf('Vollständig', 50))
+
+for _, spec in ipairs({{440,252,1}, {480,320,2}, {800,480,2}}) do
+  colorDisplay, LCD_W, LCD_H, lcd.sizeText = true, spec[1], spec[2], measure
+  local summaryWidget = loadScript('/WIDGETS/APMon/main.lua')()
+  local w = summaryWidget.create({x=0,y=0,w=LCD_W,h=LCD_H}, {Language=spec[3]})
+  local other = summaryWidget.create({x=0,y=0,w=LCD_W,h=LCD_H}, {Language=spec[3]})
+  local function frame(event, touch)
+    calls, draws, rectangles, bitmaps = {}, {}, {}, {}
+    summaryWidget.refresh(w, event, touch)
+  end
+  prepareFlight()
+  if spec[3] == 1 then reportStatus(0); summaryWidget.background(w) end
+  reportStatus(1); summaryWidget.background(other)
+  changeFlight(); reportStatus(1); summaryWidget.background(w)
+  reportStatus(0); frame(0)
+  assert(drawOf('APMon', 8) and drawOf('DISARMED'))
+  frame(EVT_VIRTUAL_ENTER)
+  local title = spec[3] == 1 and 'Last armed period' or 'Letzte Armed-Phase'
+  local option = assert(drawOf(title))
+  frame(EVT_TOUCH_TAP, {x=option.x,y=option.y})
+  assert(drawOf(title, 8) and drawOf('14.50 V') and drawOf('22.0 A'))
+  if spec[3] == 1 then
+    assert(drawOf('Complete') and drawOf('00:02') and drawOf('20 mAh'))
+  else
+    assert(drawOf('Unvollständig') and drawOf('Armed-Zeit') and not drawOf('00:02'))
+  end
+  local details = assert(drawOf('Details'))
+  frame(EVT_TOUCH_TAP, {x=details.x,y=details.y})
+  assert(drawOf(spec[3] == 1 and 'Summary details' or 'Bilanzdetails', 8))
+  if spec[3] == 2 then assert(drawOf('Start nicht erfasst')) end
+  frame(EVT_VIRTUAL_EXIT)
+  assert(drawOf(title, 8))
+  frame(EVT_VIRTUAL_EXIT)
+  assert(drawOf('> ' .. title))
+end
+-- SW must reach the dashboard without loading either optional view module.
+-- If the allocator rejects a tool, RTN still returns and a later attempt can succeed.
+colorDisplay, LCD_W, LCD_H, lcd.sizeText = false, 128, 64, nil
+local attempted, blockTools = {}, true
+local lowMemory = setmetatable({}, {__index = restricted})
+lowMemory.loadScript = function(path)
+  local name = string.match(path, '/([^/]+)%.lua$')
+  attempted[name] = (attempted[name] or 0) + 1
+  if name == 'mono_tools' and blockTools then return nil, 'not enough memory' end
+  return assert(loadfile(root .. path, 't', lowMemory))
+end
+local lowSW = lowMemory.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
+lowSW.run(0)
+assert(drawOf('APMon Overview', 2) and not attempted.diagnostics and not attempted.mono_tools)
+lowSW.run(EVT_VIRTUAL_ENTER); lowSW.run(EVT_ROT_LEFT); lowSW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Not enough memory') and attempted.mono_tools == 1 and not attempted.diagnostics)
+lowSW.run(0)
+assert(attempted.mono_tools == 1) -- do not retry every frame
+lowSW.run(EVT_VIRTUAL_EXIT)
+assert(drawOf('Last armed period', 57))
+blockTools = false
+lowSW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('No summary yet') and attempted.mono_tools == 2)
+lowSW.run(EVT_VIRTUAL_EXIT); lowSW.run(EVT_ROT_LEFT); lowSW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Telemetry diagnostics', 1) and attempted.mono_tools == 3 and attempted.diagnostics == 1)
 print('OK: sensor validity, stale data, read-only, layouts, bilingual menus, diagnostics, passthrough, restricted mono Lua')
