@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 0.7.0
+-- Project version: 0.8.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -854,7 +854,7 @@ for i = 1, 3 do monoDiag.run(EVT_ROT_LEFT) end
 assert(drawOf('Telemetry diagnostics', 49).flags & INVERS ~= 0)
 monoDiag.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Telemetry diagnostics', 1) and drawOf('98 %', 11) and drawOf('4/16 valid', 19))
-assert(drawOf('Valid 0s', 27) and drawOf('Not found: VSpd', 43))
+assert(drawOf('Valid 0s', 27) and drawOf('Not found: VSpd', 42))
 monoDiag.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Sensors', 1) and drawOf('Alt', 11) and drawOf('7.5 m', 43))
 data.Alt.current = false
@@ -881,7 +881,7 @@ monoDE.run(EVT_VIRTUAL_ENTER)
 for i = 1, 3 do monoDE.run(EVT_ROT_LEFT) end
 monoDE.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Telemetrie-Diagnose', 1) and drawOf('3/16 gueltig', 19) and drawOf('API fehlt', 27))
-assert(drawOf('RTN: Menue', 57))
+assert(drawOf('Bericht speichern', 57))
 getGeneralSettings, io = nil, sdIO
 
 local diagWidget = loadScript('/WIDGETS/APMon/main.lua')()
@@ -964,7 +964,7 @@ summaryTracker:sample(250, 1, readings, sources) -- still current, but held in E
 observe(summaryTracker, 0, 300)
 local phase = assert(summaryTracker.last)
 assert(phase.duration == 2 and phase.voltage == 14.5 and phase.current == 22 and phase.used == 20)
-assert(phase.altitude == -1 and not phase.partial)
+assert(phase.altitude == -1 and phase.lq == nil and not phase.partial)
 observe(summaryTracker, 1, 320)
 assert(summaryTracker.last == phase) -- previous summary stays available during the next run
 summaryTracker:reset()
@@ -1003,6 +1003,35 @@ observe(summaryTracker, 0, 200)
 assert(summaryTracker.last.duration == 1 and not summaryTracker.last.used) -- no end sample
 
 do
+  local tracker = armedSummary.new()
+  local lqSource = {lq={name='RQly',fresh=true}}
+  local summary = loadScript('/SCRIPTS/APMON/summary_view.lua')()
+  observe(tracker, 0, 0)
+  tracker:sample(20, 0, {lq=0}, lqSource)
+  observe(tracker, 1, 100)
+  tracker:sample(100, 1, {lq=92}, lqSource)
+  tracker:sample(120, 1, {lq=81}, lqSource)
+  tracker:sample(140, 1, {}, lqSource) -- unavailable is not zero
+  lqSource.lq.fresh = false
+  tracker:sample(160, 1, {lq=15}, lqSource)
+  lqSource.lq.fresh = true
+  tracker:sample(180, 1, {lq=96}, lqSource)
+  tracker:sample(420, nil, {lq=0}, lqSource) -- FC status unknown
+  observe(tracker, 0, 440)
+  assert(tracker.last.lq == 81 and tracker.last.gaps[1] == 1)
+  assert(summary.rows(tracker.last)[2][2] == '81 %')
+  observe(tracker, 1, 460)
+  tracker:sample(460, 1, {lq=0}, lqSource) -- explicitly received zero is valid
+  tracker:sample(480, 1, {lq=95}, lqSource)
+  observe(tracker, 0, 500)
+  assert(tracker.last.lq == 0 and summary.rows(tracker.last)[2][2] == '0 %')
+  observe(tracker, 1, 520)
+  tracker:sample(520, 1, {}, lqSource)
+  observe(tracker, 0, 540)
+  assert(tracker.last.lq == nil and summary.rows(tracker.last)[2][2] == '--')
+end
+
+do
   local t = armedSummary.new('GAlt')
   observe(t, 0, 0)
   observe(t, 1, 100)
@@ -1033,10 +1062,11 @@ local function reportStatus(value)
   incoming = {single(0x5001, value == 1 and 256 or 0)}
 end
 local function prepareFlight()
-  data = {RxBt={value=15.8}, Curr={value=2}, Capa={value=0}, GAlt={value=25}}
+  data = {RxBt={value=15.8}, Curr={value=2}, Capa={value=0}, GAlt={value=25}, RQly={value=96}}
 end
 local function changeFlight()
   data.RxBt.value, data.Curr.value, data.Capa.value = 14.5, 22, 20
+  data.RQly.value = 82
 end
 local function flightWithGaps(background)
   prepareFlight()
@@ -1065,15 +1095,17 @@ reportStatus(0); summarySW.run(0)
 assert(drawOf('APMon Overview', 2) and drawOf('DISARMED', 27)) -- never opens the menu automatically
 summarySW.run(EVT_VIRTUAL_ENTER); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Last armed period') and drawOf('Time armed', 10) and drawOf('00:02', 10))
-assert(drawOf('14.50 V', 18) and drawOf('22.0 A', 26) and drawOf('--', 34) and drawOf('20 mAh', 42))
-assert(drawOf('Complete', 50)) -- height is optional and unverified GAlt is not shown
+assert(drawOf('Min. RC LQ', 17) and drawOf('82 %', 17))
+assert(drawOf('14.50 V', 24) and drawOf('22.0 A', 31) and drawOf('--', 38) and drawOf('20 mAh', 45))
+assert(drawOf('ENT: details', 57) and drawOf('Complete', 57)) -- all values and controls on the same screen
 summarySW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Summary details') and drawOf('No rel. altitude source'))
 summarySW.run(EVT_VIRTUAL_EXIT); summarySW.run(EVT_VIRTUAL_EXIT)
 summarySW.run(EVT_ROT_RIGHT); summarySW.run(EVT_ROT_RIGHT); summarySW.run(EVT_VIRTUAL_ENTER)
 summarySW.run(EVT_ROT_RIGHT); summarySW.run(EVT_VIRTUAL_ENTER) -- select German
 summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
-assert(drawOf('Letzte Armed-Phase') and drawOf('Armed-Zeit', 10) and drawOf('Vollständig', 50))
+assert(drawOf('Letzte Armed-Phase') and drawOf('Armed-Zeit', 10) and drawOf('Vollständig', 57))
+assert(drawOf('RC-LQ min.', 17) and drawOf('82 %', 17))
 
 for _, spec in ipairs({{440,252,1}, {480,320,2}, {800,480,2}}) do
   colorDisplay, LCD_W, LCD_H, lcd.sizeText = true, spec[1], spec[2], measure
@@ -1095,12 +1127,18 @@ for _, spec in ipairs({{440,252,1}, {480,320,2}, {800,480,2}}) do
   local option = assert(drawOf(title))
   frame(EVT_TOUCH_TAP, {x=option.x,y=option.y})
   assert(drawOf(title, 8) and drawOf('14.50 V') and drawOf('22.0 A'))
+  local lq = assert(drawOf(spec[3] == 1 and 'Min. RC LQ' or 'RC-LQ min.'))
+  assert(drawOf('82 %').y > lq.y and lq.y == drawOf(spec[3] == 1 and 'Time armed' or 'Armed-Zeit').y)
   if spec[3] == 1 then
     assert(drawOf('Complete') and drawOf('00:02') and drawOf('20 mAh'))
   else
     assert(drawOf('Unvollständig') and drawOf('Armed-Zeit') and not drawOf('00:02'))
   end
   local details = assert(drawOf('Details'))
+  for _, label in ipairs({'82 %', '14.50 V', '22.0 A', '--'}) do
+    local drawn = assert(drawOf(label))
+    assert(drawn.y + drawn.h <= details.y)
+  end
   frame(EVT_TOUCH_TAP, {x=details.x,y=details.y})
   assert(drawOf(spec[3] == 1 and 'Summary details' or 'Bilanzdetails', 8))
   if spec[3] == 2 then assert(drawOf('Start nicht erfasst')) end
@@ -1414,4 +1452,142 @@ do
     assert(drawOf('> ' .. title))
   end
 end
-print('OK: sensor validity, GPS details, armed-summary gaps, stale data, read-only, layouts, bilingual menus, diagnostics, passthrough, restricted mono Lua')
+do
+  local path = '/APMon-report.txt'
+  local opens, closes, body, failure, preference = 0, 0, nil, nil, nil
+  local originalIO, originalFstat, originalVersion = io, fstat, getVersion
+  local reportFile, prefs = {}, {}
+  io = {
+    open = function(name, mode)
+      if name == '/SCRIPTS/APMON/VERSION' then return sdIO.open(name, mode) end
+      if name == '/SCRIPTS/APMON/mono.cfg' and mode == 'r' then return preference and prefs end
+      assert(name == path and mode == 'w')
+      opens = opens + 1
+      if failure == 'open' then return nil, 'open failed' end
+      body = ''
+      return reportFile
+    end,
+    read = function(file, n) return file == prefs and preference or sdIO.read(file, n) end,
+    write = function(file, text)
+      assert(file == reportFile)
+      if failure == 'write' then return nil, 'card full' end
+      body = body .. text
+      return file
+    end,
+    close = function(file)
+      if file == prefs then return end
+      if file ~= reportFile then return sdIO.close(file) end
+      closes = closes + 1
+      if failure == 'close' then return nil, 'I/O error' end
+      -- EdgeTX's io.close has no return values.
+    end,
+  }
+  getVersion = function() return '2.12.5', 'test-radio' end
+  fstat = function(name)
+    assert(name == path)
+    return {size = failure == 'size' and #body - 1 or #body}
+  end
+  local sensitive = 'Lat 46.123456 Lon -12.765432'
+  local function prepare()
+    now = now + 20
+    data = {GPS={value={lat=55.555555,lon=66.666666}}, Hdg={value=189}}
+    local packets = {single(0x5001, 0), message(sensitive, 4), message(sensitive, 4)}
+    crossfireTelemetryPop = function()
+      local p = table.remove(packets, 1)
+      if p then return 0x80, p end
+    end
+  end
+  local function has(text) return body and string.find(body, text, 1, true) end
+  local function verify(en, full)
+    assert(has('APMon ' .. versionLabel) and has('EdgeTX: 2.12.5 (test-radio)'))
+    assert(has(en and 'Mapping / Detected / Status' or 'Zuordnung / Erkannt / Status'))
+    assert(has(en and 'gps: GPS / GPS / Valid' or 'gps: GPS / GPS / Gültig'))
+    assert(has(en and 'current: Curr / -- / Not found' or 'current: Curr / -- / Nicht gefunden'))
+    assert(has(en and 'S4 | 0s ago | x2' or 'S4 | vor 0s | x2'))
+    assert(not has('55.555555') and not has('66.666666') and not has('189 deg'))
+    assert(not not has(sensitive) == full)
+  end
+  colorDisplay, LCD_W, LCD_H, lcd.sizeText = false, 128, 64, nil
+  for _, en in ipairs({true, false}) do
+    preference = en and 'en' or 'de'
+    prepare()
+    local sw = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
+    local function menu()
+      sw.run(EVT_VIRTUAL_ENTER)
+      for i = 1, 3 do sw.run(EVT_ROT_LEFT) end
+      sw.run(EVT_VIRTUAL_ENTER)
+      sw.run(EVT_ROT_RIGHT)
+      assert(drawOf(en and 'Save report' or 'Bericht speichern', 57).flags & INVERS ~= 0)
+    end
+    local before = opens
+    menu()
+    sw.run(EVT_VIRTUAL_ENTER); sw.run(0)
+    assert(drawOf(en and 'Without FC text' or 'Ohne FC-Klartext', 37).flags & INVERS ~= 0)
+    assert(drawOf(path, 11) and opens == before)
+    sw.run(EVT_VIRTUAL_EXIT); assert(opens == before)
+    sw.run(EVT_VIRTUAL_ENTER); assert(opens == before)
+    sw.run(EVT_VIRTUAL_ENTER)
+    assert(drawOf(en and 'Report saved' or 'Bericht gespeichert', 11) and drawOf(path, 20))
+    verify(en, false)
+    sw.run(EVT_VIRTUAL_ENTER); sw.run(0); assert(opens == before + 1)
+    sw.run(EVT_VIRTUAL_EXIT); sw.run(EVT_VIRTUAL_ENTER)
+    sw.run(EVT_ROT_RIGHT); sw.run(EVT_VIRTUAL_ENTER)
+    verify(en, true)
+    sw.run(EVT_VIRTUAL_EXIT); sw.run(EVT_VIRTUAL_ENTER)
+    assert(drawOf(en and 'Without FC text' or 'Ohne FC-Klartext', 37).flags & INVERS ~= 0)
+  end
+  for _, spec in ipairs({{440,252,1}, {480,320,2}, {800,480,1}}) do
+    colorDisplay, LCD_W, LCD_H, lcd.sizeText = true, spec[1], spec[2], measure
+    prepare()
+    local app = loadScript('/WIDGETS/APMon/main.lua')()
+    local w = app.create({x=0,y=0,w=LCD_W,h=LCD_H}, {Language=spec[3]})
+    local function frame(event, label)
+      local tap = label and assert(drawOf(label), label)
+      calls, draws, rectangles, bitmaps = {}, {}, {}, {}
+      app.refresh(w, event, tap and {x=tap.x,y=tap.y})
+    end
+    local en = spec[3] == 1
+    local action, back = en and 'Save report' or 'Bericht speichern', en and 'Back' or 'Zurück'
+    local before = opens
+    frame(EVT_VIRTUAL_ENTER)
+    for i = 1, 3 do frame(EVT_VIRTUAL_NEXT) end
+    frame(EVT_VIRTUAL_ENTER)
+    frame(EVT_TOUCH_TAP, action)
+    assert(drawOf(path) and opens == before)
+    frame(EVT_TOUCH_TAP, back); assert(opens == before)
+    frame(EVT_VIRTUAL_ENTER) -- report still selected in diagnostics
+    frame(EVT_TOUCH_TAP, en and 'Save: Without FC text' or 'Speichern: Ohne FC-Klartext')
+    assert(drawOf(en and 'Report saved' or 'Bericht gespeichert') and drawOf(path))
+    verify(en, false)
+    frame(EVT_VIRTUAL_ENTER); frame(EVT_VIRTUAL_ENTER)
+    frame(EVT_VIRTUAL_NEXT); frame(EVT_VIRTUAL_ENTER)
+    verify(en, true)
+    for _, mode in ipairs({'open','write','close','size'}) do
+      frame(EVT_VIRTUAL_ENTER); frame(EVT_VIRTUAL_ENTER)
+      local wasClosed = closes
+      failure = mode
+      frame(EVT_VIRTUAL_ENTER)
+      assert(drawOf(en and 'Write failed' or 'Schreibfehler') and not drawOf(path))
+      assert(closes == wasClosed + (mode == 'open' and 0 or 1))
+    end
+    failure = nil
+  end
+  local rx = loadScript('/SCRIPTS/APMON/pass.lua')(12)
+  local cfg = loadScript('/SCRIPTS/APMON/config.lua')()
+  local mon = core.new(cfg)
+  cfg.sensors.current.names = {'Missing', 'Curr'}
+  data.Curr = {value=7.25}
+  mon:sample(true)
+  for i = 1, 10 do
+    rx.decode(0x80, message('Report message ' .. i, 6), now)
+  end
+  rx.decode(0x80, single(0x5001, 0), now)
+  rx.decode(0x80, single(0x5001, 256), now)
+  assert(loadScript('/SCRIPTS/APMON/diagnostic_report.lua')(
+    path, versionLabel, cfg, mon, rx, function(key) return key end, true))
+  assert(has('current: Missing, Curr / Curr / Gültig'))
+  assert(has('Report message 10') and has('Report message 3') and not has('Report message 2'))
+  assert(not has('[ARMED]') and not has('7.25'))
+  io, fstat, getVersion = originalIO, originalFstat, originalVersion
+end
+print('OK: sensors, GPS, armed-summary gaps, bilingual diagnostic reports, layouts, passthrough, restricted mono Lua')

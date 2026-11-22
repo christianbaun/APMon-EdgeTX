@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/mono_summary.lua
 -- Purpose: Draw the optional SW armed-summary screens on demand.
--- Project version: 0.7.0
+-- Project version: 0.8.0
 -- Updated: 2026-11-22
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -34,13 +34,14 @@ return function(view, width, page, text)
     if phase.gaps then text(50, monoText('Kein Beleg für RC-Ausfall')) end
     if #notes > 5 then rightText(right, 57, page .. '/2', small) end
   else
-    for i, row in ipairs(ui.rows) do field(2, right, 10 + (i - 1) * 8, row[1], row[2]) end
-    text(50, monoText(phase.partial and 'Unvollständig' or 'Vollständig'))
+    for i, row in ipairs(ui.rows) do field(2, right, 10 + (i - 1) * 7, row[1], row[2]) end
   end
   if detail then
     text(57, tr('RTN: Bilanz'))
+  elseif phase then
+    text(57, tr('ENT: Details'))
+    rightText(right, 57, monoText(phase.partial and 'Unvollständig' or 'Vollständig'), small)
   else
-    if phase then text(57, tr('ENT: Details')) end
     rightText(right, 57, monoText('RTN: Menü'), small)
   end
 end

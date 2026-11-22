@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/summary_view.lua
 -- Purpose: Format the armed summary and its data-gap notes for both displays.
--- Project version: 0.7.0
+-- Project version: 0.8.0
 -- Updated: 2026-11-22
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -27,7 +27,8 @@ function M.rows(phase)
     end
   end
   return {
-    {'Armed-Zeit', time}, {'Akku min.', number(phase.voltage, '%.2f V')},
+    {'Armed-Zeit', time}, {'RC-LQ min.', number(phase.lq, '%.0f %%')},
+    {'Akku min.', number(phase.voltage, '%.2f V')},
     {'Strom max.', number(phase.current, '%.1f A')},
     {'Höhe rel. max.', number(phase.altitude, '%.1f m')},
     {'Akkuverbrauch', number(phase.used, '%.0f mAh')},

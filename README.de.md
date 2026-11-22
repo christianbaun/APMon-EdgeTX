@@ -14,8 +14,8 @@ vollständigen MAVLink-Datenstrom. Die Anwendung besteht aus Lua-Skripten auf de
 SD-Karte und benötigt zur Laufzeit weder einen Laptop noch ein zusätzliches
 Skript im Flugcontroller.
 
-Der aktuelle Projektstand ist **Version 0.7.0**. Die Versionsnummer steht in
-[VERSION](VERSION). Siehe [Release-Notizen zu v0.7.0](releases/v0.7.0.md).
+Der aktuelle Projektstand ist **Version 0.8.0**. Die Versionsnummer steht in
+[VERSION](VERSION). Siehe [Release-Notizen zu v0.8.0](releases/v0.8.0.md).
 
 Die GUI unterstützt **Englisch und Deutsch**. Englisch ist die Standardsprache.
 
@@ -110,14 +110,15 @@ Language** auswählen. Auf COLOR-Displays APMon im Vollbild öffnen und
   jeweils mit Alter der Meldung.
 - **RC-Linkqualität:** Anteil empfangener Steuerpakete in Prozent.
 - **Telemetrie-Diagnose:** Zustand von RC-Link, EdgeTX-Sensoren und FC-Status
-  getrennt prüfen.
+  getrennt prüfen und einen [Diagnosebericht speichern](#diagnosebericht).
 - **Letzte Armed-Phase:** Dauer und gemessene Extremwerte nach dem Entarmen
   im Projektmenü nachsehen.
 - **Sprachwahl:** direkt am Sender. Weitere Sprachen können zentral ergänzt werden.
 
 APMon sendet **keine Flugbefehle, Parameteränderungen oder Telemetrieanfragen**.
-Es verändert keine Modell- oder FC-Einstellungen. Die SW-Version speichert
-lediglich ihre Sprachwahl in einer eigenen Datei auf der SD-Karte.
+Es verändert keine Modell- oder FC-Einstellungen. SW speichert Sprache und
+Uhreinstellung auf der SD-Karte. Beide Varianten schreiben einen Bericht nur
+auf ausdrücklichen Wunsch.
 
 **Grenzen:** LiDAR-Bodenabstand, Optical-Flow-Rohdaten, VTX-Frequenz, Band/Kanal
 und PIT werden derzeit nicht angezeigt. Die vorhandenen Konfigurationseinträge
@@ -136,7 +137,7 @@ wertet keine Fluglogs aus. Für diese Aufgaben ergänzt eine GCS APMon.
 
 | Lösung | Plattform und typischer Einsatz | Schwerpunkt |
 | --- | --- | --- |
-| **APMon** | EdgeTX 2.x mit Lua-LCD-API auf Schwarzweiß- und Farbsendern, ArduPilot mit ExpressLRS im MAVLink-Modus | Telemetrie direkt am Sender, FC-Meldungen, Armed-Bilanz |
+| **APMon** | EdgeTX 2.x mit Lua-LCD-API auf Schwarzweiß- und Farbsendern, ArduPilot mit ExpressLRS im MAVLink-Modus | Telemetrie direkt am Sender, FC-Meldungen, Armed-Bilanz und lokaler Diagnosebericht |
 | [FM2M ToolBox](https://fm2m.online/) | EdgeTX- oder ETHOS-Farbsender, vor allem Betaflight und INAV mit kompatibler CRSF- oder FrSky-S.Port-Telemetrie | Status, Telemetrie und Diagnose am Sender, je nach Edition und Aufbau auch Geräte- und VTX-Konfiguration |
 | [Yaapu Telemetry Script](https://github.com/yaapu/frskytelemetryscript) | OpenTX, EdgeTX oder ETHOS, ArduPilot-Passthrough je nach Aufbau über FrSky S.Port, TBS Crossfire oder ExpressLRS | ArduPilot-Telemetrie als Skript oder Widget für mehr Sender und Telemetrieverbindungen |
 | [INAV Lua Telemetry](https://github.com/iNavFlight/OpenTX-Telemetry-Widget) | OpenTX oder EdgeTX mit INAV und kompatibler Telemetrie | Status, Akku, GPS und Flugdaten direkt am Sender für INAV statt ArduPilot |
@@ -154,7 +155,8 @@ Ob Sender, Firmware und Telemetrieverbindung zusammenpassen, steht in der
 Dokumentation des jeweiligen Projekts. Nicht jede Alternative funktioniert
 ohne Änderungen mit demselben Aufbau wie APMon.
 
-Cloud-Dienste verarbeiten Daten außerhalb des Senders. APMon lädt keine Daten zu
+Cloud-Dienste verarbeiten Daten außerhalb des Senders. Ihr Fluglog-Import
+ist vom lokalen APMon-Diagnosebericht getrennt. APMon lädt keine Daten zu
 diesen Diensten hoch und exportiert keine Fluglogs.
 
 ## Kompatibilität und Voraussetzungen
@@ -491,6 +493,23 @@ konfigurierte Sensoren zählen nicht mit. Die Werte sind keine Flugfreigabe.
 Auf der TX16S MK3 mit v0.7.0: [Diagnose-Übersicht](images/screenshots/apmon-color-tx16s-mk3-diagnostics-de-v0.7.0-2026-11-22-192319.png)
 und [Sensorliste mit abgedeckten Koordinaten](images/screenshots/apmon-color-tx16s-mk3-sensors-de-v0.7.0-2026-11-22-192321.png) bei 800 × 480 Pixeln.
 
+### Diagnosebericht
+
+**Projektmenü → Telemetrie-Diagnose → Bericht speichern** öffnen. Auf SW
+mit dem Drehgeber und **ENTER** bedienen, auf COLOR auch per Touch. Mit
+**Ohne FC-Klartext** bestätigen, um `/APMon-report.txt` auf die SD-Karte zu
+schreiben. Der neue Bericht ersetzt den alten. APMon zeigt den Dateipfad
+oder einen Schreibfehler an.
+
+Der Bericht enthält APMon- und EdgeTX-Version, konfigurierte und erkannte
+Sensorquellen samt Gültigkeitsstatus, den FC-Status mit Alter sowie
+Schweregrad, Alter und Wiederholungszahl von bis zu acht letzten
+FC-Meldungen. Sensorwerte und GPS-Koordinaten aus Sensoren fehlen bewusst.
+**Mit FC-Klartext** muss bei jedem Export ausdrücklich gewählt werden.
+Meldungstexte können selbst Standortdaten enthalten. Den Bericht vor dem
+Teilen prüfen. Es gibt keine Hintergrundaufzeichnung und keinen
+automatischen Upload.
+
 ### Zusammenfassung nach dem Entarmen
 
 Unter **Projektmenü → Letzte Armed-Phase** steht die letzte abgeschlossene
@@ -501,6 +520,10 @@ nicht automatisch. Die Bilanz bleibt bis zum Neuladen von APMon im Speicher.
 - **Armed-Zeit:** Dauer zwischen bestätigtem Armen und Entarmen, auch am
   Boden. Wurde der Start nicht beobachtet oder gab es eine Lücke im FC-Status,
   steht `--` statt einer Schätzung.
+- **RC-LQ min.:** niedrigster frischer, gültiger `RQly`-Wert bei bestätigtem
+  Armed-Status. Ohne gültigen Messwert erscheint `--`. Ein tatsächlich
+  gemeldetes `0 %` bleibt `0 %`. Das Minimum wird getrennt von den
+  FC-Datenlücken gezeigt und belegt keinen RC-Verbindungsabbruch.
 - **Messwerte:** Niedrigste Akkuspannung und Spitzenstrom aus frischen
   Messungen während der Phase. Der Verbrauch ist die Differenz des
   mAh-Zählers aus Messungen nahe dem Start und Ende (jeweils höchstens drei
@@ -716,6 +739,32 @@ Erhalt fremder Dateien sowie der gespeicherten Sprache beim Deployment.
 Das sind **Simulationstests**, keine vollständige Hardwarequalifikation.
 Schriften, Tastenereignisse, Speicher- und Laufzeitbudget sowie Funkintegration
 müssen auf dem jeweiligen Sender geprüft werden.
+
+### APMon-Host-Simulator und GIF-Demos
+
+Der Simulator in [`simulate.py`](simulate.py) führt den echten APMon-Lua-Code
+mit synthetischen Sensoren, Passthrough-Paketen und geskripteten Drehgeber-,
+Tasten- und Touch-Eingaben aus. Er prüft Meldungsfilter, GPS-Position nach
+einem Ausfall, Armed-Bilanz und Diagnosebericht ohne Koordinaten oder
+FC-Klartext. Die simulierte SD-Karte bleibt im Arbeitsspeicher.
+
+```bash
+python3 simulate.py --check
+python3 simulate.py
+python3 simulate.py --profile sw-128x64 --profile color-480x320 --lang de
+```
+
+Standardmäßig prüft das Skript beide Sprachen auf SW mit 128 × 64 und
+experimentell 212 × 64 sowie COLOR mit 440 × 252, 480 × 320 und 800 × 480.
+Der erste Befehl prüft nur. Für GIFs sind zusätzlich Pillow und eine
+Unicode-TrueType-Schrift wie DejaVu Sans nötig. Mit `--font` lässt sich eine
+Schriftdatei angeben. Die GIFs landen standardmäßig im von Git ignorierten
+Ordner `simulator-output/`. Mit `--output-dir` lässt sich ein anderer Ordner
+wählen. Beschriftungen und Touch-Markierungen erklären die Bedienung.
+
+Das ist eine Nachbildung der Lua-LCD-API, nicht der offizielle
+EdgeTX-Simulator. Die GIFs sind keine echten Senderaufnahmen und kein
+Nachweis für die Unterstützung neuer Sender oder Auflösungen.
 
 ### Pakete bauen
 

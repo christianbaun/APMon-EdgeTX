@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/project.lua
 -- Purpose: Share project metadata and sender-clock formatting across both displays.
--- Project version: 0.7.0
+-- Project version: 0.8.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -40,5 +40,6 @@ return {
   subtitle = { 'ArduPilot Telemetry', 'Monitor for EdgeTX radios' },
   repo = { 'github.com/christianbaun/', 'APMon-EdgeTX' },
   version = 'v' .. (version() or '--'),
+  reportPath = '/APMon-report.txt',
   clock = clock,
 }

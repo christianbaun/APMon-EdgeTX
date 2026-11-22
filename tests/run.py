@@ -2,7 +2,7 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: tests/run.py
 # Purpose: Execute the Lua regression suite through a local Lua 5.3/5.4 shared library.
-# Project version: 0.7.0
+# Project version: 0.8.0
 # Updated: 2026-11-20
 # Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -16,6 +16,7 @@ import ctypes as C
 import ctypes.util
 import os
 from pathlib import Path
+import sys
 
 os.chdir(Path(__file__).resolve().parents[1])
 name = ctypes.util.find_library('lua5.3') or ctypes.util.find_library('lua5.4')
@@ -34,7 +35,8 @@ if not state:
     raise SystemExit('Could not create Lua state')
 try:
     lua.luaL_openlibs(state)
-    result = lua.luaL_loadfilex(state, b'tests/check.lua', None)
+    script = os.fsencode(sys.argv[1]) if len(sys.argv) > 1 else b'tests/check.lua'
+    result = lua.luaL_loadfilex(state, script, None)
     if not result:
         result = lua.lua_pcallk(state, 0, 0, 0, 0, None)
     if result:

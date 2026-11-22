@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/TELEMETRY/APMon.lua
 -- Purpose: Render the GX12/Boxer telemetry UI with two pages, menus and saved language choice.
--- Project version: 0.7.0
+-- Project version: 0.8.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -35,6 +35,7 @@ local warningsOnly, filterFocus, messageList = false, false, nil
 local view = 'data'
 local sensorIndex = 1
 local toolRenderer, toolError, toolPhase
+local reportSaved
 local radioLanguage = type(getGeneralSettings) == 'function' and getGeneralSettings().language
 local nativeUmlauts = not radioLanguage or radioLanguage == 'DE'
 local preference = '/SCRIPTS/APMON/mono.cfg'
@@ -202,14 +203,24 @@ local function summaryData(phase)
   local summary = module('summary_view')
   return summary.rows(phase), summary.notes(phase)
 end
+local function saveReport(includeText)
+  local ok, saved = pcall(module, 'diagnostic_report', project.reportPath, project.version,
+    config, monitor, receiver, tr, includeText)
+  return ok and saved == true
+end
 local function loadTools(isDiagnostics)
+  if view == 'report' then
+    return module('mono_report', {header = menuHeader, option = menuOption,
+      tr = tr, reportPath = project.reportPath})
+  end
   local rows, notes
   if toolPhase then rows, notes = summaryData(toolPhase) end
-  return module(isDiagnostics and 'mono_tools' or view == 'gps' and 'mono_gps' or 'mono_summary', {
+  return module(view == 'sensors' and 'mono_sensors' or isDiagnostics and 'mono_tools' or view == 'gps' and 'mono_gps'
+    or view == 'messageDetail' and 'mono_message' or 'mono_summary', {
     tr = tr, monoText = monoText, header = menuHeader, field = field,
-    rightText = rightText, small = small, filled = filled, fit = fit, textWidth = textWidth,
+    rightText = rightText, small = small, option = menuOption, fit = fit, textWidth = textWidth,
     monitor = monitor, receiver = receiver, tracker = tracker,
-    rows = rows, notes = notes,
+    rows = rows, notes = notes, message = messageDetail,
     diagnostics = isDiagnostics and module('diagnostics') or nil,
   })
 end
@@ -230,12 +241,18 @@ local function run(event)
   elseif view == 'gps' then
     if exitEvent then view = 'menu' end
   elseif view == 'diagnostics' then
+    if step ~= 0 then sensorIndex = 3 - sensorIndex end
     if exitEvent then view = 'menu'
-    elseif enterEvent and toolRenderer then view, sensorIndex = 'sensors', 1 end
+    elseif enterEvent and toolRenderer then
+      if sensorIndex == 1 then view, toolRenderer = 'sensors', nil
+      else view, toolRenderer, enterEvent, reportSaved = 'report', nil, false, nil end
+    end
   elseif view == 'sensors' then
     local count = #monitor.sensorList
     if count > 0 then sensorIndex = (sensorIndex - 1 + step) % count + 1 end
-    if enterEvent or exitEvent then view = 'diagnostics' end
+    if enterEvent or exitEvent then view, sensorIndex, toolRenderer = 'diagnostics', 1, nil end
+  elseif view == 'report' then
+    if exitEvent then view, sensorIndex, toolRenderer = 'diagnostics', 2, nil end
   elseif view == 'messageDetail' then
     if enterEvent or exitEvent then view, messageDetail = 'messages', nil end
   elseif view == 'messages' then
@@ -277,7 +294,7 @@ local function run(event)
         showClock = not showClock
         saveError = not savePreferences() and 'Uhr nicht gespeichert' or nil
       elseif menuItem == 4 then
-        view = 'diagnostics'
+        view, sensorIndex = 'diagnostics', 1
       elseif menuItem == 5 then
         view = 'summary'
       else
@@ -295,7 +312,8 @@ local function run(event)
   end
   local diagnosticsPage = view == 'diagnostics' or view == 'sensors'
   local summaryPage = view == 'summary' or view == 'summaryDetail'
-  if diagnosticsPage or summaryPage or view == 'gps' then
+  if diagnosticsPage or summaryPage or view == 'gps' or (view == 'report' and reportSaved == nil)
+      or view == 'messageDetail' then
     local phase = summaryPage and tracker.last or nil
     if toolPhase ~= phase then toolRenderer, toolPhase = nil, phase end
     if toolRenderer == nil then
@@ -307,16 +325,29 @@ local function run(event)
       end
     end
     if toolRenderer then
-      toolRenderer(view, width, sensorIndex, text)
+      local includeText = toolRenderer(view, width, sensorIndex, text, step, enterEvent)
+      if view == 'report' and includeText ~= nil then
+        -- Do not keep the dialog or diagnostics resident during the export.
+        toolRenderer = nil
+        reportSaved = saveReport(includeText)
+      end
     else
-      menuHeader(width, tr(diagnosticsPage and 'Telemetrie-Diagnose'
-        or view == 'gps' and 'GPS-Details' or 'Letzte Armed-Phase'))
+      menuHeader(width, tr(view == 'sensors' and 'Sensoren' or diagnosticsPage and 'Telemetrie-Diagnose' or view == 'gps' and 'GPS-Details'
+        or view == 'report' and 'Diagnosebericht' or view == 'messageDetail' and 'FC-Meldungen' or 'Letzte Armed-Phase'))
       text(11, tr(toolError))
-      text(57, monoText('RTN: Menü'))
+      text(57, monoText((view == 'report' or view == 'sensors') and 'RTN: Diagnose'
+        or view == 'messageDetail' and 'RTN: Liste' or 'RTN: Menü'))
     end
-    return 0
+    if view ~= 'report' or reportSaved == nil then return 0 end
   end
   toolRenderer, toolError, toolPhase = nil, nil, nil
+  if view == 'report' then
+    menuHeader(width, tr('Diagnosebericht'))
+    text(11, tr(reportSaved and 'Bericht gespeichert' or 'Schreibfehler'), not reportSaved)
+    if reportSaved then text(20, project.reportPath) end
+    text(57, tr('RTN: Diagnose'))
+    return 0
+  end
   if view == 'menu' then
     projectMenu(width)
     return 0
@@ -332,52 +363,30 @@ local function run(event)
   end
   local v = monitor.values
   local function fmt(key) return monitor:format(key) end
-  if view == 'messages' or view == 'messageDetail' then
+  if view == 'messages' then
     menuHeader(width, tr('FC-Meldungen'))
-    if view == 'messages' then
-      messageList = receiver.timeline(messageList, warningsOnly)
-      local index, count = receiver.timelineIndex(messageList, selectedMessage), #messageList
-      local filter = filterFocus or index == 0
-      menuOption(width, 10, tr(warningsOnly and 'Filter: Warnungen' or 'Filter: Alle'), filter)
-      if count == 0 then text(21, tr(warningsOnly and 'Keine Warnungen' or 'Keine FC-Meldungen')) end
-      local first = math.max(1, index - 3)
-      for i = first, math.min(count, first + 3) do
-        local entry = messageList[i]
-        local label
-        if entry.armed ~= nil then
-          local age = receiver.age(entry)
-          label = (entry.armed == 1 and '[ARMED]' or '[DISARMED]') .. (age and ' ' .. age .. 's' or '')
-        else
-          label = 'S' .. entry.severity .. ' ' .. entry.value
-        end
-        if textWidth(label, small) > width - 15 then
-          label = fit(label, width - 15 - textWidth('...', small), small) .. '...'
-        end
-        menuOption(width, 19 + (i - first) * 9, label, not filter and i == index)
+    messageList = receiver.timeline(messageList, warningsOnly)
+    local index, count = receiver.timelineIndex(messageList, selectedMessage), #messageList
+    local filter = filterFocus or index == 0
+    menuOption(width, 10, tr(warningsOnly and 'Filter: Warnungen' or 'Filter: Alle'), filter)
+    if count == 0 then text(21, tr(warningsOnly and 'Keine Warnungen' or 'Keine FC-Meldungen')) end
+    local first = math.max(1, index - 3)
+    for i = first, math.min(count, first + 3) do
+      local entry = messageList[i]
+      local label
+      if entry.armed ~= nil then
+        local age = receiver.age(entry)
+        label = (entry.armed == 1 and '[ARMED]' or '[DISARMED]') .. (age and ' ' .. age .. 's' or '')
+      else
+        label = 'S' .. entry.severity .. ' ' .. entry.value
       end
-      text(57, tr(filter and 'ENT: Filter' or 'ENT: Details'))
-      if count > 0 then rightText(width - 2, 57, index .. '/' .. count, small) end
-      return 0
+      if textWidth(label, small) > width - 15 then
+        label = fit(label, width - 15 - textWidth('...', small), small) .. '...'
+      end
+      menuOption(width, 19 + (i - first) * 9, label, not filter and i == index)
     end
-    local message = messageDetail
-    local age = receiver.age(message)
-    if message.armed ~= nil then
-      text(11, message.armed == 1 and 'ARMED' or 'DISARMED')
-      text(20, monoText(message.armed == 1 and 'Armen bestätigt' or 'Entarmen bestätigt'))
-      if age then text(29, string.format(tr('vor %ds'), age)) end
-      text(57, tr('RTN: Liste'))
-      return 0
-    end
-    local repeats = message.repeats > 1 and ' x' .. message.repeats or ''
-    text(11, string.format('S%d%s %s', message.severity, repeats, age and age .. 's' or '--'))
-    local value = message.value
-    for i = 1, 4 do
-      if value == '' then break end
-      local part = fit(value, width, small)
-      text(20 + (i-1)*9,part)
-      value = string.sub(value,#part+1)
-    end
-    text(57, tr('RTN: Liste'))
+    text(57, tr(filter and 'ENT: Filter' or 'ENT: Details'))
+    if count > 0 then rightText(width - 2, 57, index .. '/' .. count, small) end
     return 0
   end
 

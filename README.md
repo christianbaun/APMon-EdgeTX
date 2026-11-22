@@ -13,8 +13,8 @@ sensors and selected ArduPilot passthrough data, not the full MAVLink stream.
 It runs as Lua scripts on the radio's SD card: no laptop or
 additional flight-controller script is required during use.
 
-Current project version: **0.7.0**, recorded in [VERSION](VERSION).
-See the [v0.7.0 release notes](releases/v0.7.0.md).
+Current project version: **0.8.0**, recorded in [VERSION](VERSION).
+See the [v0.8.0 release notes](releases/v0.8.0.md).
 
 The GUI supports **English and German**, with English as the default.
 
@@ -108,14 +108,14 @@ persistent COLOR setting, use **Widget settings → Language**.
   both with their age.
 - **RC link quality:** percentage of received control packets.
 - **Telemetry diagnostics:** check the RC link, EdgeTX sensors and FC status
-  separately.
+  separately and [save a diagnostic report](#diagnostic-report).
 - **Last armed period:** review elapsed time and recorded extremes after
   disarming from the project menu.
 - **Language selection:** on the radio, with a central, extensible language registry.
 
 APMon sends **no flight commands, parameter changes or telemetry requests**.
-It does not modify model or FC settings. The SW variant only writes its own
-language preference to the SD card.
+It does not modify model or FC settings. SW stores its language and clock
+preferences on the SD card. Both variants write a report only on request.
 
 **Limitations:** LiDAR ground distance, raw optical-flow readings, VTX frequency,
 band/channel and PIT are not currently displayed. Reserved sensor configuration
@@ -132,7 +132,7 @@ flight logs. Use a GCS alongside APMon when you need those functions.
 
 | Solution | Platform and typical setup | Main purpose |
 | --- | --- | --- |
-| **APMon** | EdgeTX 2.x with the Lua LCD API on monochrome or color radios, ArduPilot with ExpressLRS in MAVLink mode | On-radio telemetry, FC messages, armed summaries |
+| **APMon** | EdgeTX 2.x with the Lua LCD API on monochrome or color radios, ArduPilot with ExpressLRS in MAVLink mode | On-radio telemetry, FC messages, armed summaries and a local diagnostic report |
 | [FM2M ToolBox](https://fm2m.online/) | EdgeTX or ETHOS color radios, primarily Betaflight and INAV, with compatible CRSF or FrSky S.Port telemetry | On-radio status, telemetry, diagnostics and, depending on the edition and setup, device and VTX configuration |
 | [Yaapu Telemetry Script](https://github.com/yaapu/frskytelemetryscript) | OpenTX, EdgeTX or ETHOS, ArduPilot passthrough over FrSky S.Port, TBS Crossfire or ExpressLRS, depending on setup | On-radio ArduPilot telemetry script and widget for a wider range of radios and telemetry links |
 | [INAV Lua Telemetry](https://github.com/iNavFlight/OpenTX-Telemetry-Widget) | OpenTX or EdgeTX with INAV and compatible telemetry | On-radio status, battery, GPS and flight data for INAV rather than ArduPilot |
@@ -150,8 +150,9 @@ Check the linked project's documentation for your radio, firmware and telemetry
 link. A listed alternative is not necessarily compatible with an APMon setup
 without changes.
 
-Cloud services process data outside the radio. APMon neither uploads to these
-services nor exports a flight log.
+Cloud services process data outside the radio. Their flight-log imports are
+separate from APMon's local diagnostic report. APMon neither uploads to
+these services nor exports a flight log.
 
 ## Compatibility and requirements
 
@@ -478,6 +479,20 @@ readings are not flight clearance.
 On the TX16S MK3 with v0.7.0: [diagnostics overview](images/screenshots/apmon-color-tx16s-mk3-diagnostics-en-v0.7.0-2026-11-22-192304.png)
 and [sensor list with coordinates masked](images/screenshots/apmon-color-tx16s-mk3-sensors-en-v0.7.0-2026-11-22-192308.png) at 800 × 480.
 
+### Diagnostic report
+
+Open **Project menu → Telemetry diagnostics → Save report**. Use the wheel
+and **ENTER** on SW, or tap the buttons on COLOR. Confirm **Without FC text**
+to write `/APMon-report.txt` to the SD card. A new report replaces the old one.
+APMon displays the path on success or a write error on failure.
+
+The report contains the APMon and EdgeTX versions, configured sensor names and
+detected sources with their validity, FC status and its age, and the severity,
+age and repeat count of up to eight recent FC messages. It contains no sensor
+values or GPS coordinates from sensors. **Include FC text** is a separate
+choice for each export. FC text can itself contain location data. Review the
+report before sharing it. There is no background logging or automatic upload.
+
 ### Post-disarm summary
 
 Open **Project menu → Last armed period** to review the last completed summary.
@@ -488,6 +503,9 @@ in memory until APMon reloads.
 - **Time armed:** elapsed time between confirmed arming and disarming,
   including time on the ground. If the start was not observed or FC status
   dropped out, APMon shows `--` rather than guessing.
+- **Min. RC LQ:** lowest fresh, valid `RQly` sample while the FC confirmed
+  armed status. No valid sample shows `--`. A reported `0 %` remains `0 %`.
+  The minimum is separate from FC data gaps and is not proof of RC link loss.
 - **Measurements:** minimum battery voltage and peak current from fresh
   readings while armed. Charge used is the difference between mAh counter
   samples within three seconds of the start and end. If those samples are
@@ -695,6 +713,31 @@ of unrelated files and saved preferences.
 These are **simulation tests**, not complete hardware qualification. Fonts,
 physical keys, runtime/memory limits and radio integration still need testing on
 each target radio.
+
+### APMon host simulator and GIF demos
+
+The simulator in [`simulate.py`](simulate.py) runs the actual APMon Lua scripts
+with synthetic sensors, passthrough packets and scripted wheel, key and touch
+input. It checks the message filter, GPS position after data loss, the armed
+summary, and a diagnostic report without coordinates or FC text. The simulated
+SD card is kept in memory.
+
+```bash
+python3 simulate.py --check
+python3 simulate.py
+python3 simulate.py --profile sw-128x64 --profile color-480x320 --lang de
+```
+
+By default it checks both languages on SW 128 × 64 and experimental 212 × 64,
+and COLOR 440 × 252, 480 × 320 and 800 × 480. The first command checks only.
+GIF generation additionally needs Pillow and a Unicode TrueType font such as
+DejaVu Sans (`--font` can select a font explicitly). GIFs go to
+`simulator-output/` by default, which Git ignores. Use `--output-dir` to choose
+another location. Action captions and touch markers explain the controls.
+
+This is an approximation of the Lua LCD API, not the official EdgeTX
+simulator. The GIFs are not hardware screenshots or evidence that a new
+radio or resolution is supported.
 
 ### Build packages
 

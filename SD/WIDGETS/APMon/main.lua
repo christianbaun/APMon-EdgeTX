@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/WIDGETS/APMon/main.lua
 -- Purpose: Render the color dashboard, full-screen project menu and language selection.
--- Project version: 0.7.0
+-- Project version: 0.8.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -169,6 +169,25 @@ local function handleInput(widget, z, layout, event, touch)
     if exit or enter or inButton(z.h - rowHeight - 12, rowHeight - 3) then setView(widget, 'menu', 6) end
     return
   end
+  if widget.view == 'report' then
+    local back = z.h - rowHeight - 12
+    if exit or inButton(back, rowHeight - 3) or (enter and widget.reportSaved ~= nil) then
+      setView(widget, 'diagnostics', 2)
+    elseif widget.reportSaved == nil then
+      if event == EVT_VIRTUAL_NEXT or event == EVT_VIRTUAL_PREV then widget.focus = 3 - widget.focus end
+      local choice = inButton(back - 2 * rowHeight, rowHeight - 3) and 1
+        or inButton(back - rowHeight, rowHeight - 3) and 2 or enter and widget.focus
+      if choice then
+        local function save()
+          return module('diagnostic_report', project.reportPath, project.version, config,
+            widget.monitor, receiver, function(key) return i18n.text(languageOf(widget), key) end, choice == 2)
+        end
+        local ok, saved = pcall(save)
+        widget.reportSaved = ok and saved == true
+      end
+    end
+    return
+  end
   if summaryPage(widget) then
     local back = z.h - rowHeight - 12
     local button = inButton(back, rowHeight - 3)
@@ -198,12 +217,19 @@ local function handleInput(widget, z, layout, event, touch)
         widget.sensorFirst = math.max(1, math.min(last, first + step))
       end
     else
-      if event == EVT_VIRTUAL_NEXT or event == EVT_VIRTUAL_PREV then widget.focus = 3 - widget.focus end
-      if exit or (enter and widget.focus == 2) or (inButton(back, rowHeight - 3) and tap.x >= z.w / 2) then
+      if event == EVT_VIRTUAL_NEXT then widget.focus = widget.focus % 3 + 1
+      elseif event == EVT_VIRTUAL_PREV then widget.focus = (widget.focus - 2) % 3 + 1 end
+      local choice = inButton(back, rowHeight - 3)
+        and (tap.x < z.w / 4 and 1 or tap.x >= z.w * 3 / 4 and 3 or 2)
+        or enter and widget.focus
+      if exit or choice == 3 then
         setView(widget, 'menu', 4)
-      elseif enter or inButton(back, rowHeight - 3) then
+      elseif choice == 1 then
         widget.sensorFirst = 1
         setView(widget, 'sensors', 1)
+      elseif choice == 2 then
+        widget.reportSaved = nil
+        setView(widget, 'report', 1)
       end
     end
     return
@@ -343,6 +369,7 @@ local function refresh(widget, event, touch)
   local heading = widget.view == 'language' and 'Sprache'
     or messagePage(widget) and 'FC-Meldungen'
     or widget.view == 'diagnostics' and 'Telemetrie-Diagnose'
+    or widget.view == 'report' and 'Diagnosebericht'
     or widget.view == 'summary' and 'Letzte Armed-Phase'
     or widget.view == 'summaryDetail' and 'Bilanzdetails'
     or widget.view == 'gps' and 'GPS-Details'
@@ -355,6 +382,28 @@ local function refresh(widget, event, touch)
       clock, bg, w, layout.clockFont)
   end
   drawLogo(z, layout.header)
+  if widget.view == 'report' then
+    local height = layout.rowHeight
+    local top, back = layout.header + 8, z.h - height - 12
+    local function button(y, label, selected)
+      rect(left, y, inner, height - 3, selected and info or panel)
+      literal(left + 8, y + 4, label, selected and bg or info, inner - 16)
+    end
+    if widget.reportSaved == nil then
+      literal(left, top, project.reportPath, normal, inner)
+      text(left, top + layout.step, 'Ersetzt alten Bericht', normal, inner)
+      text(left, top + 2 * layout.step, 'Klartext evtl. mit GPS', warn, inner)
+      local save = tr('Speichern') .. ': '
+      button(back - 2 * height, save .. tr('Ohne FC-Klartext'), widget.focus == 1)
+      button(back - height, save .. tr('Mit FC-Klartext'), widget.focus == 2)
+    else
+      text(left, top, widget.reportSaved and 'Bericht gespeichert' or 'Schreibfehler',
+        widget.reportSaved and info or warn, inner)
+      if widget.reportSaved then literal(left, top + layout.step, project.reportPath, normal, inner) end
+    end
+    button(back, tr('Zurück'), widget.reportSaved ~= nil)
+    return
+  end
   if widget.view == 'gps' then
     local details, live, age = m:gpsDetails()
     local top, back = layout.header + 8, z.h - layout.rowHeight - 12
@@ -410,12 +459,9 @@ local function refresh(widget, event, touch)
       local _, bigHeight = lcd.sizeText('Ag', headingFont + CUSTOM_COLOR)
       local valueFont = cardHeight >= layout.smallHeight + bigHeight + 7 and headingFont or regularFont
       for i, row in ipairs(summary.rows(phase)) do
-        local col, y, w = 0, cardTop, inner
-        if i > 1 then
-          col = (i - 2) % 2
-          y = cardTop + (1 + math.floor((i - 2) / 2)) * stride
-          w = col == 0 and half - 2 or inner - half - 2
-        end
+        local col = (i - 1) % 2
+        local y = cardTop + math.floor((i - 1) / 2) * stride
+        local w = col == 0 and half - 2 or inner - half - 2
         local x = left + (col == 0 and 0 or half + 2)
         rect(x, y, w, cardHeight, panel)
         text(x + 8, y + 3, row[1], info, w - 16)
@@ -473,8 +519,10 @@ local function refresh(widget, event, touch)
         if row[3] then literal(left + 8, rowY + line, row[3], row[4] and warn or info, inner - 16, font) end
       end
       text(left, noteY, 'Gültige Sensordaten sind keine Flugfreigabe.', info, inner)
-      button(left, back, half - 2, 'Sensoren', widget.focus == 1)
-      button(left + half + 2, back, inner - half - 2, 'Zurück', widget.focus == 2)
+      local quarter = math.floor(z.w / 4)
+      button(left, back, quarter - 14, 'Sensoren', widget.focus == 1)
+      button(quarter + 2, back, z.w - 2 * quarter - 4, 'Bericht speichern', widget.focus == 2)
+      button(z.w - quarter + 2, back, quarter - 14, 'Zurück', widget.focus == 3)
     else
       local nameWidth, valueWidth = math.floor(inner * 0.25), math.floor(inner * 0.43)
       text(left + 8, top, 'Sensor', info, nameWidth - 8)

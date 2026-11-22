@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/pass.lua
 -- Purpose: Decode ELRS ArduPilot passthrough frames, status text and data freshness.
--- Project version: 0.7.0
+-- Project version: 0.8.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)

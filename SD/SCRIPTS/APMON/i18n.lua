@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/i18n.lua
 -- Purpose: Provide the extensible GUI language registry, translations and fallback rules.
--- Project version: 0.7.0
+-- Project version: 0.8.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -21,31 +21,20 @@ Rest|Left
 Verbr.|Used
 FC-Meldungen|FC messages
 Sprache|Language
-Zurück|Back
-Menü|Menu
-Vollbild: Menü|Full screen: menu
-Nur für diese Sitzung|For this session only
 Rad: Seite|Wheel: page
 ENT: Menu|ENT: menu
 Übersicht|Overview
 Akku|Battery
 Flugwerte|Flight
-Lage|Attitude
 FC-Status|FC status
-Spannung|Voltage
 Strom|Curr.
-Rest (FC)|Left (FC)
-Verbrauch|Used
-Höhe (GAlt)|Alt. (GAlt)
 Breite|Latitude
-Laenge|Longitude
 Länge|Longitude
 GPS-Kurs|GPS course
 GPS-Details|GPS details
 Nicht live|Not live
 Kein Fix|No fix
 Bestätigt|Confirmed
-Enter: speichern|ENTER: save RTN:cancel
 Sprache nicht gespeichert|Language not saved
 Uhr nicht gespeichert|Clock not saved
 Uhr|Clock
@@ -57,56 +46,34 @@ Keine FC-Meldungen|No FC messages
 Keine Warnungen|No warnings
 Filter: Alle|Filter: All
 Filter: Warnungen|Filter: Warnings
-Filter: Warnungen & Fehler|Filter: Warnings & errors
 ENT: Filter|ENT: filter
 Armen bestätigt|Arming confirmed
 Entarmen bestätigt|Disarming confirmed
-Schweregrad %d|Severity %d
-Neuere|Newer
-Ältere|Older
 vor %ds|%ds ago
 FC-Daten fehlen|FC data missing
-Rad: Ansicht ENTER:Sprache|Wheel: view ENTER:language
-RC-Linkqualität|RC link quality
-APMon: grosse Zone waehlen|APMon: select a large zone
-AKKU / STATUS / GPS|BATTERY / STATUS / GPS
-FLUG|FLIGHT
 Flugmodus|Flight mode
-Motoren|Motors
-Akku (Spannung)|Battery (voltage)
-Akku (Strom)|Battery (current)
-Akku (Rest laut FC)|Battery (left, FC)
-Akku (Verbrauch)|Battery (used)
 GPS Fix|GPS fix
 Satelliten|Satellites
-EKF zuletzt|Last EKF set
 Höhe|Altitude
-Höhe (GPS Altitude)|Height (GPS Altitude)
-H-Tempo GPS|GPS horiz. speed
-Richtung|Direction
-Steigen|Climb rate
 Vario|Climb
 Ja|Yes
 Nein|No
 Kein GPS|No GPS
 Keins|None
-Ja 2D|Yes 2D
-Ja 3D|Yes 3D
-Ja DGPS|Yes DGPS
-Ja RTK flt|Yes RTK flt
-Ja RTK fix|Yes RTK fix
-API fehlt: getSourceValue|Missing getSourceValue API
-Keine aktuellen FC-Daten|No current FC data
-FC-Meldung: --|FC message: --
-FC-Meldung / vor %ds|FC message / %ds ago
 Telemetrie-Diagnose|Telemetry diagnostics
-Diagnose|Diagnostics
-Datenquellen|Data sources
+Diagnosebericht|Diagnostic report
+Bericht speichern|Save report
+ENT: Speichern|ENT: save
+Ohne FC-Klartext|Without FC text
+Mit FC-Klartext|Include FC text
+Klartext evtl. mit GPS|Text may include GPS
+Ersetzt alten Bericht|Replaces old report
+Bericht gespeichert|Report saved
+Schreibfehler|Write failed
+Zuordnung / Erkannt / Status|Mapping / Detected / Status
 Sensoren|Sensors
-EdgeTX-Sensoren|EdgeTX sensors
 RC-Link|RC link
 FC-Text|FC text
-Letzte FC-Textmeldung|Last FC text message
 FC-Status (Passthrough)|FC status (passthrough)
 Gültig|Valid
 Ungültig|Invalid
@@ -118,25 +85,20 @@ API fehlt|API unavailable
 %d/%d gültig|%d/%d valid
 Keine Sensoren konfiguriert|No sensors configured
 Letzter Wert|Last value
-Gültige Sensordaten sind keine Flugfreigabe.|Valid sensor data is not flight clearance.
-ENT: Sensoren|ENT: sensors
 RTN: Menü|RTN: menu
 RTN: Diagnose|RTN: diagnostics
-Vorige|Previous
-Weitere|Next
 Letzte Armed-Phase|Last armed period
 Armed-Zeit|Time armed
+RC-LQ min.|Min. RC LQ
 Akku min.|Min. voltage
 Strom max.|Peak current
 Höhe rel. max.|Max. rel. alt.
 Akkuverbrauch|Charge used
 Keine Bilanz vorhanden|No summary yet
 Aufzeichnung läuft|Recording
-Armed-Zeit, nicht Flugzeit|Time armed, not flight time
 Vollständig|Complete
 Unvollständig|Incomplete
 Bilanzdetails|Summary details
-Details|Details
 RTN: Bilanz|RTN: summary
 Start nicht erfasst|Start not observed
 FC-Status fehlt|FC status missing
@@ -163,6 +125,48 @@ if ... == 'compact' then
 else
   local english = {}
   for key, value in string.gmatch(catalogue, '([^\n|]+)|([^\n]+)') do english[key] = value end
+  -- These labels are only used by COLOR. SW does not retain this string.
+  for key, value in string.gmatch([[
+Zurück|Back
+Menü|Menu
+Vollbild: Menü|Full screen: menu
+Nur für diese Sitzung|For this session only
+Filter: Warnungen & Fehler|Filter: Warnings & errors
+Schweregrad %d|Severity %d
+Neuere|Newer
+Ältere|Older
+RC-Linkqualität|RC link quality
+APMon: grosse Zone waehlen|APMon: select a large zone
+AKKU / STATUS / GPS|BATTERY / STATUS / GPS
+FLUG|FLIGHT
+Motoren|Motors
+Akku (Spannung)|Battery (voltage)
+Akku (Strom)|Battery (current)
+Akku (Rest laut FC)|Battery (left, FC)
+Akku (Verbrauch)|Battery (used)
+EKF zuletzt|Last EKF set
+Höhe (GPS Altitude)|Height (GPS Altitude)
+H-Tempo GPS|GPS horiz. speed
+Richtung|Direction
+Steigen|Climb rate
+Ja 2D|Yes 2D
+Ja 3D|Yes 3D
+Ja DGPS|Yes DGPS
+Ja RTK flt|Yes RTK flt
+Ja RTK fix|Yes RTK fix
+API fehlt: getSourceValue|Missing getSourceValue API
+Keine aktuellen FC-Daten|No current FC data
+FC-Meldung: --|FC message: --
+FC-Meldung / vor %ds|FC message / %ds ago
+Speichern|Save
+Datenquellen|Data sources
+EdgeTX-Sensoren|EdgeTX sensors
+Letzte FC-Textmeldung|Last FC text message
+Gültige Sensordaten sind keine Flugfreigabe.|Valid sensor data is not flight clearance.
+Vorige|Previous
+Weitere|Next
+Armed-Zeit, nicht Flugzeit|Time armed, not flight time
+]], '([^\n|]+)|([^\n]+)') do english[key] = value end
   lookupEnglish = function(value) return english[value] end
   catalogue = nil
 end

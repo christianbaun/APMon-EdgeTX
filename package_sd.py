@@ -2,7 +2,7 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: package_sd.py
 # Purpose: Build and verify separate monochrome and color SD-card distribution archives.
-# Project version: 0.7.0
+# Project version: 0.8.0
 # Updated: 2026-11-21
 # Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -20,7 +20,9 @@ from zipfile import ZipFile, ZIP_DEFLATED
 ROOT = Path(__file__).resolve().parent
 COLOR_LOGO = Path('WIDGETS/APMon/logo.png')
 SD_VERSION = Path('SCRIPTS/APMON/VERSION')
-SW_TOOLS = {Path('SCRIPTS/APMON') / name for name in ('mono_tools.lua', 'mono_gps.lua', 'mono_summary.lua')}
+SW_TOOLS = {Path('SCRIPTS/APMON') / name for name in (
+    'mono_tools.lua', 'mono_gps.lua', 'mono_summary.lua', 'mono_report.lua', 'mono_message.lua', 'mono_sensors.lua',
+)}
 
 
 def source_for(rel):

@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/armed_summary.lua
 -- Purpose: Keep the last observed armed interval and its sampled measurements.
--- Project version: 0.7.0
+-- Project version: 0.8.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI (code, tests and documentation)
@@ -78,6 +78,9 @@ function M.new(relativeSource)
     local volts, amps = fresh('voltage'), fresh('current')
     if volts and (not phase.voltage or volts < phase.voltage) then phase.voltage = volts end
     if amps and (not phase.current or amps > phase.current) then phase.current = amps end
+    -- RQly is an independent, optional observation, never a proxy for FC gaps.
+    local lq = fresh('lq')
+    if lq and (not phase.lq or lq < phase.lq) then phase.lq = lq end
     local relativeKey
     if relativeSource then
       for _, key in ipairs(altitudeKeys) do
