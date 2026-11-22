@@ -2,7 +2,7 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: tests/test_screenshot_import.py
 # Purpose: Check screenshot selection, pixel conversion, naming and safe import.
-# Project version: 0.4.0
+# Project version: 0.5.0
 # Updated: 2026-11-20
 # Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)

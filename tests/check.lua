@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 0.4.0
+-- Project version: 0.5.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -647,24 +647,26 @@ assert(receiverMonitor.values.armed == nil and receiverMonitor.values.gpsfix == 
 assert(pass.age(pass.ekf) == 3) -- history remains explicitly aged
 now = 1; pass.poll()
 assert(pass.ekf == nil and pass.message == nil) -- timer reset clears history
-assert(select(3, pass.browse()) == 0)
+assert(#pass.timeline(nil, false) == 0)
 for _, limit in ipairs({12, 32}) do
   local history = loadScript('/SCRIPTS/APMON/pass.lua')(limit)
   local function add(value, severity, time)
     history.decode(0x80, message(value, severity), time or now)
   end
   for n = 1, limit + 2 do add('Message ' .. n) end
-  local oldest, index, count = history.browse(nil, limit)
-  assert(index == limit and count == limit and oldest.value == 'Message 3')
-  local latest = history.browse()
+  local events = history.timeline(nil, false)
+  local oldest, latest = events[limit], events[1]
+  assert(#events == limit and oldest.value == 'Message 3')
   add(latest.value, 6, now + 100)
-  assert(history.browse() == latest and latest.repeats == 2 and latest.time == now + 100)
+  assert(history.timeline(events, false)[1] == latest and latest.repeats == 2 and latest.time == now + 100)
   add(latest.value, 4)
   assert(history.message.severity == 4 and history.message.repeats == 1)
-  assert(history.browse(latest) == latest and select(2, history.browse(latest)) == 2)
+  history.timeline(events, false)
+  assert(history.timelineIndex(events, latest) == 2)
   add('Another')
-  assert(history.browse(latest) == latest and select(2, history.browse(latest)) == 3)
-  assert(history.browse(oldest).value == 'Message 5') -- evicted selection clamps
+  history.timeline(events, false)
+  assert(history.timelineIndex(events, latest) == 3)
+  assert(events[history.timelineIndex(events, oldest)].value == 'Message 5') -- evicted selection clamps
   add(latest.value, 6)
   assert(history.message ~= latest and history.message.repeats == 1) -- not adjacent
 end
@@ -783,7 +785,7 @@ incoming = {}
 for i = 1, 6 do incoming[i] = message('Extra ' .. i) end
 now = now + 100
 small.run(0)
-assert(drawOf('S6 Extra 6', 10) and not drawOf('S6 Extra 1'))
+assert(drawOf('S6 Extra 6', 19) and not drawOf('S6 Extra 1'))
 for i = 1, 5 do small.run(EVT_ROT_RIGHT) end
 assert(drawOf('S6 Extra 1', 46) and drawOf('6/8', 57) and not drawOf('S6 Extra 6'))
 small.run(EVT_VIRTUAL_EXIT)
@@ -1090,4 +1092,96 @@ lowSW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('No summary yet') and attempted.mono_tools == 2)
 lowSW.run(EVT_VIRTUAL_EXIT); lowSW.run(EVT_ROT_LEFT); lowSW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Telemetry diagnostics', 1) and attempted.mono_tools == 3 and attempted.diagnostics == 1)
+
+-- Filtering is a view over the same FC history. Markers are independent and
+-- require a continuous AP_STATUS transition, not a first state or a switch.
+local timelineRx = loadScript('/SCRIPTS/APMON/pass.lua')(12)
+local function send(rx, payload, tick) rx.decode(0x80, payload, tick) end
+send(timelineRx, single(0x5001, 256), 100) -- startup already armed
+assert(#timelineRx.timeline(nil, false) == 0)
+send(timelineRx, single(0x5001, 0), 500) -- first reported state after a gap
+assert(#timelineRx.timeline(nil, false) == 0)
+send(timelineRx, message('Same warning', 4), 510)
+send(timelineRx, single(0x5001, 256), 510)
+send(timelineRx, message('Same warning', 4), 510)
+send(timelineRx, message('Same warning', 4), 510)
+send(timelineRx, message('Notice', 5), 515)
+send(timelineRx, single(0x5001, 256), 516)
+send(timelineRx, single(0x5001, 0), 520)
+local events = timelineRx.timeline(nil, false)
+assert(#events == 5 and events[1].armed == 0 and events[2].severity == 5)
+assert(events[3].repeats == 2 and events[4].armed == 1 and events[5].repeats == 1)
+assert(timelineRx.message.value == 'Notice') -- markers do not take over the dashboard
+assert(timelineRx.timeline(events, true) == events and #events == 4)
+assert(events[1].armed == 0 and events[2].severity == 4 and events[3].armed == 1 and events[4].severity == 4)
+assert(#timelineRx.timeline(events, false) == 5 and events[2].value == 'Notice')
+for _, limit in ipairs({12, 32}) do
+  local r = loadScript('/SCRIPTS/APMON/pass.lua')(limit)
+  send(r, single(0x5001, 0), 100)
+  for i = 1, limit + 2 do
+    send(r, single(0x5001, i % 2 * 256), 100 + i)
+    send(r, message('Notice ' .. i, 6), 100 + i)
+  end
+  local markerLimit = limit == 12 and 4 or 8
+  assert(#r.timeline(nil, false) == limit + markerLimit and #r.timeline(nil, true) == markerLimit)
+end
+now = 600; timelineRx.poll()
+now = 1; timelineRx.poll()
+assert(#timelineRx.timeline(events, false) == 0) -- a timer reset invalidates reused lists
+
+-- SW and COLOR use the same events and expose the filter with real input paths.
+local flightPackets = {
+  single(0x5001, 0), message('Before flight', 6), single(0x5001, 256),
+  message('Battery warning', 4), single(0x5001, 0), message('After flight', 5),
+}
+local function feedFlight()
+  now = now + 100
+  local slot = 0
+  crossfireTelemetryPop = function()
+    slot = slot + 1
+    if flightPackets[slot] then return 0x80, flightPackets[slot] end
+  end
+end
+feedFlight()
+local filterSW = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
+filterSW.run(EVT_VIRTUAL_ENTER); filterSW.run(EVT_ROT_RIGHT); filterSW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Filter: All', 10) and drawOf('S5 After flight', 19) and drawOf('[DISARMED] 0s', 28))
+filterSW.run(EVT_ROT_LEFT)
+assert(drawOf('ENT: filter') and drawOf('Filter: All', 10).flags & INVERS ~= 0)
+filterSW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Filter: Warnings') and drawOf('[DISARMED] 0s') and drawOf('[ARMED] 0s'))
+assert(drawOf('S4 Battery warning') and not drawOf('S5 After flight'))
+filterSW.run(EVT_ROT_RIGHT); filterSW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('DISARMED', 11) and drawOf('Disarming confirmed', 20))
+filterSW.run(EVT_VIRTUAL_EXIT); filterSW.run(EVT_VIRTUAL_EXIT)
+filterSW.run(EVT_ROT_LEFT); filterSW.run(EVT_VIRTUAL_ENTER)
+filterSW.run(EVT_ROT_RIGHT); filterSW.run(EVT_VIRTUAL_ENTER)
+filterSW.run(EVT_ROT_RIGHT); filterSW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('FC-Meldungen', 1) and drawOf('Filter: Warnungen', 10))
+filterSW.run(EVT_ROT_LEFT); filterSW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Filter: Alle') and drawOf('S5 After flight'))
+
+for _, spec in ipairs({{480,320,1}, {800,480,2}, {440,252,1}}) do
+  colorDisplay, LCD_W, LCD_H, lcd.sizeText = true, spec[1], spec[2], measure
+  feedFlight()
+  local app = loadScript('/WIDGETS/APMon/main.lua')()
+  local w = app.create({x=0,y=0,w=LCD_W,h=LCD_H}, {Language=spec[3]})
+  local function frame(event, target)
+    local tap = target and assert(drawOf(target), target)
+    calls, draws, rectangles, bitmaps = {}, {}, {}, {}
+    app.refresh(w, event, tap and {x=tap.x,y=tap.y})
+  end
+  local english = spec[3] == 1
+  local all, warn = english and 'Filter: All' or 'Filter: Alle',
+    english and 'Filter: Warnings & errors' or 'Filter: Warnungen & Fehler'
+  frame(EVT_VIRTUAL_ENTER); frame(EVT_VIRTUAL_NEXT); frame(EVT_VIRTUAL_ENTER)
+  assert(drawOf(all) and drawOf('> After flight'))
+  frame(EVT_TOUCH_TAP, all)
+  assert(drawOf(warn) and drawOf('[DISARMED]') and drawOf('Battery warning') and not drawOf('After flight'))
+  frame(EVT_TOUCH_TAP, '[DISARMED]')
+  assert(drawOf(english and 'Disarming confirmed' or 'Entarmen bestätigt'))
+  frame(EVT_VIRTUAL_EXIT)
+  frame(EVT_VIRTUAL_PREV); frame(EVT_VIRTUAL_ENTER)
+  assert(drawOf(all) and drawOf('After flight'))
+end
 print('OK: sensor validity, stale data, read-only, layouts, bilingual menus, diagnostics, passthrough, restricted mono Lua')

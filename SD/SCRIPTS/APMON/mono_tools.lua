@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/mono_tools.lua
 -- Purpose: Draw the optional SW diagnostic and armed-summary screens on demand.
--- Project version: 0.4.0
+-- Project version: 0.5.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI (code, tests and documentation)

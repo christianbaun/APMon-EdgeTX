@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/WIDGETS/APMon/main.lua
 -- Purpose: Render the color dashboard, full-screen project menu and language selection.
--- Project version: 0.4.0
+-- Project version: 0.5.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -137,14 +137,19 @@ local function diagnosticWindow(widget, z, layout)
   return top, back, listTop, visible, count, first, last
 end
 local function messageWindow(widget, z, layout)
-  local top, back = layout.header + 9, z.h - layout.rowHeight - 16
-  local visible = math.floor((back - layout.rowHeight - top) / layout.rowHeight)
-  local _, index, count = receiver.browse(widget.selectedMessage)
+  local top, back = layout.header + 9 + layout.rowHeight, z.h - layout.rowHeight - 16
+  local visible = math.max(1, math.floor((back - layout.rowHeight - top) / layout.rowHeight))
+  widget.messageList = receiver.timeline(widget.messageList, widget.warningsOnly == true)
+  local index, count = receiver.timelineIndex(widget.messageList, widget.selectedMessage), #widget.messageList
   local first = math.max(1, index - visible + 1)
   return top, back, first, index, count, math.min(visible, count - first + 1)
 end
 local function handleInput(widget, z, layout, event, touch)
-  if event == nil then setView(widget); widget.messageDetail = nil; return end
+  if event == nil then
+    setView(widget)
+    widget.messageDetail, widget.selectedMessage, widget.messageList = nil, nil, nil
+    return
+  end
   if event == 0 then return end
   local enter = event == EVT_VIRTUAL_ENTER
   local exit = event == EVT_VIRTUAL_EXIT
@@ -200,7 +205,7 @@ local function handleInput(widget, z, layout, event, touch)
     return
   end
   if messagePage(widget) then
-    local top, back, first, _, _, visible = messageWindow(widget, z, layout)
+    local top, back, first, index, count, visible = messageWindow(widget, z, layout)
     if widget.view == 'messageDetail' then
       if enter or exit or inButton(back, rowHeight - 3) then
         widget.messageDetail = nil
@@ -210,22 +215,36 @@ local function handleInput(widget, z, layout, event, touch)
     end
     if exit or inButton(back, rowHeight - 3) then
       setView(widget, 'menu', 2)
+      widget.selectedMessage, widget.messageList = nil, nil
+      return
+    end
+    local filter = widget.filterFocus or index == 0
+    if inButton(top - rowHeight, rowHeight - 3) or (enter and filter) then
+      widget.warningsOnly, widget.filterFocus, widget.selectedMessage = not widget.warningsOnly, true, nil
       return
     end
     local step = 0
     if event == EVT_VIRTUAL_NEXT then step = 1
     elseif event == EVT_VIRTUAL_PREV then step = -1
-    elseif inButton(back - rowHeight, rowHeight - 3) then
+    elseif not filter and inButton(back - rowHeight, rowHeight - 3) then
       step = tap.x < z.w / 2 and -1 or 1
     end
-    local message, index = receiver.browse(widget.selectedMessage, step)
     if inButton(top, visible * rowHeight) then
       local row = tap.y - top
       if row % rowHeight < rowHeight - 3 then
         index = first + math.floor(row / rowHeight)
-        message, enter = receiver.messageAt(index), true
+        widget.filterFocus, enter = false, true
       end
+    elseif filter then
+      if step > 0 and count > 0 then widget.filterFocus, widget.selectedMessage = false, nil end
+      return
+    elseif event == EVT_VIRTUAL_PREV and index == 1 then
+      widget.filterFocus = true
+      return
+    else
+      index = math.max(1, math.min(count, index + step))
     end
+    local message = widget.messageList[index]
     widget.selectedMessage = index > 1 and message or nil
     if enter and message then
       widget.messageDetail, widget.selectedMessage = message, message
@@ -252,7 +271,7 @@ local function handleInput(widget, z, layout, event, touch)
   if widget.view == 'menu' then
     if widget.focus == 1 then setView(widget, 'language', languageOf(widget))
     elseif widget.focus == 2 then
-      widget.selectedMessage = nil
+      widget.selectedMessage, widget.filterFocus = nil, false
       setView(widget, 'messages', 1)
     elseif widget.focus == 3 then
       -- Like the language menu, this overrides the saved widget setting for this session.
@@ -452,13 +471,20 @@ local function refresh(widget, event, touch)
       lcd.setColor(CUSTOM_COLOR, color)
       lcd.drawText(x, y, value, flags)
     end
-    local function button(x, y, w, label)
-      rect(x, y, w, height - 3, panel)
-      text(x + 8, y + 4, label, info, w - 16)
+    local function button(x, y, w, label, selected)
+      rect(x, y, w, height - 3, selected and info or panel)
+      text(x + 8, y + 4, label, selected and bg or info, w - 16)
     end
     if widget.view == 'messageDetail' then
       local message = widget.messageDetail
       local age = receiver.age(message)
+      top = top - height
+      if message.armed ~= nil then
+        text(left, top, message.armed == 1 and 'Armen bestätigt' or 'Entarmen bestätigt', info, inner)
+        if age then text(left, top + layout.step, string.format(tr('vor %ds'), age), normal, inner) end
+        button(left, back, inner, 'Zurück')
+        return
+      end
       local label = string.format(tr('Schweregrad %d'), message.severity)
       if age then label = label .. '  |  ' .. string.format(tr('vor %ds'), age) end
       if message.repeats > 1 then label = label .. '  |  x' .. message.repeats end
@@ -470,19 +496,23 @@ local function refresh(widget, event, touch)
         messageText(left, y, part, message.severity <= 4 and warn or normal)
         value = string.sub(value, #part + 1)
       end
-    elseif total == 0 then
-      text(left, top, 'Keine FC-Meldungen', info, inner)
     else
+      local filter = widget.filterFocus or index == 0
+      button(left, top - height, inner, widget.warningsOnly and 'Filter: Warnungen & Fehler' or 'Filter: Alle', filter)
+      if total == 0 then text(left, top, widget.warningsOnly and 'Keine Warnungen' or 'Keine FC-Meldungen', info, inner) end
       for i = first, first + visible - 1 do
-        local entry = receiver.messageAt(i)
-        local y, selected = top + (i - first) * height, i == index
+        local entry = widget.messageList[i]
+        local marker = entry.armed ~= nil
+        local y, selected = top + (i - first) * height, not filter and i == index
         local age = receiver.age(entry)
-        local meta = 'S' .. entry.severity .. (entry.repeats > 1 and ' x' .. entry.repeats or '')
-          .. (age and ' ' .. age .. 's' or '')
+        local meta = marker and (age and age .. 's' or '')
+          or ('S' .. entry.severity .. (entry.repeats > 1 and ' x' .. entry.repeats or '')
+            .. (age and ' ' .. age .. 's' or ''))
         local metaWidth = math.min(lcd.sizeText(meta, flags), math.floor(inner / 2))
         rect(left, y, inner, height - 3, selected and info or panel)
-        local fg = selected and bg or entry.severity <= 4 and warn or normal
-        local preview, available = (selected and '> ' or '') .. entry.value, inner - metaWidth - 24
+        local fg = selected and bg or marker and info or entry.severity <= 4 and warn or normal
+        local value = marker and (entry.armed == 1 and '[ARMED]' or '[DISARMED]') or entry.value
+        local preview, available = (selected and '> ' or '') .. value, inner - metaWidth - 24
         if lcd.sizeText(preview, flags) > available then
           preview = fit(preview, available - lcd.sizeText('...', flags), flags) .. '...'
         end
@@ -490,8 +520,8 @@ local function refresh(widget, event, touch)
         text(left + inner - metaWidth - 8, y + 4, meta, fg, metaWidth)
       end
       local half, nav = math.floor(inner / 2), back - height
-      if index > 1 then button(left, nav, half - 2, 'Neuere') end
-      if index < total then button(left + half + 2, nav, inner - half - 2, 'Ältere') end
+      if not filter and index > 1 then button(left, nav, half - 2, 'Neuere') end
+      if not filter and index < total then button(left + half + 2, nav, inner - half - 2, 'Ältere') end
     end
     button(left, back, inner, 'Zurück')
     if widget.view == 'messages' and total > 0 then

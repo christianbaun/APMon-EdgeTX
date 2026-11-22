@@ -13,8 +13,8 @@ sensors and selected ArduPilot passthrough data, not the full MAVLink stream.
 It runs as Lua scripts on the radio's SD card: no laptop or
 additional flight-controller script is required during use.
 
-Current project version: **0.4.0**, recorded in [VERSION](VERSION).
-See the [v0.4.0 release notes](releases/v0.4.0.md).
+Current project version: **0.5.0**, recorded in [VERSION](VERSION).
+See the [v0.5.0 release notes](releases/v0.5.0.md).
 
 The GUI supports **English and German**, with English as the default.
 
@@ -55,44 +55,40 @@ does not mean the hardware has been tested.
 Actual captures from the GX12, GX15 and TX16S MK3. The readings show the
 captured state and are not an indication of flight readiness.
 
-**Monochrome — GX12 (128 × 64, APMon v0.4.0)**
+**Monochrome — GX12 (128 × 64)**
 
-The images are enlarged 4×. The radio clock is enabled on both telemetry pages.
+The images are enlarged for readability. The radio clock is enabled on both telemetry pages.
 
-| Overview (German) | Flight data (German) |
+| Overview (v0.5.0) | Flight data (German, v0.4.0) |
 | --- | --- |
-| ![APMon overview in German with the radio clock on the GX12](images/screenshots/apmon-sw-gx12-overview-de-v0.4.0-2026-11-21-213218-4x.png) | ![APMon flight data in German with the radio clock on the GX12](images/screenshots/apmon-sw-gx12-flight-de-v0.4.0-2026-11-21-213221-4x.png) |
+| <img src="images/screenshots/apmon-sw-gx12-overview-en-v0.5.0-2026-11-22-112049.png" width="384" alt="APMon overview in English with the radio clock on the GX12"> | ![APMon flight data in German with the radio clock on the GX12](images/screenshots/apmon-sw-gx12-flight-de-v0.4.0-2026-11-21-213221-4x.png) |
 
-| Project menu | FC message list |
+| Project menu (v0.5.0) | FC message list (v0.5.0) |
 | --- | --- |
-| ![APMon project menu in English with version and clock setting](images/screenshots/apmon-sw-gx12-menu-en-v0.4.0-2026-11-21-213251-4x.png) | ![Scrollable FC message list in English on the GX12](images/screenshots/apmon-sw-gx12-messages-en-v0.4.0-2026-11-21-213253-4x.png) |
+| <img src="images/screenshots/apmon-sw-gx12-menu-en-v0.5.0-2026-11-22-112047.png" width="384" alt="APMon project menu in English showing version 0.5.0"> | <img src="images/screenshots/apmon-sw-gx12-messages-en-v0.5.0-2026-11-22-112056.png" width="384" alt="GX12 FC message list in English with the All filter"> |
 
 More GX12 captures: [project menu scrolled to the new entries](images/screenshots/apmon-sw-gx12-menu-en-v0.4.0-2026-11-21-213258-4x.png),
+[FC message filter in v0.5.0](#radio-clock-and-fc-message-history),
 [Telemetry diagnostics](#telemetry-diagnostics), and
 [Post-disarm summary](#post-disarm-summary).
 
-**Color display — GX15 (480 × 320, APMon v0.4.0)**
+**Color display — GX15 (480 × 320)**
 
-| Dashboard with radio clock | Project menu |
+| Dashboard with radio clock (v0.5.0) | Project menu (v0.4.0) |
 | --- | --- |
-| ![APMon color dashboard with the radio clock on the GX15](images/screenshots/apmon-color-gx15-overview-en-v0.4.0-2026-11-21-201623.png) | ![Project menu with v0.4.0, Telemetry diagnostics and Last armed period](images/screenshots/apmon-color-gx15-menu-en-v0.4.0-2026-11-21-201616.png) |
+| ![APMon v0.5.0 color dashboard with the radio clock on the GX15](images/screenshots/apmon-color-gx15-overview-en-v0.5.0-2026-11-22-111830.png) | ![Project menu with v0.4.0, Telemetry diagnostics and Last armed period](images/screenshots/apmon-color-gx15-menu-en-v0.4.0-2026-11-21-201616.png) |
 
-**FC message list — GX15**
-
-![Scrollable FC message list with severity and age on the GX15](images/screenshots/apmon-color-gx15-messages-en-v0.4.0-2026-11-21-201609.png)
-
-More GX15 captures: [Telemetry diagnostics](#telemetry-diagnostics) and
+More GX15 captures: [FC message filter in v0.5.0](#radio-clock-and-fc-message-history),
+[Telemetry diagnostics](#telemetry-diagnostics), and
 [Post-disarm summary](#post-disarm-summary).
 
-**Color display — TX16S MK3 (800 × 480, APMon v0.4.0)**
+**Color display — TX16S MK3 (800 × 480)**
 
-| Dashboard | Project menu |
+| Dashboard (v0.4.0) | Project menu (v0.5.0) |
 | --- | --- |
-| ![APMon color dashboard in English on the TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.4.0-2026-11-21-213638.png) | ![APMon project menu in English with Telemetry diagnostics and Last armed period](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.4.0-2026-11-21-213655.png) |
+| ![APMon color dashboard in English on the TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.4.0-2026-11-21-213638.png) | ![English project menu with FC messages selected and version 0.5.0 shown](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.5.0-2026-11-22-112823.png) |
 
-**FC message list — TX16S MK3 (German)**
-
-![FC message list with severity, repeat count and age on the TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-messages-de-v0.4.0-2026-11-21-213728.png)
+[FC message filter and armed markers on the TX16S MK3](#radio-clock-and-fc-message-history)
 
 **Change language:** On SW, press **ENTER** and select **Language / Sprache**.
 On COLOR, open APMon in full screen and select **Menu → Language**. For a
@@ -361,8 +357,35 @@ date. If EdgeTX cannot supply a valid hour or minute, it shows `--:--`.
 browse, or tap **Older/Newer** on COLOR. Press **ENTER** or tap a row on
 COLOR to open the full message with its severity, age since it was last
 received and any consecutive repeat count (`x3`). **RTN** returns to the list.
-`S4` means MAVLink severity 4. The history keeps **12 entries on SW** and
-**32 on COLOR** in memory and clears when APMon reloads.
+`S4` means MAVLink severity 4.
+
+Use **Filter: All** to switch between all messages and **Warnings & errors**.
+Use the wheel or **PREV** from the newest row to reach the filter, then press
+**ENTER**. On COLOR, you can also tap the filter directly. The warnings view
+shows severities **S0 through S4** and hides all other messages without
+deleting them.
+
+| GX12 with v0.5.0: All messages | GX12 with v0.5.0: Warnings |
+| --- | --- |
+| <img src="images/screenshots/apmon-sw-gx12-messages-en-v0.5.0-2026-11-22-112103.png" width="384" alt="GX12 FC message list with the All filter selected"> | <img src="images/screenshots/apmon-sw-gx12-messages-en-v0.5.0-2026-11-22-112101.png" width="384" alt="GX12 FC message list with the warnings filter active"> |
+
+| GX15 with v0.5.0: All messages | GX15 with v0.5.0: Warnings & errors |
+| --- | --- |
+| ![FC message list with informational EKF messages and warnings](images/screenshots/apmon-color-gx15-messages-en-v0.5.0-2026-11-22-111817.png) | ![FC message list with the warnings filter active](images/screenshots/apmon-color-gx15-messages-en-v0.5.0-2026-11-22-111819.png) |
+
+Confirmed transitions in the FC status appear as **`[ARMED]`** and
+**`[DISARMED]`**. Markers remain visible with the warnings filter. No marker is
+created for the first reported state, including after an FC status gap. APMon
+does not infer transitions from switch positions. The history holds **12 messages
+and 4 markers on SW** or **32 messages and 8 markers on COLOR**. Markers do not
+displace messages. Reloading APMon clears the history.
+
+| TX16S MK3 with v0.5.0: All messages (German) | TX16S MK3 with v0.5.0: Warnings & errors (German) |
+| --- | --- |
+| ![FC message list with informational messages and armed markers](images/screenshots/apmon-color-tx16s-mk3-messages-de-v0.5.0-2026-11-22-113021.png) | ![The warnings filter hides informational messages but keeps armed markers visible](images/screenshots/apmon-color-tx16s-mk3-messages-de-v0.5.0-2026-11-22-113025.png) |
+
+The filter is also shown in English: [All messages](images/screenshots/apmon-color-tx16s-mk3-messages-en-v0.5.0-2026-11-22-112952.png)
+and [Warnings & errors](images/screenshots/apmon-color-tx16s-mk3-messages-en-v0.5.0-2026-11-22-112955.png).
 
 ### Telemetry diagnostics
 

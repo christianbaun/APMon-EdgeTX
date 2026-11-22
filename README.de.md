@@ -14,8 +14,8 @@ vollständigen MAVLink-Datenstrom. Die Anwendung besteht aus Lua-Skripten auf de
 SD-Karte und benötigt zur Laufzeit weder einen Laptop noch ein zusätzliches
 Skript im Flugcontroller.
 
-Der aktuelle Projektstand ist **Version 0.4.0**. Die Versionsnummer steht in
-[VERSION](VERSION). Siehe [Release-Notizen zu v0.4.0](releases/v0.4.0.md).
+Der aktuelle Projektstand ist **Version 0.5.0**. Die Versionsnummer steht in
+[VERSION](VERSION). Siehe [Release-Notizen zu v0.5.0](releases/v0.5.0.md).
 
 Die GUI unterstützt **Englisch und Deutsch**. Englisch ist die Standardsprache.
 
@@ -56,20 +56,21 @@ Ein passendes Display allein bedeutet nicht, dass der Sender getestet wurde.
 Echte Aufnahmen von GX12, GX15 und TX16S MK3.
 Die Werte zeigen den Aufnahmezustand und sind keine Aussage zur Flugbereitschaft.
 
-**Schwarzweiß — GX12 (128 × 64, APMon v0.4.0)**
+**Schwarzweiß — GX12 (128 × 64)**
 
-Die Bilder sind vierfach vergrößert. Die Senderuhr ist auf beiden
+Die Bilder sind zur besseren Lesbarkeit vergrößert. Die Senderuhr ist auf beiden
 Telemetrieseiten eingeschaltet.
 
-| Übersicht | Flugwerte |
+| Übersicht (v0.4.0) | Flugwerte (v0.4.0) |
 | --- | --- |
 | ![APMon-Übersicht auf Deutsch mit Senderuhr auf der GX12](images/screenshots/apmon-sw-gx12-overview-de-v0.4.0-2026-11-21-213213-4x.png) | ![APMon-Flugwerte auf Deutsch mit Senderuhr auf der GX12](images/screenshots/apmon-sw-gx12-flight-de-v0.4.0-2026-11-21-213221-4x.png) |
 
-| Projektmenü | FC-Meldungsliste |
+| Projektmenü (v0.5.0) | FC-Meldungsliste (v0.5.0) |
 | --- | --- |
-| ![APMon-Projektmenü auf Deutsch mit Version und eingeschalteter Uhr](images/screenshots/apmon-sw-gx12-menu-de-v0.4.0-2026-11-21-213227-4x.png) | ![Scrollbare FC-Meldungsliste auf Deutsch auf der GX12](images/screenshots/apmon-sw-gx12-messages-de-v0.4.0-2026-11-21-213246-4x.png) |
+| <img src="images/screenshots/apmon-sw-gx12-menu-de-v0.5.0-2026-11-22-112115.png" width="384" alt="APMon-Projektmenü auf Deutsch mit Version 0.5.0"> | <img src="images/screenshots/apmon-sw-gx12-messages-de-v0.5.0-2026-11-22-112108.png" width="384" alt="FC-Meldungsliste auf Deutsch mit dem Filter Alle"> |
 
 Weitere GX12-Aufnahmen: [Projektmenü mit den neuen Einträgen (Englisch)](images/screenshots/apmon-sw-gx12-menu-en-v0.4.0-2026-11-21-213258-4x.png),
+[FC-Meldungsfilter in v0.5.0](#senderuhr-und-fc-meldungsverlauf),
 [Telemetrie-Diagnose](#telemetrie-diagnose) und
 [Zusammenfassung nach dem Entarmen](#zusammenfassung-nach-dem-entarmen).
 
@@ -79,22 +80,17 @@ Weitere GX12-Aufnahmen: [Projektmenü mit den neuen Einträgen (Englisch)](image
 | --- | --- |
 | ![APMon-Farbübersicht mit Senderuhr auf der GX15](images/screenshots/apmon-color-gx15-overview-de-v0.4.0-2026-11-21-201646.png) | ![Projektmenü mit v0.4.0, Telemetrie-Diagnose und Letzte Armed-Phase](images/screenshots/apmon-color-gx15-menu-de-v0.4.0-2026-11-21-201641.png) |
 
-**FC-Meldungsliste — GX15 (Englisch)**
-
-![Scrollbare FC-Meldungsliste mit Schweregrad und Alter auf der GX15](images/screenshots/apmon-color-gx15-messages-en-v0.4.0-2026-11-21-201609.png)
-
-Weitere GX15-Aufnahmen: [Telemetrie-Diagnose](#telemetrie-diagnose) und
+Weitere GX15-Aufnahmen: [FC-Meldungsfilter in v0.5.0](#senderuhr-und-fc-meldungsverlauf),
+[Telemetrie-Diagnose](#telemetrie-diagnose) und
 [Zusammenfassung nach dem Entarmen](#zusammenfassung-nach-dem-entarmen).
 
-**Farbdisplay — TX16S MK3 (800 × 480, APMon v0.4.0)**
+**Farbdisplay — TX16S MK3 (800 × 480, APMon v0.5.0)**
 
-| Übersicht im Vollbild | Projektmenü |
+| Übersicht im Vollbild | Projektmenü (Englisch) |
 | --- | --- |
-| ![APMon-Farbübersicht auf Deutsch auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-de-v0.4.0-2026-11-21-213751.png) | ![APMon-Projektmenü auf Deutsch mit Telemetrie-Diagnose und Letzte Armed-Phase](images/screenshots/apmon-color-tx16s-mk3-menu-de-v0.4.0-2026-11-21-213723.png) |
+| ![APMon-Farbübersicht auf Deutsch auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-de-v0.5.0-2026-11-22-113045.png) | ![Englisches APMon-Projektmenü mit ausgewählter FC-Meldungsliste und Version 0.5.0](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.5.0-2026-11-22-112823.png) |
 
-**FC-Meldungsliste — TX16S MK3**
-
-![FC-Meldungsliste mit Schweregrad, Wiederholungszähler und Alter auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-messages-de-v0.4.0-2026-11-21-213728.png)
+[FC-Meldungsfilter und Armed-Markierungen auf der TX16S MK3](#senderuhr-und-fc-meldungsverlauf)
 
 **Sprache wechseln:** Auf SW-Displays **ENTER** drücken und **Sprache /
 Language** auswählen. Auf COLOR-Displays APMon im Vollbild öffnen und
@@ -371,8 +367,31 @@ Drehgeber oder **NEXT/PREV** blättern, auf COLOR auch mit **Ältere/Neuere**.
 **ENTER** oder ein Tipp auf die Zeile (COLOR) öffnet den vollständigen Text
 mit Schweregrad, Alter seit dem letzten Empfang und ggf. Wiederholungszähler
 (`x3`). **RTN** führt zurück zur Liste. `S4` bedeutet MAVLink-Schweregrad 4.
-Der Verlauf hält **12 Einträge auf SW** und **32 auf COLOR** im Arbeitsspeicher
-und wird beim Neuladen von APMon geleert.
+Über **Filter: Alle** zwischen allen Meldungen und **Warnungen & Fehler**
+wechseln. Mit dem Drehgeber oder **PREV** von der neuesten Zeile zum Filter
+navigieren und **ENTER** drücken. Auf COLOR lässt sich der Filter direkt
+antippen. Der Filter zeigt Schweregrade **S0 bis S4** und blendet andere
+Meldungen nur aus.
+
+| GX12 mit v0.5.0: Alle Meldungen | GX12 mit v0.5.0: Warnungen |
+| --- | --- |
+| <img src="images/screenshots/apmon-sw-gx12-messages-de-v0.5.0-2026-11-22-112109.png" width="384" alt="GX12-Meldungsliste mit ausgewähltem Filter Alle"> | <img src="images/screenshots/apmon-sw-gx12-messages-de-v0.5.0-2026-11-22-112110.png" width="384" alt="GX12-Meldungsliste mit aktivem Warnungsfilter"> |
+
+| GX15 mit v0.5.0: Alle Meldungen | GX15 mit v0.5.0: Warnungen & Fehler |
+| --- | --- |
+| ![FC-Meldungsliste mit informativen EKF-Meldungen und Warnungen](images/screenshots/apmon-color-gx15-messages-de-v0.5.0-2026-11-22-111807.png) | ![FC-Meldungsliste mit aktivem Warnungsfilter](images/screenshots/apmon-color-gx15-messages-de-v0.5.0-2026-11-22-111805.png) |
+
+Bestätigte Wechsel im FC-Status erscheinen als **`[ARMED]`** und
+**`[DISARMED]`**. Die Markierungen bleiben auch im Warnungsfilter sichtbar.
+Der erste empfangene Zustand, auch nach einer Lücke im FC-Status, erzeugt
+keine Markierung. Die Übergänge werden nicht aus Schalterstellungen abgeleitet.
+Der Verlauf hält **12 Meldungen und 4 Markierungen auf SW** bzw.
+**32 Meldungen und 8 Markierungen auf COLOR** im Arbeitsspeicher. Markierungen
+verdrängen keine Meldungen. Beim Neuladen wird der Verlauf geleert.
+
+| TX16S MK3 mit v0.5.0: Alle Meldungen | TX16S MK3 mit v0.5.0: Warnungen & Fehler |
+| --- | --- |
+| ![FC-Meldungsliste mit informativen Meldungen und Armed-Markierungen](images/screenshots/apmon-color-tx16s-mk3-messages-de-v0.5.0-2026-11-22-113021.png) | ![Der Warnungsfilter blendet informative Meldungen aus und lässt Armed-Markierungen sichtbar](images/screenshots/apmon-color-tx16s-mk3-messages-de-v0.5.0-2026-11-22-113025.png) |
 
 ### Telemetrie-Diagnose
 

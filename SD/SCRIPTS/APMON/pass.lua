@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/pass.lua
 -- Purpose: Decode ELRS ArduPilot passthrough frames, status text and data freshness.
--- Project version: 0.4.0
+-- Project version: 0.5.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -17,31 +17,57 @@ local M = { data = {}, message = nil, ekf = nil }
 local capacity, armedSummary = ...
 capacity = capacity or 12
 local log, head, count = {}, 0, 0
+local markers, markerHead, markerCount = {}, 0, 0
+local markerCapacity, order = capacity <= 12 and 4 or 8, 0
 local statusTimeout = 300
 local function at(index)
   return log[(head - index) % capacity + 1]
 end
-function M.messageAt(index)
-  if index >= 1 and index <= count then return at(index) end
+local function mark(armed, now)
+  order = order + 1
+  markerHead = markerHead % markerCapacity + 1
+  markerCount = math.min(markerCount + 1, markerCapacity)
+  markers[markerHead] = { armed = armed, time = now, order = order }
 end
--- nil follows the newest entry; an older entry stays selected until evicted.
-function M.browse(selected, step)
-  if count == 0 then return nil, 0, 0 end
-  local index = 1
-  if selected then
-    while index < count and at(index) ~= selected do index = index + 1 end
+-- Merge references, not copies. Markers do not consume any of the FC text slots.
+function M.timeline(list, warnings)
+  list = list or {}
+  if list.order == order and list.warnings == warnings then return list end
+  local i, j, n = 1, 1, 0
+  while i <= count or j <= markerCount do
+    local message = i <= count and at(i)
+    local marker = j <= markerCount and markers[(markerHead - j) % markerCapacity + 1]
+    if marker and (not message or marker.order > message.order) then
+      n, j = n + 1, j + 1
+      list[n] = marker
+    else
+      if not warnings or message.severity <= 4 then
+        n = n + 1
+        list[n] = message
+      end
+      i = i + 1
+    end
   end
-  index = math.max(1, math.min(count, index + (step or 0)))
-  return at(index), index, count
+  for k = n + 1, #list do list[k] = nil end
+  list.order, list.warnings = order, warnings
+  return list
+end
+function M.timelineIndex(list, selected)
+  -- nil follows the newest entry; keep an older selection until it is evicted.
+  if #list == 0 then return 0 end
+  if not selected then return 1 end
+  for i, entry in ipairs(list) do if entry == selected then return i end end
+  return #list
 end
 local function remember(value, severity, now)
   local latest = M.message
-  if latest and latest.value == value and latest.severity == severity then
+  if latest and latest.order == order and latest.value == value and latest.severity == severity then
     latest.time, latest.repeats = now, latest.repeats + 1
   else
     head = head % capacity + 1
     count = math.min(count + 1, capacity)
-    M.message = { value = value, time = now, severity = severity, repeats = 1 }
+    order = order + 1
+    M.message = { value = value, time = now, severity = severity, repeats = 1, order = order }
     log[head] = M.message
   end
 end
@@ -55,6 +81,10 @@ local function item(id, p, start, now)
   -- creates a float and can round away fix bits on embedded 32-bit Lua builds.
   if id == 0x5001 then
     local armed = p[start + 1] % 2
+    local previous = M.data.armed
+    if previous and armed ~= previous.value and now >= previous.time and now - previous.time <= statusTimeout then
+      mark(armed, now)
+    end
     M.data.armed = { value = armed, time = now }
     if armedSummary then armedSummary:observe(armed, now, statusTimeout) end
   elseif id == 0x5002 then
@@ -94,6 +124,7 @@ function M.poll()
   if M.last == now then return end
   if M.last and now < M.last then
     M.data, M.message, M.ekf, log, head, count = {}, nil, nil, {}, 0, 0
+    markers, markerHead, markerCount, order = {}, 0, 0, order + 1
     M.last = nil
     if armedSummary then armedSummary:reset() end
   end

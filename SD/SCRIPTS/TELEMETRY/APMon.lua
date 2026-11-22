@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/TELEMETRY/APMon.lua
 -- Purpose: Render the GX12/Boxer telemetry UI with two pages, menus and saved language choice.
--- Project version: 0.4.0
+-- Project version: 0.5.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -32,6 +32,7 @@ local project = module('project')
 local monitor = core.new(config, receiver, tracker)
 local page, language, menuItem, languageItem = 1, 1, 1, 1
 local showClock, saveError, selectedMessage, messageDetail = false, nil, nil, nil
+local warningsOnly, filterFocus, messageList = false, false, nil
 local view = 'data'
 local sensorIndex = 1
 local toolRenderer, toolError
@@ -230,10 +231,24 @@ local function run(event)
   elseif view == 'messageDetail' then
     if enterEvent or exitEvent then view, messageDetail = 'messages', nil end
   elseif view == 'messages' then
-    local message, index = receiver.browse(selectedMessage, step)
-    selectedMessage = index > 1 and message or nil
-    if exitEvent then view = 'menu' end
-    if enterEvent and message then view, messageDetail, selectedMessage = 'messageDetail', message, message end
+    if exitEvent then
+      view, selectedMessage, messageList = 'menu', nil, nil
+    else
+      messageList = receiver.timeline(messageList, warningsOnly)
+      local index = receiver.timelineIndex(messageList, selectedMessage)
+      if index == 0 then filterFocus = true end
+      if filterFocus then
+        if nextEvent and index > 0 then filterFocus, selectedMessage = false, nil end
+        if enterEvent then warningsOnly, selectedMessage = not warningsOnly, nil end
+      elseif prevEvent and index == 1 then
+        filterFocus = true
+      else
+        index = math.max(1, math.min(#messageList, index + step))
+        local message = messageList[index]
+        selectedMessage = index > 1 and message or nil
+        if enterEvent then view, messageDetail, selectedMessage = 'messageDetail', message, message end
+      end
+    end
   elseif view == 'language' then
     local count = #i18n.languages
     if nextEvent then languageItem = languageItem % count + 1 end
@@ -249,7 +264,7 @@ local function run(event)
     if exitEvent then view = 'data' end
     if enterEvent then
       if menuItem == 1 then view, languageItem = 'language', language
-      elseif menuItem == 2 then view, selectedMessage = 'messages', nil
+      elseif menuItem == 2 then view, selectedMessage, filterFocus = 'messages', nil, false
       elseif menuItem == 3 then
         showClock = not showClock
         saveError = not savePreferences() and 'Uhr nicht gespeichert' or nil
@@ -305,27 +320,40 @@ local function run(event)
   local function fmt(key) return monitor:format(key) end
   if view == 'messages' or view == 'messageDetail' then
     menuHeader(width, tr('FC-Meldungen'))
-    local message, index, count = receiver.browse(selectedMessage)
     if view == 'messages' then
-      if not message then
-        text(11, tr('Keine FC-Meldungen'))
-        return 0
-      end
-      local first = math.max(1, index - 4)
-      for i = first, math.min(count, first + 4) do
-        local entry = receiver.messageAt(i)
-        local label = 'S' .. entry.severity .. ' ' .. entry.value
+      messageList = receiver.timeline(messageList, warningsOnly)
+      local index, count = receiver.timelineIndex(messageList, selectedMessage), #messageList
+      local filter = filterFocus or index == 0
+      menuOption(width, 10, tr(warningsOnly and 'Filter: Warnungen' or 'Filter: Alle'), filter)
+      if count == 0 then text(21, tr(warningsOnly and 'Keine Warnungen' or 'Keine FC-Meldungen')) end
+      local first = math.max(1, index - 3)
+      for i = first, math.min(count, first + 3) do
+        local entry = messageList[i]
+        local label
+        if entry.armed ~= nil then
+          local age = receiver.age(entry)
+          label = (entry.armed == 1 and '[ARMED]' or '[DISARMED]') .. (age and ' ' .. age .. 's' or '')
+        else
+          label = 'S' .. entry.severity .. ' ' .. entry.value
+        end
         if textWidth(label, small) > width - 15 then
           label = fit(label, width - 15 - textWidth('...', small), small) .. '...'
         end
-        menuOption(width, 10 + (i - first) * 9, label, i == index)
+        menuOption(width, 19 + (i - first) * 9, label, not filter and i == index)
       end
-      text(57, tr('ENT: Details'))
-      rightText(width - 2, 57, index .. '/' .. count, small)
+      text(57, tr(filter and 'ENT: Filter' or 'ENT: Details'))
+      if count > 0 then rightText(width - 2, 57, index .. '/' .. count, small) end
       return 0
     end
-    message = messageDetail
+    local message = messageDetail
     local age = receiver.age(message)
+    if message.armed ~= nil then
+      text(11, message.armed == 1 and 'ARMED' or 'DISARMED')
+      text(20, monoText(message.armed == 1 and 'Armen bestätigt' or 'Entarmen bestätigt'))
+      if age then text(29, string.format(tr('vor %ds'), age)) end
+      text(57, tr('RTN: Liste'))
+      return 0
+    end
     local repeats = message.repeats > 1 and ' x' .. message.repeats or ''
     text(11, string.format('S%d%s %s', message.severity, repeats, age and age .. 's' or '--'))
     local value = message.value

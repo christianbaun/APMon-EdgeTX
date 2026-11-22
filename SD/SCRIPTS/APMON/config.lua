@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/config.lua
 -- Purpose: Define sensor names, units, conversion factors and value validation limits.
--- Project version: 0.4.0
+-- Project version: 0.5.0
 -- Updated: 2026-11-20
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
