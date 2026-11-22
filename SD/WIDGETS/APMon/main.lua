@@ -22,7 +22,7 @@ local core = module('core')
 local config = module('config')
 local tracker = module('armed_summary').new(config.relativeAltitudeSensor)
 local summary = module('summary_view')
-local receiver = module('pass', 32, tracker)
+local receiver = module('pass', 32, tracker, true)
 local i18n = module('i18n')
 local project = module('project')
 local diagnostics = module('diagnostics')
@@ -53,7 +53,7 @@ end
 local function setView(widget, view, focus)
   widget.view, widget.focus = view, focus
 end
-local menuW = 148
+local menuW, warningW = 148, 196
 local menuCount = 7
 local regularFont = SMLSIZE or 0
 local headingFont = MIDSIZE or regularFont
@@ -119,7 +119,7 @@ local function rows(widget, layout)
   return layout.languageTop, math.max(1, widget.focus - layout.languageRows + 1), count, layout.languageRows
 end
 local function messagePage(widget)
-  return widget.view == 'messages' or widget.view == 'messageDetail'
+  return widget.view == 'messages' or widget.view == 'messageDetail' or widget.view == 'warningDetail'
 end
 local function diagnosticPage(widget)
   return widget.view == 'diagnostics' or widget.view == 'sensors'
@@ -136,8 +136,14 @@ local function diagnosticWindow(widget, z, layout)
   local first = math.min(widget.sensorFirst or 1, last)
   return top, back, listTop, visible, count, first, last
 end
+local function messageBack(z, layout)
+  return z.h - layout.rowHeight - 16
+end
+local function warningTop(layout)
+  return layout.footerY - 5 - layout.buttonHeight - 4
+end
 local function messageWindow(widget, z, layout)
-  local top, back = layout.header + 9 + layout.rowHeight, z.h - layout.rowHeight - 16
+  local top, back = layout.header + 9 + layout.rowHeight, messageBack(z, layout)
   local visible = math.max(1, math.floor((back - layout.rowHeight - top) / layout.rowHeight))
   widget.messageList = receiver.timeline(widget.messageList, widget.warningsOnly == true)
   local index, count = receiver.timelineIndex(widget.messageList, widget.selectedMessage), #widget.messageList
@@ -161,6 +167,12 @@ local function handleInput(widget, z, layout, event, touch)
     local top = layout.footerY - 5
     if enter or (inButton(top, layout.buttonHeight) and tap.x >= z.w - 12 - menuW) then
       setView(widget, 'menu', 1)
+    elseif inButton(warningTop(layout), layout.buttonHeight) and tap.x >= z.w - 12 - warningW then
+      local warning = receiver.latestWarning()
+      if warning then
+        widget.messageDetail = warning
+        setView(widget, 'warningDetail', 1)
+      end
     end
     return
   end
@@ -235,14 +247,15 @@ local function handleInput(widget, z, layout, event, touch)
     return
   end
   if messagePage(widget) then
-    local top, back, first, index, count, visible = messageWindow(widget, z, layout)
-    if widget.view == 'messageDetail' then
-      if enter or exit or inButton(back, rowHeight - 3) then
+    if widget.view ~= 'messages' then
+      if enter or exit or inButton(messageBack(z, layout), rowHeight - 3) then
         widget.messageDetail = nil
-        setView(widget, 'messages', 1)
+        if widget.view == 'warningDetail' then setView(widget)
+        else setView(widget, 'messages', 1) end
       end
       return
     end
+    local top, back, first, index, count, visible = messageWindow(widget, z, layout)
     if exit or inButton(back, rowHeight - 3) then
       setView(widget, 'menu', 2)
       widget.selectedMessage, widget.messageList = nil, nil
@@ -367,6 +380,7 @@ local function refresh(widget, event, touch)
   local left, inner = z.x + 12, z.w - 24
   rect(z.x, z.y, z.w, layout.header, info)
   local heading = widget.view == 'language' and 'Sprache'
+    or widget.view == 'warningDetail' and 'Letzte FC-Warnung'
     or messagePage(widget) and 'FC-Meldungen'
     or widget.view == 'diagnostics' and 'Telemetrie-Diagnose'
     or widget.view == 'report' and 'Diagnosebericht'
@@ -548,7 +562,7 @@ local function refresh(widget, event, touch)
     return
   end
   if messagePage(widget) then
-    local top, back, first, index, total, visible = messageWindow(widget, z, layout)
+    local back = messageBack(z, layout)
     local height = layout.rowHeight
     local flags = regularFont + CUSTOM_COLOR
     local function messageText(x, y, value, color)
@@ -559,14 +573,14 @@ local function refresh(widget, event, touch)
       rect(x, y, w, height - 3, selected and info or panel)
       text(x + 8, y + 4, label, selected and bg or info, w - 16)
     end
-    if widget.view == 'messageDetail' then
+    button(left, back, inner, 'Zurück')
+    if widget.view ~= 'messages' then
       local message = widget.messageDetail
       local age = receiver.age(message)
-      top = top - height
+      local top = layout.header + 9
       if message.armed ~= nil then
         text(left, top, message.armed == 1 and 'Armen bestätigt' or 'Entarmen bestätigt', info, inner)
         if age then text(left, top + layout.step, string.format(tr('vor %ds'), age), normal, inner) end
-        button(left, back, inner, 'Zurück')
         return
       end
       local label = string.format(tr('Schweregrad %d'), message.severity)
@@ -581,6 +595,7 @@ local function refresh(widget, event, touch)
         value = string.sub(value, #part + 1)
       end
     else
+      local top, _, first, index, total, visible = messageWindow(widget, z, layout)
       local filter = widget.filterFocus or index == 0
       button(left, top - height, inner, widget.warningsOnly and 'Filter: Warnungen & Fehler' or 'Filter: Alle', filter)
       if total == 0 then text(left, top, widget.warningsOnly and 'Keine Warnungen' or 'Keine FC-Meldungen', info, inner) end
@@ -606,12 +621,11 @@ local function refresh(widget, event, touch)
       local half, nav = math.floor(inner / 2), back - height
       if not filter and index > 1 then button(left, nav, half - 2, 'Neuere') end
       if not filter and index < total then button(left + half + 2, nav, inner - half - 2, 'Ältere') end
-    end
-    button(left, back, inner, 'Zurück')
-    if widget.view == 'messages' and total > 0 then
-      local position = index .. '/' .. total
-      local w = lcd.sizeText(position, flags)
-      text(left + inner - w - 8, back + 4, position, info, w)
+      if total > 0 then
+        local position = index .. '/' .. total
+        local w = lcd.sizeText(position, flags)
+        text(left + inner - w - 8, back + 4, position, info, w)
+      end
     end
     return
   end
@@ -717,6 +731,12 @@ local function refresh(widget, event, touch)
   if event ~= nil then
     rect(buttonX, footer - 5, menuW, layout.buttonHeight, panel)
     text(buttonX + 8, footer - 2, 'Menü', info, menuW - 16)
+    if receiver.latestWarning() then
+      local x, y = z.x + z.w - 12 - warningW, z.y + warningTop(layout)
+      rect(x, y, warningW, layout.buttonHeight, panel)
+      text(x + 8, y + math.floor((layout.buttonHeight - layout.smallHeight) / 2),
+        'Letzte FC-Warnung', warn, warningW - 16)
+    end
   else
     text(buttonX, footer, 'Vollbild: Menü', info, menuW)
   end

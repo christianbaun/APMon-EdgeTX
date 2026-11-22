@@ -404,6 +404,13 @@ Drehgeber oder **NEXT/PREV** blättern, auf COLOR auch mit **Ältere/Neuere**.
 **ENTER** oder ein Tipp auf die Zeile (COLOR) öffnet den vollständigen Text
 mit Schweregrad, Alter seit dem letzten Empfang und ggf. Wiederholungszähler
 (`x3`). **RTN** führt zurück zur Liste. `S4` bedeutet MAVLink-Schweregrad 4.
+
+Auf COLOR öffnet **Letzte FC-Warnung** unten rechts in der Vollbildübersicht
+die jüngste noch im Verlauf gespeicherte Warnung oder Fehlermeldung (S0–S4).
+Die Schaltfläche erscheint nur, wenn eine solche Meldung vorhanden ist.
+**Zurück** oder **RTN** führt direkt zur Übersicht, ohne den Meldungsfilter
+zu ändern.
+
 Über **Filter: Alle** zwischen allen Meldungen und **Warnungen & Fehler**
 wechseln. Mit dem Drehgeber oder **PREV** von der neuesten Zeile zum Filter
 navigieren und **ENTER** drücken. Auf COLOR lässt sich der Filter direkt

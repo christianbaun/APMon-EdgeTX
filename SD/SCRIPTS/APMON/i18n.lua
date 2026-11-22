@@ -130,6 +130,7 @@ else
 Zurück|Back
 Menü|Menu
 Vollbild: Menü|Full screen: menu
+Letzte FC-Warnung|Last FC warning
 Nur für diese Sitzung|For this session only
 Filter: Warnungen & Fehler|Filter: Warnings & errors
 Schweregrad %d|Severity %d

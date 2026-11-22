@@ -182,6 +182,14 @@ tick(100, packet(0x5001,0), packet(0x5002,48))
 expect('DISARMED')
 frame('Confirmed disarm', 'Bestätigtes Entarmen')
 
+if color then
+  tap('Last FC warning', 'Letzte FC-Warnung')
+  expect('Battery warning')
+  frame('Read the last FC warning directly', 'Letzte FC-Warnung direkt lesen')
+  render(exit)
+  expect('APMon')
+end
+
 openMenu()
 frame('Open the project menu', 'Projektmenü öffnen')
 choose(2, 'FC messages', 'FC-Meldungen')

@@ -394,6 +394,11 @@ COLOR to open the full message with its severity, age since it was last
 received and any consecutive repeat count (`x3`). **RTN** returns to the list.
 `S4` means MAVLink severity 4.
 
+On COLOR, tap **Last FC warning** at the lower right of the full-screen
+dashboard to open the latest retained warning or error (S0–S4). The button
+only appears when a warning or error is available. **Back** or **RTN**
+returns directly to the dashboard without changing the history filter.
+
 Use **Filter: All** to switch between all messages and **Warnings & errors**.
 Use the wheel or **PREV** from the newest row to reach the filter, then press
 **ENTER**. On COLOR, you can also tap the filter directly. The warnings view

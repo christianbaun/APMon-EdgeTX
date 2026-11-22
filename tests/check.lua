@@ -1590,4 +1590,63 @@ do
   assert(not has('[ARMED]') and not has('7.25'))
   io, fstat, getVersion = originalIO, originalFstat, originalVersion
 end
-print('OK: sensors, GPS, armed-summary gaps, bilingual diagnostic reports, layouts, passthrough, restricted mono Lua')
+do
+  local rx = loadScript('/SCRIPTS/APMON/pass.lua')(4, nil, true)
+  rx.decode(0x80, message('One warning', 4), 100)
+  for i = 1, 3 do rx.decode(0x80, message('Notice ' .. i, 5), 100 + i) end
+  assert(rx.latestWarning().value == 'One warning')
+  rx.decode(0x80, message('Notice 4', 5), 104)
+  assert(not rx.latestWarning()) -- no warning retained outside the ring
+end
+
+for _, spec in ipairs({{440,252,2}, {480,320,1}, {800,480,2}}) do
+  colorDisplay, LCD_W, LCD_H, lcd.sizeText = true, spec[1], spec[2], measure
+  local app = loadScript('/WIDGETS/APMon/main.lua')()
+  local widget = app.create({x=0,y=0,w=LCD_W,h=LCD_H}, {Language=spec[3]})
+  local de = spec[3] == 2
+  local shortcut, back, menu = de and 'Letzte FC-Warnung' or 'Last FC warning',
+    de and 'Zurück' or 'Back', de and 'Menü' or 'Menu'
+  local packetList = {}
+  crossfireTelemetryPop = function()
+    local packet = table.remove(packetList, 1)
+    if packet then return 0x80, packet end
+  end
+  local function frame(event, point)
+    calls, draws, rectangles, bitmaps = {}, {}, {}, {}
+    app.refresh(widget, event, point)
+  end
+  local function receive(...)
+    now = now + 100
+    packetList = {...}
+    frame(0)
+  end
+  local function tap(label) frame(EVT_TOUCH_TAP, assert(drawOf(label), label)) end
+  data = {}
+  receive(single(0x5001, 0), message('Routine notice', 5))
+  assert(not drawOf(shortcut) and drawOf(menu))
+  receive(message('Old battery warning', 4), message('Newest FC error', 2), message('Newest FC error', 2))
+  receive(single(0x5001, 256), message('Latest routine notice', 5))
+  local button, menuButton = assert(drawOf(shortcut)), assert(drawOf(menu))
+  assert(button.x >= LCD_W / 2 and button.y + button.h < menuButton.y)
+  assert(drawOf('Latest routine notice') and not drawOf('Newest FC error'))
+  local missing = assert(drawOf(de and 'Keine aktuellen FC-Daten' or 'No current FC data'))
+  assert(missing.y + missing.h <= button.y - 3)
+  frame(EVT_TOUCH_TAP, {x=button.x-9, y=button.y})
+  assert(drawOf('APMon', 8)) -- the adjacent unpainted area is not interactive
+  tap(shortcut)
+  assert(drawOf(shortcut, 8) and drawOf('Newest FC error') and not drawOf('Old battery warning'))
+  assert(drawOf(de and 'Schweregrad 2  |  vor 1s  |  x2' or 'Severity 2  |  1s ago  |  x2'))
+  receive(message('New emergency', 0))
+  assert(drawOf('Newest FC error') and not drawOf('New emergency')) -- keep the opened entry selected
+  frame(EVT_VIRTUAL_EXIT)
+  assert(drawOf('APMon', 8) and drawOf(shortcut) and drawOf(menu))
+  tap(shortcut); assert(drawOf('New emergency'))
+  tap(back)
+  assert(drawOf('APMon', 8) and drawOf(menu))
+  tap(menu)
+  tap(de and 'FC-Meldungen' or 'FC messages')
+  assert(drawOf(de and 'Filter: Alle' or 'Filter: All')) -- shortcut never changes the history filter
+  frame(nil)
+  assert(drawOf('APMon', 8) and not drawOf(shortcut)) -- no misleading touch target outside fullscreen
+end
+print('OK: sensors, GPS, armed-summary gaps, diagnostic reports, FC warning shortcut, layouts, bilingual UI, restricted mono Lua')

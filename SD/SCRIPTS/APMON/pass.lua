@@ -14,7 +14,7 @@
 -- ELRS 4.1.0 ArduPilot response frames (0x80), little-endian payload.
 -- One shared receiver per loaded widget script; never transmits requests.
 local M = { data = {}, message = nil, ekf = nil }
-local capacity, armedSummary = ...
+local capacity, armedSummary, warningShortcut = ...
 capacity = capacity or 12
 local log, head, count = {}, 0, 0
 local markers, markerHead, markerCount = {}, 0, 0
@@ -22,6 +22,14 @@ local markerCapacity, order = capacity <= 12 and 4 or 8, 0
 local statusTimeout = 300
 local function at(index)
   return log[(head - index) % capacity + 1]
+end
+if warningShortcut then
+  function M.latestWarning()
+    for i = 1, count do
+      local message = at(i)
+      if message.severity <= 4 then return message end
+    end
+  end
 end
 local function mark(armed, now)
   order = order + 1
