@@ -13,8 +13,8 @@ sensors and selected ArduPilot passthrough data, not the full MAVLink stream.
 It runs as Lua scripts on the radio's SD card: no laptop or
 additional flight-controller script is required during use.
 
-Current project version: **0.6.0**, recorded in [VERSION](VERSION).
-See the [v0.6.0 release notes](releases/v0.6.0.md).
+Current project version: **0.7.0**, recorded in [VERSION](VERSION).
+See the [v0.7.0 release notes](releases/v0.7.0.md).
 
 The GUI supports **English and German**, with English as the default.
 
@@ -59,9 +59,9 @@ captured state and are not an indication of flight readiness.
 
 The images are enlarged for readability. The radio clock is enabled on both telemetry pages.
 
-| Overview (v0.6.0) | Flight data (v0.6.0) |
+| Overview (v0.7.0) | Flight data (v0.7.0) |
 | --- | --- |
-| <img src="images/screenshots/apmon-sw-gx12-overview-en-v0.6.0-2026-11-22-172745.png" width="384" alt="APMon overview in English with the radio clock on the GX12"> | <img src="images/screenshots/apmon-sw-gx12-flight-en-v0.6.0-2026-11-22-172750.png" width="384" alt="APMon flight data in English with the radio clock on the GX12"> |
+| <img src="images/screenshots/apmon-sw-gx12-overview-en-v0.7.0-2026-11-22-192557.png" width="384" alt="APMon overview in English with the radio clock on the GX12"> | <img src="images/screenshots/apmon-sw-gx12-flight-en-v0.7.0-2026-11-22-192558.png" width="384" alt="APMon flight data in English with the radio clock on the GX12"> |
 
 | Compact project menu (v0.6.0) | FC message list (v0.5.0) |
 | --- | --- |
@@ -72,25 +72,26 @@ More GX12 captures: [FC message filter](#radio-clock-and-fc-message-history),
 [Telemetry diagnostics](#telemetry-diagnostics), and
 [Post-disarm summary](#post-disarm-summary).
 
-**Color display — GX15 (480 × 320, APMon v0.6.0)**
+**Color display — GX15 (480 × 320, APMon v0.7.0)**
 
 | Dashboard with radio clock | Project menu |
 | --- | --- |
-| ![APMon color dashboard with the radio clock on the GX15](images/screenshots/apmon-color-gx15-overview-en-v0.6.0-2026-11-22-183842.png) | ![Project menu with GPS details and version 0.6.0](images/screenshots/apmon-color-gx15-menu-en-v0.6.0-2026-11-22-185034.png) |
+| ![APMon color dashboard with the radio clock on the GX15](images/screenshots/apmon-color-gx15-overview-en-v0.7.0-2026-11-22-193059.png) | ![Project menu on the GX15 showing version 0.7.0](images/screenshots/apmon-color-gx15-menu-en-v0.7.0-2026-11-22-193108.png) |
 
 More GX15 captures: [FC message filter](#radio-clock-and-fc-message-history),
 [GPS details](#gps-details),
 [Telemetry diagnostics](#telemetry-diagnostics), and
 [Post-disarm summary](#post-disarm-summary).
 
-**Color display — TX16S MK3 (800 × 480, APMon v0.6.0)**
+**Color display — TX16S MK3 (800 × 480)**
 
-| Dashboard | Project menu |
+| Dashboard (v0.6.0) | Project menu (v0.7.0) |
 | --- | --- |
-| ![APMon color dashboard in English on the TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.6.0-2026-11-22-185702.png) | ![English project menu with GPS details and version 0.6.0](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.6.0-2026-11-22-185711.png) |
+| ![APMon color dashboard in English on the TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.6.0-2026-11-22-185702.png) | ![English project menu on the TX16S MK3 showing version 0.7.0](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.7.0-2026-11-22-192217.png) |
 
-More TX16S MK3 captures: [FC message filter and armed markers](#radio-clock-and-fc-message-history)
-and [GPS details](#gps-details).
+More TX16S MK3 captures: [Armed summary](#post-disarm-summary),
+[telemetry diagnostics](#telemetry-diagnostics), [GPS details](#gps-details)
+and [FC message filter](#radio-clock-and-fc-message-history).
 
 **Change language:** On SW, press **ENTER** and select **Language / Sprache**.
 On COLOR, open APMon in full screen and select **Menu → Language**. For a
@@ -130,10 +131,10 @@ versions require separate testing.
 
 | Radio | Versions |
 | --- | --- |
-| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.6.0 |
+| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.7.0 |
 | TX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
-| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.6.0 |
-| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.6.0 |
+| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.7.0 |
+| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.7.0 |
 | Boxer | Hardware testing pending |
 | Other radios | Hardware testing pending |
 
@@ -398,11 +399,11 @@ at once. Scroll past **Last armed period** for **GPS details**, then press
 | --- | --- |
 | <img src="images/screenshots/apmon-sw-gx12-gps-en-v0.6.0-2026-11-22-184732.png" width="384" alt="GPS details on the GX12 with a live 3D fix, 11 satellites and GPS course"> | ![GPS details on the GX15 with a live 3D fix, 9 satellites and GPS course](images/screenshots/apmon-color-gx15-gps-en-v0.6.0-2026-11-22-185043.png) |
 
-**TX16S MK3 (COLOR, 800 × 480):**
+**TX16S MK3 (COLOR, 800 × 480, APMon v0.7.0):**
 
-![GPS details on the TX16S MK3 with a live 3D fix, 11 satellites and GPS course](images/screenshots/apmon-color-tx16s-mk3-gps-en-v0.6.0-2026-11-22-185716.png)
+![GPS details on the TX16S MK3 with a live 3D fix, 19 satellites and GPS course](images/screenshots/apmon-color-tx16s-mk3-gps-en-v0.7.0-2026-11-22-192300.png)
 
-*All three radios are running APMon 0.6.0. The coordinates are masked in the screenshots.*
+*GX12 and GX15 captures are from APMon 0.6.0. Coordinates are masked in all three screenshots.*
 
 Coordinates are shown in decimal degrees. APMon needs a fresh, valid `GPS`
 reading and a confirmed position fix to show **Live**. To avoid flicker
@@ -435,16 +436,16 @@ After a sensor drops out, its cached value remains visible only as the last
 value, not as live telemetry. Unconfigured sensors are not counted. Valid
 readings are not flight clearance.
 
-| Telemetry diagnostics on the GX15 | Sensor list on the GX15 |
+| GX15 with v0.7.0: Telemetry diagnostics | Sensor list (coordinates masked) |
 | --- | --- |
-| ![Telemetry diagnostics showing radio link, sensor and FC status separately](images/screenshots/apmon-color-gx15-diagnostics-en-v0.4.0-2026-11-21-201556.png) | ![Sensor list showing the last readings and their validity](images/screenshots/apmon-color-gx15-sensors-en-v0.4.0-2026-11-21-201559.png) |
+| ![Telemetry diagnostics showing radio link, sensor and FC status separately](images/screenshots/apmon-color-gx15-diagnostics-en-v0.7.0-2026-11-22-193131.png) | ![Sensor list showing the last readings and their validity with GPS coordinates masked](images/screenshots/apmon-color-gx15-sensors-en-v0.7.0-2026-11-22-193133.png) |
 
-**Telemetry diagnostics on the GX12 (v0.6.0):**
+| GX12 with v0.7.0: Telemetry diagnostics | Sensor details |
+| --- | --- |
+| <img src="images/screenshots/apmon-sw-gx12-diagnostics-en-v0.7.0-2026-11-22-192648.png" width="384" alt="Telemetry diagnostics on the GX12 showing RC link, sensor validity and FC status"> | <img src="images/screenshots/apmon-sw-gx12-sensors-en-v0.7.0-2026-11-22-192651.png" width="384" alt="Sensor details for Hdg showing its last valid GPS course"> |
 
-<img src="images/screenshots/apmon-sw-gx12-diagnostics-en-v0.6.0-2026-11-22-172808.png" width="384" alt="Telemetry diagnostics on the GX12 showing RC link, sensor validity and FC status">
-
-On the TX16S MK3: [diagnostics overview](images/screenshots/apmon-color-tx16s-mk3-diagnostics-en-v0.4.0-2026-11-21-213701.png)
-and [sensor list (German)](images/screenshots/apmon-color-tx16s-mk3-sensors-de-v0.4.0-2026-11-21-213741.png) at 800 × 480.
+On the TX16S MK3 with v0.7.0: [diagnostics overview](images/screenshots/apmon-color-tx16s-mk3-diagnostics-en-v0.7.0-2026-11-22-192304.png)
+and [sensor list with coordinates masked](images/screenshots/apmon-color-tx16s-mk3-sensors-en-v0.7.0-2026-11-22-192308.png) at 800 × 480.
 
 ### Post-disarm summary
 
@@ -467,14 +468,33 @@ in memory until APMon reloads.
   in your setup. The summary does not fall back to another altitude source
   or estimate ground clearance.
 
-If the summary is **Incomplete**, open **Details** to see why. Observed readings
-remain visible. Loss of telemetry is never treated as disarming.
+If the summary is **Incomplete**, open **Details** to see why. For example,
+**FC status missing 2x** means two separate gaps in FC status.
+**Current missing 1x** means the current sensor was unavailable during one
+observed interval. Consecutive missing samples of the same source count
+as one gap. APMon counts FC status, voltage, current, the mAh counter and
+relative altitude separately. Relative altitude is checked only if configured.
+APMon does not attribute a gap to individual sensors while the armed status
+cannot be confirmed. On SW, use the wheel or **NEXT/PREV** if a second
+details page is indicated.
 
-| GX12 | GX15 |
+Observed readings remain visible. A data gap is **not proof of RC link loss**.
+Loss of telemetry is never treated as disarming.
+
+| GX12 with v0.7.0: Complete summary | Details for the same period |
 | --- | --- |
-| <img src="images/screenshots/apmon-sw-gx12-summary-en-v0.6.0-2026-11-22-172802.png" width="384" alt="Last armed period on the GX12 showing three seconds armed"> | ![Last armed period on the GX15 showing time armed, battery voltage, peak current and charge used](images/screenshots/apmon-color-gx15-summary-en-v0.4.0-2026-11-21-201634.png) |
+| <img src="images/screenshots/apmon-sw-gx12-summary-en-v0.7.0-2026-11-22-192614.png" width="384" alt="Complete armed summary on the GX12 showing five seconds armed"> | <img src="images/screenshots/apmon-sw-gx12-summary-details-en-v0.7.0-2026-11-22-192616.png" width="384" alt="Summary details without recorded gaps or a configured relative altitude source"> |
 
-[Last armed period on the TX16S MK3 (800 × 480)](images/screenshots/apmon-color-tx16s-mk3-summary-en-v0.4.0-2026-11-21-213717.png)
+While the first armed period is still being recorded: [GX12](images/screenshots/apmon-sw-gx12-summary-en-v0.7.0-2026-11-22-192608.png)
+and [GX15](images/screenshots/apmon-color-gx15-summary-en-v0.7.0-2026-11-22-193114.png).
+
+| GX15 with v0.7.0: Complete summary | Details for the same period |
+| --- | --- |
+| ![Complete armed summary on the GX15 showing seven seconds armed](images/screenshots/apmon-color-gx15-summary-en-v0.7.0-2026-11-22-193121.png) | ![Summary details without recorded gaps or a configured relative altitude source](images/screenshots/apmon-color-gx15-summary-details-en-v0.7.0-2026-11-22-193123.png) |
+
+| TX16S MK3 with v0.7.0: Complete summary | Details for the same period |
+| --- | --- |
+| ![Complete armed summary on the TX16S MK3 showing five seconds armed](images/screenshots/apmon-color-tx16s-mk3-summary-en-v0.7.0-2026-11-22-192251.png) | ![Summary details showing no relative altitude source and no recorded gaps](images/screenshots/apmon-color-tx16s-mk3-summary-details-en-v0.7.0-2026-11-22-192254.png) |
 
 ## Sensor configuration
 

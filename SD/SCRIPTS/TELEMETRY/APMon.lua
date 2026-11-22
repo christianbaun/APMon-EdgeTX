@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/TELEMETRY/APMon.lua
 -- Purpose: Render the GX12/Boxer telemetry UI with two pages, menus and saved language choice.
--- Project version: 0.6.0
+-- Project version: 0.7.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -25,8 +25,7 @@ local function module(name, ...)
 end
 local i18n = module('i18n', 'compact')
 local core, config = module('core'), module('config')
-local summary = module('armed_summary')
-local tracker = summary.new(config.relativeAltitudeSensor)
+local tracker = module('armed_summary').new(config.relativeAltitudeSensor)
 local receiver = module('pass', 12, tracker)
 local project = module('project')
 local monitor = core.new(config, receiver, tracker)
@@ -35,7 +34,7 @@ local showClock, saveError, selectedMessage, messageDetail = false, nil, nil, ni
 local warningsOnly, filterFocus, messageList = false, false, nil
 local view = 'data'
 local sensorIndex = 1
-local toolRenderer, toolError
+local toolRenderer, toolError, toolPhase
 local radioLanguage = type(getGeneralSettings) == 'function' and getGeneralSettings().language
 local nativeUmlauts = not radioLanguage or radioLanguage == 'DE'
 local preference = '/SCRIPTS/APMON/mono.cfg'
@@ -198,11 +197,19 @@ local function projectMenu(width)
   local first = math.max(1, menuItem - 4)
   for i = first, first + 4 do menuOption(width, 25 + (i - first) * 8, labels[i], menuItem == i) end
 end
+local function summaryData(phase)
+  -- Keep the formatted data, not the formatter, in the SW tool's memory.
+  local summary = module('summary_view')
+  return summary.rows(phase), summary.notes(phase)
+end
 local function loadTools(isDiagnostics)
+  local rows, notes
+  if toolPhase then rows, notes = summaryData(toolPhase) end
   return module(isDiagnostics and 'mono_tools' or view == 'gps' and 'mono_gps' or 'mono_summary', {
     tr = tr, monoText = monoText, header = menuHeader, field = field,
     rightText = rightText, small = small, filled = filled, fit = fit, textWidth = textWidth,
-    monitor = monitor, receiver = receiver, tracker = tracker, summary = summary,
+    monitor = monitor, receiver = receiver, tracker = tracker,
+    rows = rows, notes = notes,
     diagnostics = isDiagnostics and module('diagnostics') or nil,
   })
 end
@@ -216,9 +223,10 @@ local function run(event)
   local step = nextEvent and 1 or prevEvent and -1 or 0
   if view == 'summary' then
     if exitEvent then view = 'menu'
-    elseif enterEvent and tracker.last and toolRenderer then view = 'summaryDetail' end
+    elseif enterEvent and tracker.last and toolRenderer then view, sensorIndex = 'summaryDetail', 1 end
   elseif view == 'summaryDetail' then
     if enterEvent or exitEvent then view = 'summary' end
+    if step ~= 0 then sensorIndex = 3 - sensorIndex end
   elseif view == 'gps' then
     if exitEvent then view = 'menu' end
   elseif view == 'diagnostics' then
@@ -286,7 +294,10 @@ local function run(event)
     lcd.drawText(0, y, fit(value, width, small), small + (inverse and (INVERS or 0) or 0))
   end
   local diagnosticsPage = view == 'diagnostics' or view == 'sensors'
-  if diagnosticsPage or view == 'summary' or view == 'summaryDetail' or view == 'gps' then
+  local summaryPage = view == 'summary' or view == 'summaryDetail'
+  if diagnosticsPage or summaryPage or view == 'gps' then
+    local phase = summaryPage and tracker.last or nil
+    if toolPhase ~= phase then toolRenderer, toolPhase = nil, phase end
     if toolRenderer == nil then
       local ok, render = pcall(loadTools, diagnosticsPage)
       toolRenderer = ok and render or false
@@ -305,7 +316,7 @@ local function run(event)
     end
     return 0
   end
-  toolRenderer, toolError = nil, nil
+  toolRenderer, toolError, toolPhase = nil, nil, nil
   if view == 'menu' then
     projectMenu(width)
     return 0

@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/mono_summary.lua
 -- Purpose: Draw the optional SW armed-summary screens on demand.
--- Project version: 0.6.0
+-- Project version: 0.7.0
 -- Updated: 2026-11-22
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -15,7 +15,7 @@ local ui = ...
 local tr, monoText, header = ui.tr, ui.monoText, ui.header
 local field, rightText, small = ui.field, ui.rightText, ui.small
 
-return function(view, width, _, text)
+return function(view, width, page, text)
   local right = width - 2
   local detail, phase = view == 'summaryDetail', ui.tracker.last
   header(width, tr(detail and 'Bilanzdetails' or 'Letzte Armed-Phase'))
@@ -23,11 +23,18 @@ return function(view, width, _, text)
     text(11, tr('Keine Bilanz vorhanden'))
     if ui.tracker.active then text(22, monoText('Aufzeichnung läuft')) end
   elseif detail then
-    local notes = ui.summary.notes(phase)
+    local notes = ui.notes
     if #notes == 0 then notes[1] = 'Keine Datenlücke erkannt' end
-    for i, note in ipairs(notes) do text(11 + (i - 1) * 8, monoText(note)) end
+    local first = #notes > 5 and (page - 1) * 5 + 1 or 1
+    for i = first, math.min(#notes, first + 4) do
+      local note, y = notes[i], 10 + (i - first) * 8
+      if type(note) == 'table' then field(2, right, y, note[1], note[2])
+      else text(y, monoText(note)) end
+    end
+    if phase.gaps then text(50, monoText('Kein Beleg für RC-Ausfall')) end
+    if #notes > 5 then rightText(right, 57, page .. '/2', small) end
   else
-    for i, row in ipairs(ui.summary.rows(phase)) do field(2, right, 10 + (i - 1) * 8, row[1], row[2]) end
+    for i, row in ipairs(ui.rows) do field(2, right, 10 + (i - 1) * 8, row[1], row[2]) end
     text(50, monoText(phase.partial and 'Unvollständig' or 'Vollständig'))
   end
   if detail then

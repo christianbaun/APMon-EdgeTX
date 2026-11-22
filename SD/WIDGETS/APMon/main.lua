@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/WIDGETS/APMon/main.lua
 -- Purpose: Render the color dashboard, full-screen project menu and language selection.
--- Project version: 0.6.0
+-- Project version: 0.7.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -20,8 +20,8 @@ local function module(name, ...)
 end
 local core = module('core')
 local config = module('config')
-local summary = module('armed_summary')
-local tracker = summary.new(config.relativeAltitudeSensor)
+local tracker = module('armed_summary').new(config.relativeAltitudeSensor)
+local summary = module('summary_view')
 local receiver = module('pass', 32, tracker)
 local i18n = module('i18n')
 local project = module('project')
@@ -385,8 +385,20 @@ local function refresh(widget, event, touch)
     elseif widget.view == 'summaryDetail' then
       local notes = summary.notes(phase)
       if #notes == 0 then notes[1] = 'Keine Datenlücke erkannt' end
-      for i, note in ipairs(notes) do text(left, top + (i - 1) * layout.step, note, normal, inner) end
-      text(left, back - layout.step, 'Armed-Zeit, nicht Flugzeit', info, inner)
+      local width = #notes > 5 and half - 4 or inner
+      for i, note in ipairs(notes) do
+        local x = left + (i > 5 and half + 4 or 0)
+        local y = top + ((i - 1) % 5) * layout.step
+        if type(note) == 'table' then
+          local count = lcd.sizeText(note[2], regularFont + CUSTOM_COLOR)
+          text(x, y, note[1], normal, width - count - 6)
+          literal(x + width - count, y, note[2], warn, count)
+        else
+          text(x, y, note, normal, width)
+        end
+      end
+      text(left, back - layout.step, phase.gaps and 'Kein Beleg für RC-Ausfall'
+        or 'Armed-Zeit, nicht Flugzeit', info, inner)
     else
       text(left, top, phase.partial and 'Unvollständig' or 'Vollständig', phase.partial and warn or info, inner)
       local caption = tr('Armed-Zeit, nicht Flugzeit')

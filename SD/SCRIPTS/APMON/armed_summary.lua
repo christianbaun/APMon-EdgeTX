@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/armed_summary.lua
 -- Purpose: Keep the last observed armed interval and its sampled measurements.
--- Project version: 0.6.0
+-- Project version: 0.7.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI (code, tests and documentation)
@@ -14,6 +14,18 @@
 local M = {}
 local counterWindow = 300 -- maximum distance of a fresh capacity sample from an edge
 local altitudeKeys = {'altitude', 'gpsaltitude'}
+
+-- A negative count is an open gap. Consecutive missing samples count once.
+local function gap(phase, key, missing)
+  local gaps = phase.gaps
+  local count = gaps and gaps[key] or 0
+  if missing and count >= 0 then
+    if not gaps then gaps = {}; phase.gaps = gaps end
+    gaps[key] = -(count + 1)
+  elseif not missing and count < 0 then
+    gaps[key] = -count
+  end
+end
 
 function M.new(relativeSource)
   local self = { relativeSource = relativeSource }
@@ -27,22 +39,25 @@ function M.new(relativeSource)
   function self:observe(armed, now, statusTimeout)
     local phase = self.active
     local continuous = seenAt ~= nil and now >= seenAt and now - seenAt <= statusTimeout
-    if phase and not continuous then phase.statusGap = true end
+    if phase then
+      if not continuous then gap(phase, 1, true) end
+      gap(phase, 1, false)
+    end
     if armed == 1 and not phase then
       local start = continuous and previous == 0 and now or nil
       self.active = { started = start, relativeSource = relativeSource }
       sampledAt = nil
     elseif armed == 0 and phase then
-      if phase.started and not phase.statusGap then
+      if phase.started and not (phase.gaps and phase.gaps[1]) then
         phase.duration = math.floor((now - phase.started) / 100)
         if not phase.counterProblem and phase.counterStartAt and phase.counterAt > phase.counterStartAt
             and now - phase.counterAt <= counterWindow then
           phase.used = phase.counterEnd - phase.counterStart
         end
       end
-      phase.missing = phase.sensorGap or phase.voltage == nil or phase.current == nil
+      phase.missing = phase.voltage == nil or phase.current == nil
         or (relativeSource and phase.altitude == nil) or phase.used == nil
-      phase.partial = phase.duration == nil or phase.missing
+      phase.partial = phase.duration == nil or phase.gaps ~= nil or phase.missing
       self.active, self.last = nil, phase
     end
     previous, seenAt = armed, now
@@ -51,7 +66,8 @@ function M.new(relativeSource)
   function self:sample(now, armed, values, sources)
     local phase = self.active
     if not phase then return end
-    if armed ~= 1 then phase.statusGap = true; return end
+    -- Without confirmed armed status, do not attribute the outage to sensors.
+    if armed ~= 1 then gap(phase, 1, true); return end
     -- Multiple COLOR widget instances share a tracker and must not duplicate samples.
     if sampledAt and now - sampledAt < 20 then return end
     sampledAt = now
@@ -73,9 +89,10 @@ function M.new(relativeSource)
         end
       end
     end
-    if values.voltage == nil or values.current == nil or (relativeSource and not relativeKey) then
-      phase.sensorGap = true
-    end
+    gap(phase, 2, values.voltage == nil)
+    gap(phase, 3, values.current == nil)
+    gap(phase, 4, relativeSource and not relativeKey)
+    gap(phase, 5, values.used == nil)
     local used, name = fresh('used')
     if used and phase.started then
       if not phase.counterStart and now - phase.started <= counterWindow then
@@ -94,36 +111,4 @@ function M.new(relativeSource)
   return self
 end
 
-local function number(value, format)
-  return value == nil and '--' or string.format(format, value)
-end
-
-function M.rows(phase)
-  local seconds = phase.duration
-  local time = '--'
-  if seconds then
-    if seconds >= 3600 then
-      time = string.format('%d:%02d:%02d', math.floor(seconds / 3600), math.floor(seconds / 60) % 60, seconds % 60)
-    else
-      time = string.format('%02d:%02d', math.floor(seconds / 60), seconds % 60)
-    end
-  end
-  return {
-    {'Armed-Zeit', time}, {'Akku min.', number(phase.voltage, '%.2f V')},
-    {'Strom max.', number(phase.current, '%.1f A')},
-    {'Höhe rel. max.', number(phase.altitude, '%.1f m')},
-    {'Akkuverbrauch', number(phase.used, '%.0f mAh')},
-  }
-end
-
-function M.notes(phase)
-  local notes = {}
-  if not phase.started then notes[#notes + 1] = 'Start nicht erfasst' end
-  if phase.statusGap then notes[#notes + 1] = 'Lücke im FC-Status' end
-  if phase.missing then notes[#notes + 1] = 'Messwerte unvollständig' end
-  if phase.counterProblem then notes[#notes + 1] = 'mAh-Zähler unterbrochen'
-  elseif phase.used == nil then notes[#notes + 1] = 'Kein mAh-Verbrauch' end
-  if not phase.relativeSource then notes[#notes + 1] = 'Keine rel. Höhenquelle' end
-  return notes
-end
 return M

@@ -14,8 +14,8 @@ vollständigen MAVLink-Datenstrom. Die Anwendung besteht aus Lua-Skripten auf de
 SD-Karte und benötigt zur Laufzeit weder einen Laptop noch ein zusätzliches
 Skript im Flugcontroller.
 
-Der aktuelle Projektstand ist **Version 0.6.0**. Die Versionsnummer steht in
-[VERSION](VERSION). Siehe [Release-Notizen zu v0.6.0](releases/v0.6.0.md).
+Der aktuelle Projektstand ist **Version 0.7.0**. Die Versionsnummer steht in
+[VERSION](VERSION). Siehe [Release-Notizen zu v0.7.0](releases/v0.7.0.md).
 
 Die GUI unterstützt **Englisch und Deutsch**. Englisch ist die Standardsprache.
 
@@ -61,38 +61,39 @@ Die Werte zeigen den Aufnahmezustand und sind keine Aussage zur Flugbereitschaft
 Die Bilder sind zur besseren Lesbarkeit vergrößert. Die Senderuhr ist auf beiden
 Telemetrieseiten eingeschaltet.
 
-| Übersicht (v0.6.0) | Flugwerte (v0.6.0) |
+| Übersicht (v0.7.0) | Flugwerte (v0.7.0) |
 | --- | --- |
-| <img src="images/screenshots/apmon-sw-gx12-overview-de-v0.6.0-2026-11-22-172653.png" width="384" alt="APMon-Übersicht auf Deutsch mit Senderuhr auf der GX12"> | <img src="images/screenshots/apmon-sw-gx12-flight-de-v0.6.0-2026-11-22-172704.png" width="384" alt="APMon-Flugwerte auf Deutsch mit Senderuhr auf der GX12"> |
+| <img src="images/screenshots/apmon-sw-gx12-overview-de-v0.7.0-2026-11-22-192546.png" width="384" alt="APMon-Übersicht auf Deutsch mit Senderuhr auf der GX12"> | <img src="images/screenshots/apmon-sw-gx12-flight-de-v0.7.0-2026-11-22-192545.png" width="384" alt="APMon-Flugwerte auf Deutsch mit Senderuhr auf der GX12"> |
 
-**Kompaktes Projektmenü (Englisch, v0.6.0):**
+**Kompaktes Projektmenü (v0.7.0):**
 
-<img src="images/screenshots/apmon-sw-gx12-menu-en-v0.6.0-2026-11-22-172742.png" width="384" alt="Kompaktes englisches APMon-Projektmenü mit fünf Einträgen und Version 0.6.0">
+<img src="images/screenshots/apmon-sw-gx12-menu-de-v0.7.0-2026-11-22-192630.png" width="384" alt="Kompaktes APMon-Projektmenü mit ausgewählter Letzter Armed-Phase und Version 0.7.0">
 
 Weitere GX12-Aufnahmen: [FC-Meldungsfilter](#senderuhr-und-fc-meldungsverlauf),
 [GPS-Details](#gps-details),
 [Telemetrie-Diagnose](#telemetrie-diagnose) und
 [Zusammenfassung nach dem Entarmen](#zusammenfassung-nach-dem-entarmen).
 
-**Farbdisplay — GX15 (480 × 320, APMon v0.6.0)**
+**Farbdisplay — GX15 (480 × 320, APMon v0.7.0)**
 
 | Übersicht mit Senderuhr | Projektmenü |
 | --- | --- |
-| ![APMon-Farbübersicht mit Senderuhr auf der GX15](images/screenshots/apmon-color-gx15-overview-de-v0.6.0-2026-11-22-185104.png) | ![Projektmenü mit GPS-Details und Version 0.6.0](images/screenshots/apmon-color-gx15-menu-de-v0.6.0-2026-11-22-185059.png) |
+| ![APMon-Farbübersicht mit Senderuhr auf der GX15](images/screenshots/apmon-color-gx15-overview-de-v0.7.0-2026-11-22-193146.png) | ![Projektmenü auf der GX15 mit Version 0.7.0](images/screenshots/apmon-color-gx15-menu-de-v0.7.0-2026-11-22-193138.png) |
 
 Weitere GX15-Aufnahmen: [FC-Meldungsfilter](#senderuhr-und-fc-meldungsverlauf),
 [GPS-Details](#gps-details),
 [Telemetrie-Diagnose](#telemetrie-diagnose) und
 [Zusammenfassung nach dem Entarmen](#zusammenfassung-nach-dem-entarmen).
 
-**Farbdisplay — TX16S MK3 (800 × 480, APMon v0.6.0)**
+**Farbdisplay — TX16S MK3 (800 × 480, APMon v0.7.0)**
 
-| Übersicht (Englisch) | Projektmenü |
+| Übersicht | Projektmenü |
 | --- | --- |
-| ![APMon-Farbübersicht auf Englisch auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.6.0-2026-11-22-185702.png) | ![Deutsches APMon-Projektmenü mit GPS-Details und Version 0.6.0](images/screenshots/apmon-color-tx16s-mk3-menu-de-v0.6.0-2026-11-22-185723.png) |
+| ![APMon-Farbübersicht auf Deutsch auf der TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-de-v0.7.0-2026-11-22-192333.png) | ![Deutsches Projektmenü auf der TX16S MK3 mit Version 0.7.0](images/screenshots/apmon-color-tx16s-mk3-menu-de-v0.7.0-2026-11-22-192223.png) |
 
-Weitere TX16S-MK3-Aufnahmen: [FC-Meldungsfilter und Armed-Markierungen](#senderuhr-und-fc-meldungsverlauf)
-und [GPS-Details](#gps-details).
+Weitere TX16S-MK3-Aufnahmen: [Armed-Bilanz](#zusammenfassung-nach-dem-entarmen),
+[Telemetrie-Diagnose](#telemetrie-diagnose), [GPS-Details](#gps-details)
+und [FC-Meldungsfilter](#senderuhr-und-fc-meldungsverlauf).
 
 **Sprache wechseln:** Auf SW-Displays **ENTER** drücken und **Sprache /
 Language** auswählen. Auf COLOR-Displays APMon im Vollbild öffnen und
@@ -134,10 +135,10 @@ separat geprüft werden.
 
 | Sender | Versionen |
 | --- | --- |
-| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.6.0 |
+| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.7.0 |
 | TX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
-| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.6.0 |
-| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.6.0 |
+| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.7.0 |
+| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.7.0 |
 | Boxer | Hardwaretest noch offen |
 | Andere Sender | Hardwaretest noch offen |
 
@@ -447,16 +448,16 @@ COLOR geht das auch per Touch. Ein alter Wert bleibt nach einem Ausfall nur
 als letzter Wert sichtbar und wird nicht als Live-Wert übernommen. Nicht
 konfigurierte Sensoren zählen nicht mit. Die Werte sind keine Flugfreigabe.
 
-| Telemetrie-Diagnose auf der GX15 | Sensorliste auf der GX15 |
+| GX15 mit v0.7.0: Telemetrie-Diagnose | Sensorliste (Koordinaten abgedeckt) |
 | --- | --- |
-| ![Telemetrie-Diagnose mit getrenntem RC-Link, Sensorzustand und FC-Status](images/screenshots/apmon-color-gx15-diagnostics-de-v0.4.0-2026-11-21-201659.png) | ![Sensorliste mit den letzten Werten und ihrem Gültigkeitsstatus](images/screenshots/apmon-color-gx15-sensors-de-v0.4.0-2026-11-21-201702.png) |
+| ![Telemetrie-Diagnose mit getrenntem RC-Link, Sensorzustand und FC-Status](images/screenshots/apmon-color-gx15-diagnostics-de-v0.7.0-2026-11-22-193149.png) | ![Sensorliste mit den letzten Werten und ihrem Gültigkeitsstatus bei abgedeckten GPS-Koordinaten](images/screenshots/apmon-color-gx15-sensors-de-v0.7.0-2026-11-22-193151.png) |
 
-**Telemetrie-Diagnose auf der GX12 (v0.6.0):**
+| GX12 mit v0.7.0: Telemetrie-Diagnose | Sensordetails |
+| --- | --- |
+| <img src="images/screenshots/apmon-sw-gx12-diagnostics-de-v0.7.0-2026-11-22-192633.png" width="384" alt="Telemetrie-Diagnose auf der GX12 mit RC-Link, Sensorzustand und FC-Status"> | <img src="images/screenshots/apmon-sw-gx12-sensors-de-v0.7.0-2026-11-22-192641.png" width="384" alt="Sensordetails für RQly mit dem letzten gültigen Wert der RC-Linkqualität"> |
 
-<img src="images/screenshots/apmon-sw-gx12-diagnostics-de-v0.6.0-2026-11-22-172726.png" width="384" alt="Telemetrie-Diagnose auf der GX12 mit RC-Link, Sensorzustand und FC-Status">
-
-Auf der TX16S MK3: [Diagnose-Übersicht](images/screenshots/apmon-color-tx16s-mk3-diagnostics-de-v0.4.0-2026-11-21-213731.png)
-und [Sensorliste](images/screenshots/apmon-color-tx16s-mk3-sensors-de-v0.4.0-2026-11-21-213741.png) bei 800 × 480 Pixeln.
+Auf der TX16S MK3 mit v0.7.0: [Diagnose-Übersicht](images/screenshots/apmon-color-tx16s-mk3-diagnostics-de-v0.7.0-2026-11-22-192319.png)
+und [Sensorliste mit abgedeckten Koordinaten](images/screenshots/apmon-color-tx16s-mk3-sensors-de-v0.7.0-2026-11-22-192321.png) bei 800 × 480 Pixeln.
 
 ### Zusammenfassung nach dem Entarmen
 
@@ -479,14 +480,30 @@ nicht automatisch. Die Bilanz bleibt bis zum Neuladen von APMon im Speicher.
   **relativ zu Home** für dieses Setup geprüft ist. Die Bilanz verwendet
   keine andere Höhenquelle als Ersatz und schätzt keinen Bodenabstand.
 
-Bei **Unvollständig** zeigt **Details**, warum Werte fehlen. Bereits erfasste
-Messwerte bleiben sichtbar. Ein Telemetrieausfall zählt nie als Entarmen.
+Bei **Unvollständig** zeigt **Details**, warum Werte fehlen. Beispielsweise
+bedeutet **FC-Status fehlt 2x**, dass der FC-Status zweimal unterbrochen war.
+**Stromsensor fehlt 1x** kennzeichnet einen Zeitraum, in dem der Stromsensor
+nicht verfügbar war. Aufeinanderfolgende Ausfälle derselben Quelle zählen
+als eine Lücke. APMon zählt die Lücken im FC-Status, bei Spannung, Strom,
+mAh-Zähler und relativer Höhe getrennt. Die relative Höhe wird nur geprüft,
+wenn sie konfiguriert ist. Ohne bestätigten Armed-Status ordnet APMon
+einen Ausfall nicht einzelnen Sensoren zu. Auf SW bei angezeigter zweiter
+Detailseite mit dem Drehgeber oder **NEXT/PREV** weiterblättern.
 
-| GX12 (Englisch) | GX15 |
+Bereits erfasste Messwerte bleiben sichtbar. Eine Datenlücke ist **kein Beleg
+für einen RC-Verbindungsabbruch**. Ein Telemetrieausfall zählt nie als Entarmen.
+
+| GX12 mit v0.7.0: Vollständige Bilanz | Details derselben Phase |
 | --- | --- |
-| <img src="images/screenshots/apmon-sw-gx12-summary-de-v0.6.0-2026-11-22-172730.png" width="384" alt="Letzte Armed-Phase auf der GX12 mit drei Sekunden Armed-Zeit"> | ![Letzte Armed-Phase auf der GX15 mit Armed-Zeit, Akkuspannung, Spitzenstrom und Verbrauch](images/screenshots/apmon-color-gx15-summary-de-v0.4.0-2026-11-21-201654.png) |
+| <img src="images/screenshots/apmon-sw-gx12-summary-de-v0.7.0-2026-11-22-192623.png" width="384" alt="Vollständige Armed-Bilanz auf der GX12 mit fünf Sekunden Armed-Zeit"> | <img src="images/screenshots/apmon-sw-gx12-summary-details-de-v0.7.0-2026-11-22-192626.png" width="384" alt="Bilanzdetails ohne erfasste Lücken und ohne konfigurierte relative Höhenquelle"> |
 
-[Letzte Armed-Phase auf der TX16S MK3 (800 × 480)](images/screenshots/apmon-color-tx16s-mk3-summary-de-v0.4.0-2026-11-21-213734.png)
+| GX15 mit v0.7.0: Vollständige Bilanz | Details derselben Phase |
+| --- | --- |
+| ![Vollständige Armed-Bilanz auf der GX15 mit sieben Sekunden Armed-Zeit](images/screenshots/apmon-color-gx15-summary-de-v0.7.0-2026-11-22-193156.png) | ![Bilanzdetails ohne erfasste Lücken und ohne konfigurierte relative Höhenquelle](images/screenshots/apmon-color-gx15-summary-details-de-v0.7.0-2026-11-22-193157.png) |
+
+| TX16S MK3 mit v0.7.0: Vollständige Bilanz | Details derselben Phase |
+| --- | --- |
+| ![Vollständige Armed-Bilanz auf der TX16S MK3 mit fünf Sekunden Armed-Zeit](images/screenshots/apmon-color-tx16s-mk3-summary-de-v0.7.0-2026-11-22-192238.png) | ![Bilanzdetails ohne erfasste Lücken und ohne konfigurierte relative Höhenquelle](images/screenshots/apmon-color-tx16s-mk3-summary-details-de-v0.7.0-2026-11-22-192241.png) |
 
 ## Sensoren konfigurieren
 

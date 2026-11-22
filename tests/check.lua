@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 0.6.0
+-- Project version: 0.7.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -978,9 +978,10 @@ observe(summaryTracker, 0, 500)
 observe(summaryTracker, 1, 600)
 summaryTracker:sample(600, 1, readings, sources)
 summaryTracker:sample(901, nil, readings, sources)
-assert(summaryTracker.active.statusGap and not summaryTracker.last)
+assert(summaryTracker.active.gaps[1] == -1 and not summaryTracker.last)
 observe(summaryTracker, 0, 1000)
-assert(summaryTracker.last.partial and summaryTracker.last.duration == nil and summaryTracker.last.used == nil)
+assert(summaryTracker.last.gaps[1] == 1 and summaryTracker.last.partial
+  and summaryTracker.last.duration == nil and summaryTracker.last.used == nil)
 summaryTracker:reset()
 observe(summaryTracker, 0, 0)
 observe(summaryTracker, 1, 500) -- disarmed baseline was already stale when armed first arrived
@@ -1001,6 +1002,31 @@ summaryTracker:sample(100, 1, readings, sources)
 observe(summaryTracker, 0, 200)
 assert(summaryTracker.last.duration == 1 and not summaryTracker.last.used) -- no end sample
 
+do
+  local t = armedSummary.new('GAlt')
+  observe(t, 0, 0)
+  observe(t, 1, 100)
+  t:sample(100, 1, readings, sources)
+  t:sample(401, nil, {}, {})
+  t:sample(480, nil, {}, {})
+  observe(t, 1, 500) -- the timeout and recovery count as one outage
+  t:sample(500, 1, {}, sources)
+  t:sample(560, 1, {}, sources)
+  t:sample(600, 1, readings, sources)
+  t:sample(640, 1, {voltage=0, used=0, gpsaltitude=0}, sources)
+  observe(t, 0, 810) -- timeout detected even with no intervening sample
+  local done = assert(t.last)
+  assert(done.partial and not done.duration and not done.used and done.counterProblem)
+  assert(done.gaps[1] == 2 and done.gaps[2] == 1 and math.abs(done.gaps[3]) == 2)
+  assert(done.gaps[4] == 1 and done.gaps[5] == 1)
+  local notes = loadScript('/SCRIPTS/APMON/summary_view.lua')().notes(done)
+  assert(notes[1][1] == 'FC-Status fehlt' and notes[1][2] == '2x')
+  assert(notes[3][1] == 'Stromsensor fehlt' and notes[3][2] == '2x')
+  observe(t, 1, 850)
+  t:sample(850, 1, readings, sources)
+  assert(t.last == done and t.active.gaps == nil)
+end
+
 -- Sweep a real disarm sequence through the SW and COLOR entry points.
 local function reportStatus(value)
   now = now + 100
@@ -1011,6 +1037,20 @@ local function prepareFlight()
 end
 local function changeFlight()
   data.RxBt.value, data.Curr.value, data.Capa.value = 14.5, 22, 20
+end
+local function flightWithGaps(background)
+  prepareFlight()
+  reportStatus(0); background()
+  reportStatus(1); background()
+  data.RxBt.current, data.Curr.current, data.Capa.current = false, false, false
+  now = now + 20; background()
+  prepareFlight()
+  reportStatus(1); background()
+  now = now + 310; background()
+  now = now + 50; background() -- same FC outage
+  reportStatus(1); background()
+  now = now + 300
+  reportStatus(0); background() -- second FC outage, detected on the disarm frame
 end
 prepareFlight()
 colorDisplay, LCD_W, LCD_H, lcd.sizeText = false, 128, 64, nil
@@ -1068,6 +1108,47 @@ for _, spec in ipairs({{440,252,1}, {480,320,2}, {800,480,2}}) do
   assert(drawOf(title, 8))
   frame(EVT_VIRTUAL_EXIT)
   assert(drawOf('> ' .. title))
+end
+do
+  colorDisplay, LCD_W, LCD_H, lcd.sizeText = false, 128, 64, nil
+  local sw = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
+  flightWithGaps(sw.background)
+  local function openSW()
+    sw.run(EVT_VIRTUAL_ENTER)
+    sw.run(EVT_ROT_LEFT); sw.run(EVT_ROT_LEFT)
+    sw.run(EVT_VIRTUAL_ENTER); sw.run(EVT_VIRTUAL_ENTER)
+  end
+  openSW()
+  assert(drawOf('FC status missing', 10) and drawOf('2x', 10))
+  assert(drawOf('Current missing', 26) and drawOf('1x', 26))
+  assert(drawOf('Not proof of RC loss', 50) and drawOf('1/2', 57))
+  sw.run(EVT_ROT_RIGHT)
+  assert(drawOf('No rel. altitude source', 10) and drawOf('2/2', 57))
+  sw.run(EVT_VIRTUAL_EXIT); sw.run(EVT_VIRTUAL_EXIT); sw.run(EVT_VIRTUAL_EXIT)
+  sw.run(EVT_VIRTUAL_ENTER); sw.run(EVT_VIRTUAL_ENTER)
+  sw.run(EVT_ROT_RIGHT); sw.run(EVT_VIRTUAL_ENTER); sw.run(EVT_VIRTUAL_EXIT)
+  openSW()
+  assert(drawOf('FC-Status fehlt', 10) and drawOf('2x', 10))
+  assert(drawOf('Stromsensor fehlt', 26) and drawOf('Kein Beleg für RC-Ausfall', 50))
+  for _, spec in ipairs({{440,252,1}, {480,320,2}, {800,480,2}}) do
+    colorDisplay, LCD_W, LCD_H, lcd.sizeText = true, spec[1], spec[2], measure
+    local app = loadScript('/WIDGETS/APMon/main.lua')()
+    local w = app.create({x=0,y=0,w=LCD_W,h=LCD_H}, {Language=spec[3]})
+    flightWithGaps(function() app.background(w) end)
+    local function frame(event)
+      calls, draws, rectangles, bitmaps = {}, {}, {}, {}
+      app.refresh(w, event)
+    end
+    frame(EVT_VIRTUAL_ENTER)
+    for i = 1, 4 do frame(EVT_VIRTUAL_NEXT) end
+    frame(EVT_VIRTUAL_ENTER); frame(EVT_VIRTUAL_ENTER)
+    local en = spec[3] == 1
+    local fc = assert(drawOf(en and 'FC status missing' or 'FC-Status fehlt'))
+    local current = assert(drawOf(en and 'Current missing' or 'Stromsensor fehlt'))
+    assert(drawOf('2x', fc.y) and drawOf('1x', current.y))
+    assert(drawOf(en and 'Not proof of RC loss' or 'Kein Beleg für RC-Ausfall'))
+    assert(drawOf(en and 'No rel. altitude source' or 'Keine rel. Höhenquelle'))
+  end
 end
 -- SW must reach the dashboard without loading either optional view module.
 -- If the allocator rejects a tool, RTN still returns and a later attempt can succeed.
@@ -1333,4 +1414,4 @@ do
     assert(drawOf('> ' .. title))
   end
 end
-print('OK: sensor validity, GPS details, stale data, read-only, layouts, bilingual menus, diagnostics, passthrough, restricted mono Lua')
+print('OK: sensor validity, GPS details, armed-summary gaps, stale data, read-only, layouts, bilingual menus, diagnostics, passthrough, restricted mono Lua')

@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/i18n.lua
 -- Purpose: Provide the extensible GUI language registry, translations and fallback rules.
--- Project version: 0.6.0
+-- Project version: 0.7.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -139,7 +139,12 @@ Bilanzdetails|Summary details
 Details|Details
 RTN: Bilanz|RTN: summary
 Start nicht erfasst|Start not observed
-Lücke im FC-Status|FC status gap
+FC-Status fehlt|FC status missing
+Spannung fehlt|Voltage missing
+Stromsensor fehlt|Current missing
+Höhensensor fehlt|Alt. sensor missing
+mAh-Sensor fehlt|mAh sensor missing
+Kein Beleg für RC-Ausfall|Not proof of RC loss
 Messwerte unvollständig|Incomplete readings
 mAh-Zähler unterbrochen|mAh counter interrupted
 Kein mAh-Verbrauch|Charge used unavailable
