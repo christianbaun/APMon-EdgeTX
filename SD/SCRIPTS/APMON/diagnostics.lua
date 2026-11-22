@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/diagnostics.lua
 -- Purpose: Summarize EdgeTX sensor and FC passthrough status for both displays.
--- Project version: 0.5.0
+-- Project version: 0.6.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI (code, tests and documentation)

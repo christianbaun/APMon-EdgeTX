@@ -1,8 +1,8 @@
 -- =============================================================================
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/mono_tools.lua
--- Purpose: Draw the optional SW diagnostic and armed-summary screens on demand.
--- Project version: 0.5.0
+-- Purpose: Draw the optional SW diagnostic screens on demand.
+-- Project version: 0.6.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI (code, tests and documentation)
@@ -18,27 +18,7 @@ local monitor, receiver = ui.monitor, ui.receiver
 
 return function(view, width, sensorIndex, text)
   local right = width - 2
-  if view == 'summary' or view == 'summaryDetail' then
-    local detail, phase = view == 'summaryDetail', ui.tracker.last
-    header(width, tr(detail and 'Bilanzdetails' or 'Letzte Armed-Phase'))
-    if not phase then
-      text(11, tr('Keine Bilanz vorhanden'))
-      if ui.tracker.active then text(22, monoText('Aufzeichnung läuft')) end
-    elseif detail then
-      local notes = ui.summary.notes(phase)
-      if #notes == 0 then notes[1] = 'Keine Datenlücke erkannt' end
-      for i, note in ipairs(notes) do text(11 + (i - 1) * 8, monoText(note)) end
-    else
-      for i, row in ipairs(ui.summary.rows(phase)) do field(2, right, 10 + (i - 1) * 8, row[1], row[2]) end
-      text(50, monoText(phase.partial and 'Unvollständig' or 'Vollständig'))
-    end
-    if detail then
-      text(57, tr('RTN: Bilanz'))
-    else
-      if phase then text(57, tr('ENT: Details')) end
-      rightText(right, 57, monoText('RTN: Menü'), small)
-    end
-  elseif view == 'diagnostics' then
+  if view == 'diagnostics' then
     header(width, tr('Telemetrie-Diagnose'))
     local data = ui.diagnostics.summary(monitor, receiver)
     local state = ui.diagnostics.stateLabel

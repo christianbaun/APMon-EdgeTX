@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/WIDGETS/APMon/main.lua
 -- Purpose: Render the color dashboard, full-screen project menu and language selection.
--- Project version: 0.5.0
+-- Project version: 0.6.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -54,7 +54,7 @@ local function setView(widget, view, focus)
   widget.view, widget.focus = view, focus
 end
 local menuW = 148
-local menuCount = 6
+local menuCount = 7
 local regularFont = SMLSIZE or 0
 local headingFont = MIDSIZE or regularFont
 local menuSubtitle = project.subtitle[1] .. ' ' .. project.subtitle[2]
@@ -165,6 +165,10 @@ local function handleInput(widget, z, layout, event, touch)
     return
   end
   local rowHeight = layout.rowHeight
+  if widget.view == 'gps' then
+    if exit or enter or inButton(z.h - rowHeight - 12, rowHeight - 3) then setView(widget, 'menu', 6) end
+    return
+  end
   if summaryPage(widget) then
     local back = z.h - rowHeight - 12
     local button = inButton(back, rowHeight - 3)
@@ -280,6 +284,8 @@ local function handleInput(widget, z, layout, event, touch)
       setView(widget, 'diagnostics', 1)
     elseif widget.focus == 5 then
       setView(widget, 'summary', tracker.last and 1 or 2)
+    elseif widget.focus == 6 then
+      setView(widget, 'gps', 1)
     else setView(widget) end
   elseif widget.view == 'language' then
     -- EdgeTX persists widget options only via its own settings screen.
@@ -339,6 +345,7 @@ local function refresh(widget, event, touch)
     or widget.view == 'diagnostics' and 'Telemetrie-Diagnose'
     or widget.view == 'summary' and 'Letzte Armed-Phase'
     or widget.view == 'summaryDetail' and 'Bilanzdetails'
+    or widget.view == 'gps' and 'GPS-Details'
     or widget.view == 'sensors' and 'Sensoren' or project.title
   text(left, z.y + 8, heading, bg, inner - 40, headingFont)
   if not widget.view and clockEnabled(widget) then
@@ -348,6 +355,23 @@ local function refresh(widget, event, touch)
       clock, bg, w, layout.clockFont)
   end
   drawLogo(z, layout.header)
+  if widget.view == 'gps' then
+    local details, live, age = m:gpsDetails()
+    local top, back = layout.header + 8, z.h - layout.rowHeight - 12
+    local status = tr(live and 'Live' or 'Nicht live')
+    if age then status = status .. '  |  ' .. string.format(tr('vor %ds'), age) end
+    literal(left, top, status, live and info or warn, inner)
+    local step = math.min(layout.rowHeight, math.floor((back - top - 4) / 6))
+    for i, row in ipairs(details) do
+      local y = top + i * step
+      rect(left, y, inner, step - 2, panel)
+      text(left + 8, y + 1, row[1], info, math.floor(inner / 2) - 8)
+      text(left + math.floor(inner / 2), y + 1, row[2], normal, math.floor(inner / 2) - 8)
+    end
+    rect(left, back, inner, layout.rowHeight - 3, info)
+    text(left + 8, back + 4, 'Zurück', bg, inner - 16)
+    return
+  end
   if summaryPage(widget) then
     local phase, back = tracker.last, z.h - layout.rowHeight - 12
     local top, half = layout.header + 8, math.floor(inner / 2)
@@ -555,6 +579,7 @@ local function refresh(widget, event, touch)
           or i == 3 and tr('Uhr') .. ': ' .. tr(clockEnabled(widget) and 'An' or 'Aus')
           or i == 4 and 'Telemetrie-Diagnose'
           or i == 5 and 'Letzte Armed-Phase'
+          or i == 6 and 'GPS-Details'
           or 'Zurück'
       else
         label = widget.view == 'language' and i <= #i18n.languages and i18n.languages[i].name or 'Zurück'

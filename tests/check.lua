@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 0.5.0
+-- Project version: 0.6.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -101,10 +101,6 @@ local function assertPage(title, counter)
   assert(draws[2].x + draws[2].w == LCD_W - 2)
   assert(#lines == 0) -- menus only
 end
-local function assertProjectTitle()
-  assert(calls[1] == 'APMon')
-  assert(drawOf('ArduPilot Telemetry', 10) and drawOf('Monitor for EdgeTX radios', 17))
-end
 local function assertMonoLogo()
   assert(#lines == 6 and lines[1].x1 == 110 and lines[6].x2 == 123)
   for _, line in ipairs(lines) do
@@ -114,11 +110,15 @@ local function assertMonoLogo()
   assert(draws[1].x + draws[1].w < lines[1].x1)
 end
 local function assertMonoMenu(language, messages)
-  assertProjectTitle()
-  assert(drawOf('github.com/christianbaun/', 24) and drawOf('APMon-EdgeTX', 31))
-  assert(drawOf(language, 41) and drawOf(messages, 49))
-  assert(drawOf(language == 'Sprache: Deutsch' and 'Uhr: Aus' or 'Clock: Off', 57))
-  local repo, version = drawOf('APMon-EdgeTX', 31), assert(drawOf(versionLabel, 31))
+  local german = language == 'Sprache: Deutsch'
+  assert(calls[1] == 'APMon')
+  assert(not drawOf('ArduPilot Telemetry') and not drawOf('Monitor for EdgeTX radios'))
+  assert(drawOf('github.com/christianbaun/', 10) and drawOf('APMon-EdgeTX', 17))
+  assert(drawOf(language, 25) and drawOf(messages, 33))
+  assert(drawOf(german and 'Uhr: Aus' or 'Clock: Off', 41))
+  assert(drawOf(german and 'Telemetrie-Diagnose' or 'Telemetry diagnostics', 49))
+  assert(drawOf(german and 'Letzte Armed-Phase' or 'Last armed period', 57))
+  local repo, version = drawOf('APMon-EdgeTX', 17), assert(drawOf(versionLabel, 17))
   assert(repo.x + repo.w < version.x)
   assertMonoLogo()
 end
@@ -145,7 +145,7 @@ for short, fullName in pairs({ STAB = 'STABILIZE', LOIT = 'LOITER', GUID = 'GUID
   assert(m:format('mode') == fullName)
 end
 data.FM.value = 'STABILIZE'; m:sample(true)
-assert(m:rows()[2][2] == '--') -- never infer disarmed from mode/switch
+assert(m.values.armed == nil) -- never infer disarmed from mode/switch
 data.RxBt.fresh = false
 m:sample(true)
 assert(m:format('voltage') == '15.50 V') -- slow sensor remains current
@@ -159,14 +159,13 @@ assert(m:format('current') == '--')
 config.sensors.pit.names, config.sensors.power.names = { 'Pit' }, { 'Pwr' }
 data.Pit, data.Pwr = { value = 1 }, { value = 25 }
 m:sample(true)
-assert(m:rows()[15][2] == 'AN')
-assert(m:rows()[16][2] == 'PIT: mW unbekannt')
+assert(m.values.pit == 1)
 data.Pit.value = 0
 m:sample(true)
-assert(m:rows()[16][2] == '25 mW')
+assert(m.values.pit == 0 and m:format('power') == '25 mW')
 data.Pit.current = false
 m:sample(true)
-assert(m:rows()[16][2] == '-- (PIT unbekannt)')
+assert(m.values.pit == nil)
 local saved = getSourceValue
 getSourceValue = nil
 m:sample(true)
@@ -239,7 +238,7 @@ now = 1000; mono.run(0); assert(calls[1] == selected)
 now = 5000; mono.run(0); assert(calls[1] == selected)
 mono.run(EVT_VIRTUAL_ENTER)
 assertMonoMenu('Language: English', 'FC messages')
-assert(drawOf('Language: English', 41).flags & INVERS ~= 0)
+assert(drawOf('Language: English', 25).flags & INVERS ~= 0)
 mono.run(EVT_VIRTUAL_ENTER)
 assert(calls[1] == 'APMon / Language')
 assertMonoLogo()
@@ -248,7 +247,7 @@ mono.run(EVT_ROT_RIGHT); mono.run(EVT_VIRTUAL_ENTER)
 assert(savedLanguage == 'de')
 assertMonoMenu('Sprache: Deutsch', 'FC-Meldungen')
 mono.run(EVT_ROT_RIGHT)
-assert(drawOf('FC-Meldungen', 49).flags & INVERS ~= 0)
+assert(drawOf('FC-Meldungen', 33).flags & INVERS ~= 0)
 mono.run(EVT_ROT_LEFT); mono.run(EVT_VIRTUAL_ENTER)
 mono.run(EVT_ROT_LEFT); mono.run(EVT_VIRTUAL_EXIT)
 assert(savedLanguage == 'de')
@@ -282,10 +281,10 @@ writeFailure = false
 local rtc = { year = 2026, mon = 11, day = 21, hour = 7, min = 5 }
 getDateTime = function() return rtc end
 reloaded.run(EVT_VIRTUAL_ENTER); reloaded.run(EVT_ROT_RIGHT); reloaded.run(EVT_ROT_RIGHT)
-assert(drawOf('Clock: Off', 57).flags & INVERS ~= 0)
-assert(drawOf('Language: English', 41) and drawOf('FC messages', 49))
+assert(drawOf('Clock: Off', 41).flags & INVERS ~= 0)
+assert(drawOf('Language: English', 25) and drawOf('FC messages', 33))
 reloaded.run(EVT_VIRTUAL_ENTER)
-assert(drawOf('Clock: On', 57) and savedLanguage == 'en\n1')
+assert(drawOf('Clock: On', 41) and savedLanguage == 'en\n1')
 reloaded.run(EVT_VIRTUAL_EXIT)
 assertPage('Overview', '1/2')
 local clock = assert(drawOf('07:05', 2))
@@ -567,7 +566,7 @@ end
 for _, item in pairs(data) do item.current = false end
 m:sample(true)
 assert(m:status() == 'Keine aktuellen FC-Daten')
-assert(m:rows()[2][2] == '--')
+assert(m.values.armed == nil)
 -- Independent diagnostics exposes raw API values even when APMon rejects them.
 colorDisplay, LCD_W, LCD_H = false, 128, 64
 lcd.sizeText = nil
@@ -850,8 +849,9 @@ incoming = {single(0x5001, 0), message('Sensoren')}
 now = now + 20
 restricted.crossfireTelemetryPop = nil
 local monoDiag = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
-monoDiag.run(EVT_VIRTUAL_ENTER); monoDiag.run(EVT_ROT_LEFT); monoDiag.run(EVT_ROT_LEFT)
-assert(drawOf('Telemetry diagnostics', 57).flags & INVERS ~= 0)
+monoDiag.run(EVT_VIRTUAL_ENTER)
+for i = 1, 3 do monoDiag.run(EVT_ROT_LEFT) end
+assert(drawOf('Telemetry diagnostics', 49).flags & INVERS ~= 0)
 monoDiag.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Telemetry diagnostics', 1) and drawOf('98 %', 11) and drawOf('4/16 valid', 19))
 assert(drawOf('Valid 0s', 27) and drawOf('Not found: VSpd', 43))
@@ -868,7 +868,7 @@ now = now + 500
 monoDiag.run(EVT_VIRTUAL_EXIT)
 assert(drawOf('Stale 5s', 27) and drawOf('0s ago', 35)) -- GPS/text are not an AP_STATUS heartbeat
 monoDiag.run(EVT_VIRTUAL_EXIT)
-assert(drawOf('Telemetry diagnostics', 57) and drawOf('Clock: Off', 49))
+assert(drawOf('Telemetry diagnostics', 49) and drawOf('Clock: Off', 41))
 getGeneralSettings = function() return { language = 'EN' } end
 io = {open = function(path)
   if path == '/SCRIPTS/APMON/mono.cfg' then return {} end
@@ -877,7 +877,9 @@ end, close = function(f) if type(f) == 'userdata' then sdIO.close(f) end end,
 read = function(f, n) return type(f) == 'userdata' and sdIO.read(f, n) or 'de' end}
 local monoDE = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 crossfireTelemetryPop = nil
-monoDE.run(EVT_VIRTUAL_ENTER); monoDE.run(EVT_ROT_LEFT); monoDE.run(EVT_ROT_LEFT); monoDE.run(EVT_VIRTUAL_ENTER)
+monoDE.run(EVT_VIRTUAL_ENTER)
+for i = 1, 3 do monoDE.run(EVT_ROT_LEFT) end
+monoDE.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Telemetrie-Diagnose', 1) and drawOf('3/16 gueltig', 19) and drawOf('API fehlt', 27))
 assert(drawOf('RTN: Menue', 57))
 getGeneralSettings, io = nil, sdIO
@@ -1013,7 +1015,7 @@ end
 prepareFlight()
 colorDisplay, LCD_W, LCD_H, lcd.sizeText = false, 128, 64, nil
 local summarySW = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
-summarySW.run(EVT_VIRTUAL_ENTER); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
+summarySW.run(EVT_VIRTUAL_ENTER); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Last armed period', 1) and drawOf('No summary yet'))
 summarySW.run(EVT_VIRTUAL_EXIT); summarySW.run(EVT_VIRTUAL_EXIT)
 reportStatus(0); summarySW.background()
@@ -1021,16 +1023,16 @@ reportStatus(1); summarySW.background()
 changeFlight(); reportStatus(1); summarySW.background()
 reportStatus(0); summarySW.run(0)
 assert(drawOf('APMon Overview', 2) and drawOf('DISARMED', 27)) -- never opens the menu automatically
-summarySW.run(EVT_VIRTUAL_ENTER); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
+summarySW.run(EVT_VIRTUAL_ENTER); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Last armed period') and drawOf('Time armed', 10) and drawOf('00:02', 10))
 assert(drawOf('14.50 V', 18) and drawOf('22.0 A', 26) and drawOf('--', 34) and drawOf('20 mAh', 42))
 assert(drawOf('Complete', 50)) -- height is optional and unverified GAlt is not shown
 summarySW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Summary details') and drawOf('No rel. altitude source'))
 summarySW.run(EVT_VIRTUAL_EXIT); summarySW.run(EVT_VIRTUAL_EXIT)
-summarySW.run(EVT_ROT_RIGHT); summarySW.run(EVT_VIRTUAL_ENTER)
+summarySW.run(EVT_ROT_RIGHT); summarySW.run(EVT_ROT_RIGHT); summarySW.run(EVT_VIRTUAL_ENTER)
 summarySW.run(EVT_ROT_RIGHT); summarySW.run(EVT_VIRTUAL_ENTER) -- select German
-summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
+summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Letzte Armed-Phase') and drawOf('Armed-Zeit', 10) and drawOf('Vollständig', 50))
 
 for _, spec in ipairs({{440,252,1}, {480,320,2}, {800,480,2}}) do
@@ -1075,23 +1077,24 @@ local lowMemory = setmetatable({}, {__index = restricted})
 lowMemory.loadScript = function(path)
   local name = string.match(path, '/([^/]+)%.lua$')
   attempted[name] = (attempted[name] or 0) + 1
-  if name == 'mono_tools' and blockTools then return nil, 'not enough memory' end
+  if name == 'mono_summary' and blockTools then return nil, 'not enough memory' end
   return assert(loadfile(root .. path, 't', lowMemory))
 end
 local lowSW = lowMemory.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 lowSW.run(0)
-assert(drawOf('APMon Overview', 2) and not attempted.diagnostics and not attempted.mono_tools)
-lowSW.run(EVT_VIRTUAL_ENTER); lowSW.run(EVT_ROT_LEFT); lowSW.run(EVT_VIRTUAL_ENTER)
-assert(drawOf('Not enough memory') and attempted.mono_tools == 1 and not attempted.diagnostics)
+assert(drawOf('APMon Overview', 2) and not attempted.diagnostics and not attempted.mono_tools
+  and not attempted.mono_summary and not attempted.mono_gps)
+lowSW.run(EVT_VIRTUAL_ENTER); lowSW.run(EVT_ROT_LEFT); lowSW.run(EVT_ROT_LEFT); lowSW.run(EVT_VIRTUAL_ENTER)
+assert(drawOf('Not enough memory') and attempted.mono_summary == 1 and not attempted.diagnostics)
 lowSW.run(0)
-assert(attempted.mono_tools == 1) -- do not retry every frame
+assert(attempted.mono_summary == 1) -- do not retry every frame
 lowSW.run(EVT_VIRTUAL_EXIT)
 assert(drawOf('Last armed period', 57))
 blockTools = false
 lowSW.run(EVT_VIRTUAL_ENTER)
-assert(drawOf('No summary yet') and attempted.mono_tools == 2)
+assert(drawOf('No summary yet') and attempted.mono_summary == 2)
 lowSW.run(EVT_VIRTUAL_EXIT); lowSW.run(EVT_ROT_LEFT); lowSW.run(EVT_VIRTUAL_ENTER)
-assert(drawOf('Telemetry diagnostics', 1) and attempted.mono_tools == 3 and attempted.diagnostics == 1)
+assert(drawOf('Telemetry diagnostics', 1) and attempted.mono_tools == 1 and attempted.diagnostics == 1)
 
 -- Filtering is a view over the same FC history. Markers are independent and
 -- require a continuous AP_STATUS transition, not a first state or a switch.
@@ -1184,4 +1187,150 @@ for _, spec in ipairs({{480,320,1}, {800,480,2}, {440,252,1}}) do
   frame(EVT_VIRTUAL_PREV); frame(EVT_VIRTUAL_ENTER)
   assert(drawOf(all) and drawOf('After flight'))
 end
-print('OK: sensor validity, stale data, read-only, layouts, bilingual menus, diagnostics, passthrough, restricted mono Lua')
+do
+  -- Current but not fresh is not live. Even a fresh sensor needs a confirmed fix.
+  local rx = loadScript('/SCRIPTS/APMON/pass.lua')(12)
+  local gpsConfig = loadScript('/SCRIPTS/APMON/config.lua')()
+  gpsConfig.sensors.gpsfix.names = {'Fix'}
+  local monitor = core.new(gpsConfig, rx)
+  crossfireTelemetryPop = nil
+  data = {GPS={value={lat=0,lon=0}}, Sats={value=12}, Hdg={value=0}, Yaw={value=2}}
+  local function check(lat, lon, fix, sats, course, live, age)
+    monitor:sample(true)
+    local rows, actualLive, actualAge = monitor:gpsDetails()
+    for i, expected in ipairs({lat, lon, fix, sats, course}) do
+      assert(rows[i][2] == expected, rows[i][1] .. ': ' .. rows[i][2] .. ' instead of ' .. expected)
+    end
+    assert(actualLive == live and actualAge == age)
+  end
+  check('--', '--', '--', '--', '--', false)
+  send(rx, single(0x5002, 16), now)
+  check('--', '--', 'Kein Fix', '--', '--', false)
+  send(rx, single(0x5002, 48), now)
+  check('0.000000', '0.000000', '3D', '12', '0 deg', true)
+  now = now + 120
+  data.GPS.fresh, data.GPS.value.lat, data.Hdg.fresh, data.Sats.fresh = false, 9, false, false
+  data.Sats.value, data.Hdg.value = 13, 23 -- don't copy unverified cached changes
+  check('0.000000', '0.000000', '3D', '12', '0 deg', true)
+  now = now + 30
+  check('0.000000', '0.000000', '3D', '12', '0 deg', true)
+  now = now + 1
+  check('0.000000', '0.000000', '3D', '--', '--', false, 1)
+  now = now + 300
+  check('0.000000', '0.000000', '--', '--', '--', false, 4)
+  data.GPS.fresh, data.GPS.current = true, false
+  send(rx, single(0x5002, 48 + 192 * 256), now)
+  check('0.000000', '0.000000', 'RTK fix', '--', '--', false, 4)
+  data.GPS.current, data.GPS.value.lat = true, 91
+  check('0.000000', '0.000000', 'RTK fix', '--', '--', false, 4)
+  now = now + 20
+  data.GPS.value.lat, data.Hdg.fresh, data.Hdg.value = -90, true, 180
+  check('-90.000000', '0.000000', 'RTK fix', '--', '180 deg', true)
+  now = now + 20
+  send(rx, single(0x5002, 0), now)
+  data.GPS.value.lat, data.Fix = 3, {value=1}
+  check('-90.000000', '0.000000', 'Kein GPS', '--', '--', false, 0)
+  now = now + 320
+  data.Fix.fresh = false
+  check('-90.000000', '0.000000', '--', '--', '--', false, 3)
+  data.Fix.fresh = true
+  check('3.000000', '0.000000', 'Bestätigt', '--', '180 deg', true)
+  data.Fix.fresh, data.GPS.fresh = false, false
+  now = now + 100
+  check('3.000000', '0.000000', 'Bestätigt', '--', '180 deg', true)
+  now = now + 51
+  check('3.000000', '0.000000', '--', '--', '--', false, 1)
+  data.Fix.fresh = true
+  check('3.000000', '0.000000', 'Bestätigt', '--', '--', false, 1) -- no revival from a cached GPS reading
+  data.GPS.fresh = true
+  check('3.000000', '0.000000', 'Bestätigt', '--', '180 deg', true)
+  data.Fix.value = 0
+  send(rx, single(0x5002, 32), now)
+  check('3.000000', '0.000000', 'Kein Fix', '--', '--', false, 0)
+  now, data.Fix.fresh = 1, false
+  check('--', '--', '--', '--', '--', false)
+  send(rx, single(0x5002, 48), now)
+  data.Sats.fresh, data.Hdg.fresh = true, true
+  check('3.000000', '0.000000', '3D', '13', '180 deg', true)
+  now = now + 120
+  data.Sats.fresh, data.Hdg.value = false, 181
+  check('3.000000', '0.000000', '3D', '13', '181 deg', true)
+  now = now + 31
+  data.Hdg.fresh = false
+  check('3.000000', '0.000000', '3D', '--', '181 deg', true)
+  now = now + 20
+  data.Sats.fresh, data.Sats.value, data.Hdg.value = true, 14, 361
+  check('3.000000', '0.000000', '3D', '14', '--', true) -- invalid input drops immediately
+end
+
+do
+  local function gpsInput()
+    local packet
+    data = {GPS={value={lat=-41.125, lon=12.25}}, Sats={value=11}, Hdg={value=273}}
+    crossfireTelemetryPop = function()
+      if packet then local p = packet; packet = nil; return 0x80, p end
+    end
+    return function(fix)
+      now = now + 20
+      packet = single(0x5002, fix * 16)
+    end
+  end
+  colorDisplay, LCD_W, LCD_H, lcd.sizeText = false, 128, 64, nil
+  local reportFix = gpsInput()
+  local sw = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
+  sw.run(EVT_VIRTUAL_ENTER)
+  for i = 1, 5 do sw.run(EVT_ROT_RIGHT) end
+  assert(drawOf('GPS details', 57).flags & INVERS ~= 0 and not drawOf('Language: English'))
+  sw.run(EVT_VIRTUAL_ENTER)
+  assert(drawOf('GPS details', 1) and drawOf('Not live', 10) and not drawOf('-41.125000'))
+  reportFix(2); sw.background(); sw.run(0)
+  assert(drawOf('Live', 10) and drawOf('-41.125000', 18) and drawOf('12.250000', 26))
+  assert(drawOf('2D', 34) and drawOf('11', 42) and drawOf('273 deg', 50))
+  data.GPS.fresh, data.Sats.fresh, data.Hdg.fresh = false, false, false
+  now = now + 120; sw.run(0)
+  assert(drawOf('Live', 10) and drawOf('11', 42) and drawOf('273 deg', 50))
+  now = now + 120; sw.run(0)
+  assert(drawOf('Not live', 10).flags & INVERS ~= 0 and drawOf('2s ago', 10))
+  assert(drawOf('-41.125000', 18) and drawOf('--', 42) and drawOf('--', 50))
+  sw.run(EVT_VIRTUAL_EXIT)
+  assert(drawOf('GPS details', 57).flags & INVERS ~= 0)
+  sw.run(EVT_ROT_RIGHT); sw.run(EVT_VIRTUAL_ENTER)
+  sw.run(EVT_ROT_RIGHT); sw.run(EVT_VIRTUAL_ENTER) -- switch this session to German
+  sw.run(EVT_ROT_LEFT); sw.run(EVT_VIRTUAL_ENTER)
+  assert(drawOf('GPS-Details', 1) and drawOf('Nicht live', 10) and drawOf('vor 2s', 10))
+  assert(drawOf('Breite', 18) and drawOf('Länge', 26))
+
+  for _, spec in ipairs({{440,252,1}, {480,320,1}, {800,480,2}}) do
+    colorDisplay, LCD_W, LCD_H, lcd.sizeText = true, spec[1], spec[2], measure
+    reportFix = gpsInput()
+    local app = loadScript('/WIDGETS/APMon/main.lua')()
+    local w = app.create({x=0,y=0,w=LCD_W,h=LCD_H}, {Language=spec[3]})
+    local function frame(event, target)
+      local tap = target and assert(drawOf(target), target)
+      calls, draws, rectangles, bitmaps = {}, {}, {}, {}
+      app.refresh(w, event, tap and {x=tap.x,y=tap.y})
+    end
+    local en = spec[3] == 1
+    local title, offline = en and 'GPS details' or 'GPS-Details', en and 'Not live' or 'Nicht live'
+    frame(EVT_VIRTUAL_ENTER)
+    if drawOf(title) then frame(EVT_TOUCH_TAP, title)
+    else
+      for i = 1, 5 do frame(EVT_VIRTUAL_NEXT) end
+      frame(EVT_VIRTUAL_ENTER)
+    end
+    assert(drawOf(title, 8) and drawOf(offline) and not drawOf('-41.125000'))
+    reportFix(3); app.background(w); frame(0)
+    assert(drawOf('Live') and drawOf('3D') and drawOf('11') and drawOf('273 deg'))
+    assert(drawOf(en and 'Latitude' or 'Breite') and drawOf(en and 'GPS course' or 'GPS-Kurs'))
+    assert(drawOf('-41.125000') and drawOf('12.250000'))
+    data.GPS.fresh, data.Sats.fresh, data.Hdg.fresh = false, false, false
+    now = now + 120; frame(0)
+    assert(drawOf('Live') and drawOf('11') and drawOf('273 deg'))
+    data.GPS.current = false; now = now + 300; frame(0)
+    assert(drawOf(offline .. (en and '  |  4s ago' or '  |  vor 4s')))
+    assert(drawOf('-41.125000') and not drawOf('3D') and not drawOf('273 deg'))
+    frame(EVT_TOUCH_TAP, en and 'Back' or 'Zurück')
+    assert(drawOf('> ' .. title))
+  end
+end
+print('OK: sensor validity, GPS details, stale data, read-only, layouts, bilingual menus, diagnostics, passthrough, restricted mono Lua')

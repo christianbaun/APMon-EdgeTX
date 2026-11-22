@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/core.lua
 -- Purpose: Read and validate EdgeTX sensors and merge optional ArduPilot passthrough data.
--- Project version: 0.5.0
+-- Project version: 0.6.0
 -- Updated: 2026-11-20
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -48,6 +48,8 @@ local function formatValue(key, def, value)
     (def.unit ~= '' and ' ' .. def.unit or '')
 end
 local sourceRank = { missing = 0, unknown = 1, stale = 2, invalid = 3 }
+local gpsFixLabels = { [0] = 'Kein GPS', 'Kein Fix', '2D', '3D', 'DGPS', 'RTK float', 'RTK fix' }
+local gpsGrace = 150 -- 1.5 s bridges ordinary gaps between GPS updates.
 function M.new(config, receiver, armedSummary)
   local self = { values = {}, sources = {}, sensorList = {}, last = nil, api = false }
   local keys = {}
@@ -61,7 +63,9 @@ function M.new(config, receiver, armedSummary)
     local now = getTime()
     if receiver then receiver.poll() end
     if not force and self.last and now >= self.last and now - self.last < 20 then return end
-    if self.last and now < self.last then self.sources = {} end
+    if self.last and now < self.last then
+      self.sources, self.gpsPosition, self.gpsBinaryTime = {}, nil, nil
+    end
     self.last = now
     self.api = type(getSourceValue) == 'function' and type(getFieldInfo) == 'function'
     self.values = {}
@@ -71,6 +75,7 @@ function M.new(config, receiver, armedSummary)
       local def = config.sensors[key]
       if def.names[1] then
         local entry = self.sources[key] or { key = key }
+        local previousName = entry.name
         self.sources[key] = entry
         entry.name, entry.state = def.names[1], self.api and 'missing' or 'noapi'
         entry.fresh = false
@@ -80,7 +85,8 @@ function M.new(config, receiver, armedSummary)
             local info = getFieldInfo(name)
             if info then
               local value, current, fresh = getSourceValue(info.id)
-              -- isFresh only covers ~320 ms in EdgeTX 2.12.2. Use isCurrent.
+              -- Keep current values for the dashboard. The GPS detail page
+              -- separately uses isFresh (a short window, not a packet timestamp).
               local valid = current == true and validated(def, value) or nil
               if valid ~= nil then
                 self.values[key] = valid
@@ -97,6 +103,13 @@ function M.new(config, receiver, armedSummary)
             end
           end
         end
+        if key == 'satellites' or key == 'heading' then
+          if entry.fresh then
+            entry.gpsTime, entry.gpsValue = now, entry.lastValue
+          elseif entry.state ~= 'valid' or entry.name ~= previousName then
+            entry.gpsTime = nil
+          end
+        end
         count = count + 1
         self.sensorList[count] = entry
       else
@@ -106,13 +119,54 @@ function M.new(config, receiver, armedSummary)
     for i = count + 1, #self.sensorList do self.sensorList[i] = nil end
     local confirmedArmed = receiver and receiver.value('armed')
     if armedSummary then armedSummary:sample(now, confirmedArmed, self.values, self.sources) end
-    if not self.api then return end
+    local wasLive = self.gpsLive
+    self.gpsLive, self.gpsFixLabel = false, nil
+    if not self.api then self.gpsBinaryTime = nil; return end
+    local binaryFix = self.values.gpsfix
+    if binaryFix ~= nil and self.sources.gpsfix.fresh then
+      self.gpsBinaryFix, self.gpsBinaryTime = binaryFix, now
+    elseif binaryFix ~= self.gpsBinaryFix then
+      self.gpsBinaryTime = nil
+    end
+    if not self.gpsBinaryTime or now - self.gpsBinaryTime > gpsGrace then binaryFix = nil end
     if receiver then
       local fix = receiver.value('fix')
       if self.values.armed == nil then self.values.armed = confirmedArmed end
       self.fix = fix
       if self.values.gpsfix == nil and fix ~= nil then self.values.gpsfix = fix >= 2 and 1 or 0 end
     end
+    -- Use passthrough for the fix type. A recent explicit no-fix from
+    -- either source vetoes a position, even if the other source claims a fix.
+    local fix = self.fix
+    local hasFix = binaryFix ~= 0 and (fix and fix >= 2 or fix == nil and binaryFix == 1)
+    self.gpsFixLabel = binaryFix == 0 and (fix == 0 and 'Kein GPS' or 'Kein Fix')
+      or gpsFixLabels[fix] or (binaryFix == 1 and 'Bestätigt' or nil)
+    local pos = self.values.gps
+    if hasFix and pos then
+      if self.sources.gps.fresh then
+        self.gpsLive, self.gpsPosition, self.gpsTime = true, pos, now
+      elseif wasLive and self.gpsPosition and now - self.gpsTime <= gpsGrace then
+        -- Keep the displayed position and timestamp unchanged during the gap.
+        self.gpsLive = true
+      end
+    end
+  end
+  function self:gpsDetails()
+    local pos, live, now = self.gpsPosition, self.gpsLive, getTime()
+    local function liveValue(key)
+      local entry = self.sources[key]
+      if live and entry and entry.gpsTime and now - entry.gpsTime <= gpsGrace then
+        return formatValue(key, config.sensors[key], entry.gpsValue)
+      end
+      return '--'
+    end
+    return {
+      { 'Breite', pos and string.format('%.6f', pos.lat) or '--' },
+      { 'Länge', pos and string.format('%.6f', pos.lon) or '--' },
+      { 'GPS Fix', self.gpsFixLabel or '--' },
+      { 'Satelliten', liveValue('satellites') },
+      { 'GPS-Kurs', liveValue('heading') },
+    }, live, not live and pos and math.floor((now - self.gpsTime) / 100) or nil
   end
   function self:format(key)
     return formatValue(key, config.sensors[key], self.values[key])
@@ -122,32 +176,6 @@ function M.new(config, receiver, armedSummary)
   end
   function self:formatSensor(entry)
     return formatValue(entry.key, config.sensors[entry.key], self:lastSensorValue(entry))
-  end
-  function self:rows()
-    local v = self.values
-    local armed = v.armed == 1 and 'ARMED' or v.armed == 0 and 'DISARMED' or '--'
-    local pit = v.pit == 1 and 'AN' or v.pit == 0 and 'AUS' or '--'
-    local power = v.pit == 1 and 'PIT: mW unbekannt'
-      or v.pit == 0 and self:format('power') or '-- (PIT unbekannt)'
-    local gps = v.gps
-    return {
-      { 'Modus (FC)', self:format('mode') },
-      { 'Motoren (FC)', armed, v.armed == 1 and 'warn' or nil },
-      { 'Akku', self:format('voltage') },
-      { 'Strom', self:format('current') },
-      { 'Rest (FC)', self:format('remaining') },
-      { 'Verbraucht', self:format('used') },
-      { 'Hoehe (Sensor)', self:format('altitude') },
-      { 'Steigen', self:format('climb') },
-      { 'GPS-Tempo', self:format('speed') },
-      { 'Satelliten', self:format('satellites') },
-      { 'GPS-Kurs', self:format('heading') },
-      { 'RC-Linkqualität', self:format('lq') },
-      { 'GPS Breite', gps and string.format('%.6f', gps.lat) or '--' },
-      { 'GPS Laenge', gps and string.format('%.6f', gps.lon) or '--' },
-      { 'PIT (FC)', pit, v.pit == 1 and 'info' or nil },
-      { 'VTX (FC)', power, v.pit == 1 and 'info' or nil },
-    }
   end
   function self:status()
     if not self.api then return 'API fehlt: getSourceValue', 'warn' end

@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/TELEMETRY/APMon.lua
 -- Purpose: Render the GX12/Boxer telemetry UI with two pages, menus and saved language choice.
--- Project version: 0.5.0
+-- Project version: 0.6.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -186,22 +186,20 @@ local function menuHeader(width, title)
 end
 local function projectMenu(width)
   menuHeader(width, project.title)
-  for i, line in ipairs(project.subtitle) do
+  for i, line in ipairs(project.repo) do
     lcd.drawText(2, 10 + (i - 1) * 7, fit(line, width - 4, small), small)
   end
-  for i, line in ipairs(project.repo) do
-    lcd.drawText(2, 24 + (i - 1) * 7, fit(line, width - 4, small), small)
-  end
   local version = fit(project.version, width - textWidth(project.repo[2], small) - 8, small)
-  rightText(width - 2, 31, version, small)
-  filled(2, 39, width - 4, 1)
+  rightText(width - 2, 17, version, small)
+  filled(2, 23, width - 4, 1)
   local labels = { tr('Sprache') .. ': ' .. i18n.language(language).name, tr('FC-Meldungen'),
-    tr('Uhr') .. ': ' .. tr(showClock and 'An' or 'Aus'), tr('Telemetrie-Diagnose'), tr('Letzte Armed-Phase') }
-  local first = math.max(1, menuItem - 2)
-  for i = first, first + 2 do menuOption(width, 41 + (i - first) * 8, labels[i], menuItem == i) end
+    tr('Uhr') .. ': ' .. tr(showClock and 'An' or 'Aus'), tr('Telemetrie-Diagnose'),
+    tr('Letzte Armed-Phase'), tr('GPS-Details') }
+  local first = math.max(1, menuItem - 4)
+  for i = first, first + 4 do menuOption(width, 25 + (i - first) * 8, labels[i], menuItem == i) end
 end
 local function loadTools(isDiagnostics)
-  return module('mono_tools', {
+  return module(isDiagnostics and 'mono_tools' or view == 'gps' and 'mono_gps' or 'mono_summary', {
     tr = tr, monoText = monoText, header = menuHeader, field = field,
     rightText = rightText, small = small, filled = filled, fit = fit, textWidth = textWidth,
     monitor = monitor, receiver = receiver, tracker = tracker, summary = summary,
@@ -221,6 +219,8 @@ local function run(event)
     elseif enterEvent and tracker.last and toolRenderer then view = 'summaryDetail' end
   elseif view == 'summaryDetail' then
     if enterEvent or exitEvent then view = 'summary' end
+  elseif view == 'gps' then
+    if exitEvent then view = 'menu' end
   elseif view == 'diagnostics' then
     if exitEvent then view = 'menu'
     elseif enterEvent and toolRenderer then view, sensorIndex = 'sensors', 1 end
@@ -260,7 +260,7 @@ local function run(event)
       view = 'menu'
     end
   elseif view == 'menu' then
-    if step ~= 0 then menuItem = (menuItem - 1 + step) % 5 + 1 end
+    if step ~= 0 then menuItem = (menuItem - 1 + step) % 6 + 1 end
     if exitEvent then view = 'data' end
     if enterEvent then
       if menuItem == 1 then view, languageItem = 'language', language
@@ -270,8 +270,10 @@ local function run(event)
         saveError = not savePreferences() and 'Uhr nicht gespeichert' or nil
       elseif menuItem == 4 then
         view = 'diagnostics'
-      else
+      elseif menuItem == 5 then
         view = 'summary'
+      else
+        view = 'gps'
       end
     end
   elseif enterEvent then
@@ -284,7 +286,7 @@ local function run(event)
     lcd.drawText(0, y, fit(value, width, small), small + (inverse and (INVERS or 0) or 0))
   end
   local diagnosticsPage = view == 'diagnostics' or view == 'sensors'
-  if diagnosticsPage or view == 'summary' or view == 'summaryDetail' then
+  if diagnosticsPage or view == 'summary' or view == 'summaryDetail' or view == 'gps' then
     if toolRenderer == nil then
       local ok, render = pcall(loadTools, diagnosticsPage)
       toolRenderer = ok and render or false
@@ -296,7 +298,8 @@ local function run(event)
     if toolRenderer then
       toolRenderer(view, width, sensorIndex, text)
     else
-      menuHeader(width, tr(diagnosticsPage and 'Telemetrie-Diagnose' or 'Letzte Armed-Phase'))
+      menuHeader(width, tr(diagnosticsPage and 'Telemetrie-Diagnose'
+        or view == 'gps' and 'GPS-Details' or 'Letzte Armed-Phase'))
       text(11, tr(toolError))
       text(57, monoText('RTN: Menü'))
     end
