@@ -122,9 +122,40 @@ band/channel and PIT are not currently displayed. Reserved sensor configuration
 entries do not provide a transport for these values. APMon is a telemetry
 monitor, not a flight-readiness check or a replacement for FC pre-arm checks.
 
+## Alternatives and scope
+
+APMon is a **read-only monitor on the radio**, not a Ground Control Station
+(GCS). It uses EdgeTX sensors and selected ArduPilot passthrough data from
+ExpressLRS MAVLink mode, not the full MAVLink stream. It does not plan or
+upload missions, configure the flight controller, flash firmware or analyze
+flight logs. Use a GCS alongside APMon when you need those functions.
+
+| Solution | Platform and typical setup | Main purpose |
+| --- | --- | --- |
+| **APMon** | EdgeTX 2.x with the Lua LCD API on monochrome or color radios, ArduPilot with ExpressLRS in MAVLink mode | On-radio telemetry, FC messages, armed summaries |
+| [FM2M ToolBox](https://fm2m.online/) | EdgeTX or ETHOS color radios, primarily Betaflight and INAV, with compatible CRSF or FrSky S.Port telemetry | On-radio status, telemetry, diagnostics and, depending on the edition and setup, device and VTX configuration |
+| [Yaapu Telemetry Script](https://github.com/yaapu/frskytelemetryscript) | OpenTX, EdgeTX or ETHOS, ArduPilot passthrough over FrSky S.Port, TBS Crossfire or ExpressLRS, depending on setup | On-radio ArduPilot telemetry script and widget for a wider range of radios and telemetry links |
+| [INAV Lua Telemetry](https://github.com/iNavFlight/OpenTX-Telemetry-Widget) | OpenTX or EdgeTX with INAV and compatible telemetry | On-radio status, battery, GPS and flight data for INAV rather than ArduPilot |
+| [ArduDeck](https://ardudeck.com/) | Cross-platform GCS for ArduPilot and PX4, with an optional EdgeTX HUD | Map-based monitoring, mission and survey planning, parameter management and log analysis |
+| [Mission Planner](https://ardupilot.org/planner/docs/mission-planner-overview.html) by Michael Oborne | Windows GCS for ArduPilot | Vehicle setup and tuning, firmware installation, mission planning and log analysis |
+| [MicoPilot](https://micoair.com/en/tools/micopilot) by MicoAir | GCS for ArduPilot and PX4, Android beta with other platforms in testing | Live telemetry, FC configuration, sensor calibration and mission planning |
+| [QGroundControl](https://qgroundcontrol.com/) | Desktop and mobile MAVLink GCS for PX4 and ArduPilot | Vehicle setup, map-based flight monitoring and control, and mission planning |
+| [MAVProxy](https://ardupilot.org/mavproxy/) | Command-line MAVLink ground station | Scriptable vehicle interaction and telemetry forwarding to other ground stations |
+| [UgCS](https://ugcs.com/supported_drones_autopilots) | Commercial desktop mission planner for supported aircraft, including compatible ArduPilot and PX4 setups | Survey route planning for photogrammetry, LiDAR and corridor mapping |
+| [ArduPilot UAV Log Viewer](https://plot.ardupilot.org/) | Browser tool for existing ArduPilot DataFlash (`.bin`) and MAVLink (`.tlog`) logs | Post-flight plots, maps and flight replay rather than live monitoring on the radio |
+| [AirData UAV](https://airdata.com/supported-apps) | Cloud service that accepts supported ArduPilot `.bin` and `.tlog` flight logs | Post-flight analysis, battery health, maintenance and fleet management |
+| [DroneLogbook](https://www.dronelogbook.com/hp/1/features.html) | Cloud service for flight records with supported log imports | Flight records, equipment, inspections, maintenance and compliance documentation |
+
+Check the linked project's documentation for your radio, firmware and telemetry
+link. A listed alternative is not necessarily compatible with an APMon setup
+without changes.
+
+Cloud services process data outside the radio. APMon neither uploads to these
+services nor exports a flight log.
+
 ## Compatibility and requirements
 
-APMon targets the **classic EdgeTX 2.x LCD API**, not EdgeTX 3.x/LVGL.
+APMon targets **EdgeTX 2.x with the Lua LCD API**, not EdgeTX 3.x/LVGL.
 SW is designed for 128 × 64 pixels. COLOR needs a widget zone of at least
 440 × 252 pixels. Other resolutions, key mappings, memory budgets and firmware
 versions require separate testing.

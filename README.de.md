@@ -125,9 +125,41 @@ allein schaffen dafür keinen Transport vom FC zur Fernsteuerung.
 APMon ist eine Telemetrieanzeige, keine Flugfreigabe und kein Ersatz für die
 PreArm-Prüfungen des Flugcontrollers.
 
+## Alternativen und Abgrenzung
+
+APMon ist ein **rein lesender Monitor direkt am Sender**, keine
+Bodenstation (Ground Control Station, GCS). Es nutzt EdgeTX-Sensoren und
+ausgewählte ArduPilot-Passthrough-Daten aus dem ExpressLRS-MAVLink-Modus,
+nicht den vollständigen MAVLink-Datenstrom. APMon plant oder überträgt keine
+Missionen, konfiguriert keinen Flugcontroller, flasht keine Firmware und
+wertet keine Fluglogs aus. Für diese Aufgaben ergänzt eine GCS APMon.
+
+| Lösung | Plattform und typischer Einsatz | Schwerpunkt |
+| --- | --- | --- |
+| **APMon** | EdgeTX 2.x mit Lua-LCD-API auf Schwarzweiß- und Farbsendern, ArduPilot mit ExpressLRS im MAVLink-Modus | Telemetrie direkt am Sender, FC-Meldungen, Armed-Bilanz |
+| [FM2M ToolBox](https://fm2m.online/) | EdgeTX- oder ETHOS-Farbsender, vor allem Betaflight und INAV mit kompatibler CRSF- oder FrSky-S.Port-Telemetrie | Status, Telemetrie und Diagnose am Sender, je nach Edition und Aufbau auch Geräte- und VTX-Konfiguration |
+| [Yaapu Telemetry Script](https://github.com/yaapu/frskytelemetryscript) | OpenTX, EdgeTX oder ETHOS, ArduPilot-Passthrough je nach Aufbau über FrSky S.Port, TBS Crossfire oder ExpressLRS | ArduPilot-Telemetrie als Skript oder Widget für mehr Sender und Telemetrieverbindungen |
+| [INAV Lua Telemetry](https://github.com/iNavFlight/OpenTX-Telemetry-Widget) | OpenTX oder EdgeTX mit INAV und kompatibler Telemetrie | Status, Akku, GPS und Flugdaten direkt am Sender für INAV statt ArduPilot |
+| [ArduDeck](https://ardudeck.com/) | Plattformübergreifende GCS für ArduPilot und PX4 mit optionalem EdgeTX-HUD | Kartenbasierte Überwachung, Missions- und Vermessungsplanung, Parameterverwaltung und Log-Auswertung |
+| [Mission Planner](https://ardupilot.org/planner/docs/mission-planner-overview.html) von Michael Oborne | Windows-GCS für ArduPilot | Einrichtung und Abstimmung, Firmware-Installation, Missionsplanung und Log-Auswertung |
+| [MicoPilot](https://micoair.com/en/tools/micopilot) von MicoAir | GCS für ArduPilot und PX4, Android-Beta und weitere Plattformen im Test | Live-Telemetrie, FC-Konfiguration, Sensorkalibrierung und Missionsplanung |
+| [QGroundControl](https://qgroundcontrol.com/) | MAVLink-GCS für PX4 und ArduPilot auf Desktop- und Mobilgeräten | Einrichtung, kartenbasierte Flugüberwachung und -steuerung sowie Missionsplanung |
+| [MAVProxy](https://ardupilot.org/mavproxy/) | MAVLink-Bodenstation für die Kommandozeile | Skriptgestützter Zugriff auf das Modell und Weiterleitung von Telemetrie an andere Bodenstationen |
+| [UgCS](https://ugcs.com/supported_drones_autopilots) | Kommerzieller Desktop-Missionsplaner für unterstützte Fluggeräte, darunter kompatible ArduPilot- und PX4-Aufbauten | Planung von Vermessungsrouten für Photogrammetrie, LiDAR und Korridorkartierung |
+| [ArduPilot UAV Log Viewer](https://plot.ardupilot.org/) | Browserwerkzeug für vorhandene ArduPilot-DataFlash- (`.bin`) und MAVLink-Logs (`.tlog`) | Diagramme, Karten und Flugwiedergabe im Nachhinein statt Live-Anzeige am Sender |
+| [AirData UAV](https://airdata.com/supported-apps) | Cloud-Dienst mit Import für unterstützte ArduPilot-Fluglogs (`.bin` und `.tlog`) | Flugauswertung, Akkuzustand, Wartung und Flottenverwaltung |
+| [DroneLogbook](https://www.dronelogbook.com/hp/1/features.html) | Cloud-Dienst für Flugbücher mit Import unterstützter Logformate | Flugbuch, Ausrüstung, Inspektionen, Wartung und Nachweisdokumentation |
+
+Ob Sender, Firmware und Telemetrieverbindung zusammenpassen, steht in der
+Dokumentation des jeweiligen Projekts. Nicht jede Alternative funktioniert
+ohne Änderungen mit demselben Aufbau wie APMon.
+
+Cloud-Dienste verarbeiten Daten außerhalb des Senders. APMon lädt keine Daten zu
+diesen Diensten hoch und exportiert keine Fluglogs.
+
 ## Kompatibilität und Voraussetzungen
 
-Zielplattform ist die **klassische EdgeTX-2.x-LCD-API**. Eine Oberfläche für
+Zielplattform ist **EdgeTX 2.x mit Lua-LCD-API**. Eine Oberfläche für
 EdgeTX 3.x/LVGL ist nicht enthalten. SW ist für 128 × 64 Pixel ausgelegt.
 COLOR benötigt eine Widget-Zone von mindestens 440 × 252 Pixeln. Andere
 Auflösungen, Tastenbelegungen, Speicherbudgets und Firmwarestände müssen
