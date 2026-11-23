@@ -14,8 +14,8 @@ vollständigen MAVLink-Datenstrom. Die Anwendung besteht aus Lua-Skripten auf de
 SD-Karte und benötigt zur Laufzeit weder einen Laptop noch ein zusätzliches
 Skript im Flugcontroller.
 
-Der aktuelle Projektstand ist **Version 0.9.0**. Die Versionsnummer steht in
-[VERSION](VERSION). Siehe [Release-Notizen zu v0.9.0](releases/v0.9.0.md).
+Der aktuelle Projektstand ist **Version 1.0.0**, siehe [VERSION](VERSION).
+Siehe [Release-Notizen zu v1.0.0](releases/v1.0.0.md).
 
 Die GUI unterstützt **Englisch und Deutsch**. Englisch ist die Standardsprache.
 
@@ -42,7 +42,7 @@ Hardwaretests. Der aktuelle Prüfstand steht im Abschnitt zur Kompatibilität.
 
 | Paket | Display / Oberfläche | Referenzsender |
 | --- | --- | --- |
-| [APMon-SW.zip](APMon-SW.zip) | Telemetrieskript mit zwei Datenseiten für Schwarzweißdisplays (128 × 64 Pixel) | RadioMaster GX12 und Boxer |
+| [APMon-SW.zip](APMon-SW.zip) | Telemetrieskript mit Übersicht, Flugwerten und HUD für Schwarzweißdisplays (128 × 64 Pixel) | RadioMaster GX12 und Boxer |
 | [APMon-COLOR.zip](APMon-COLOR.zip) | Dashboard-Widget für Farbdisplays (Widget-Zone mindestens 440 × 252 Pixel) | RadioMaster GX15 und TX15 (480 × 320), TX16S MK3 (800 × 480) |
 
 **SW** steht für *Schwarzweiß*. Paket und Deployment-Option richten sich nach
@@ -56,46 +56,46 @@ Ein passendes Display allein bedeutet nicht, dass der Sender getestet wurde.
 Echte Aufnahmen von GX12, GX15 und TX16S MK3.
 Die Werte zeigen den Aufnahmezustand und sind keine Aussage zur Flugbereitschaft.
 
-**Schwarzweiß — GX12 (128 × 64, APMon v0.9.0)**
+**Schwarzweiß — GX12 (128 × 64, APMon v1.0.0)**
 
-Die Bilder sind zur besseren Lesbarkeit vergrößert. Die Senderuhr ist auf beiden
-Telemetrieseiten eingeschaltet.
+Die Bilder sind zur besseren Lesbarkeit vergrößert. In beiden Aufnahmen ist
+die Senderuhr eingeblendet.
 
-| Übersicht | Flugwerte |
+| Übersicht (1/3) | Flugwerte (2/3) |
 | --- | --- |
-| <img src="images/screenshots/apmon-sw-gx12-overview-de-v0.9.0-2026-11-23-091828.png" width="384" alt="APMon-Übersicht auf Deutsch mit Senderuhr auf der GX12"> | <img src="images/screenshots/apmon-sw-gx12-flight-de-v0.9.0-2026-11-23-091826.png" width="384" alt="APMon-Flugwerte auf Deutsch mit Senderuhr auf der GX12"> |
+| <img src="images/screenshots/apmon-sw-gx12-overview-de-v1.0.0-2026-11-23-105922.png" width="384" alt="Übersicht auf der GX12 mit Senderuhr und Seitennummer 1/3"> | <img src="images/screenshots/apmon-sw-gx12-flight-de-v1.0.0-2026-11-23-105923.png" width="384" alt="Flugwerte auf der GX12 mit Senderuhr und Seitennummer 2/3"> |
 
 **Kompaktes Projektmenü:**
 
-<img src="images/screenshots/apmon-sw-gx12-menu-de-v0.9.0-2026-11-23-091754.png" width="384" alt="Kompaktes APMon-Projektmenü mit fünf sichtbaren Einträgen und Version 0.9.0">
+<img src="images/screenshots/apmon-sw-gx12-menu-de-v1.0.0-2026-11-23-105919.png" width="384" alt="Deutsches Projektmenü auf der GX12 mit APMon v1.0.0">
 
-Weitere GX12-Aufnahmen: [FC-Meldungsfilter](#senderuhr-und-fc-meldungsverlauf),
+Weitere GX12-Aufnahmen: [HUD](#hud), [FC-Meldungsfilter](#senderuhr-und-fc-meldungsverlauf),
 [GPS-Details](#gps-details),
 [Telemetrie-Diagnose](#telemetrie-diagnose),
 [Einrichtungscheck](#einrichtungscheck-für-telemetriequellen),
 [Diagnosebericht](#diagnosebericht) und
 [Zusammenfassung nach dem Entarmen](#zusammenfassung-nach-dem-entarmen).
 
-**Farbdisplay — GX15 (480 × 320, APMon v0.9.0)**
+**Farbdisplay — GX15 (480 × 320, APMon v1.0.0)**
 
-| Übersicht mit Senderuhr | Projektmenü |
+| Übersicht (1/2) mit Senderuhr | Projektmenü |
 | --- | --- |
-| ![APMon-Übersicht auf der GX15 mit Senderuhr und der Schaltfläche Letzte FC-Warnung](images/screenshots/apmon-color-gx15-overview-de-v0.9.0-2026-11-23-091303.png) | ![Projektmenü auf der GX15 mit Version 0.9.0](images/screenshots/apmon-color-gx15-menu-de-v0.9.0-2026-11-23-091237.png) |
+| ![Übersicht auf der GX15 mit Senderuhr und Seitennummer 1/2](images/screenshots/apmon-color-gx15-overview-de-v1.0.0-2026-11-23-111014.png) | ![Deutsches Projektmenü auf der GX15 mit APMon v1.0.0](images/screenshots/apmon-color-gx15-menu-de-v1.0.0-2026-11-23-111010.png) |
 
-Weitere GX15-Aufnahmen: [FC-Meldungsfilter](#senderuhr-und-fc-meldungsverlauf),
+Weitere GX15-Aufnahmen: [HUD](#hud), [FC-Meldungsfilter](#senderuhr-und-fc-meldungsverlauf),
 [GPS-Details](#gps-details),
 [Telemetrie-Diagnose](#telemetrie-diagnose),
 [Einrichtungscheck](#einrichtungscheck-für-telemetriequellen),
 [Diagnosebericht](#diagnosebericht) und
 [Zusammenfassung nach dem Entarmen](#zusammenfassung-nach-dem-entarmen).
 
-**Farbdisplay — TX16S MK3 (800 × 480, APMon v0.9.0)**
+**Farbdisplay — TX16S MK3 (800 × 480, APMon v1.0.0)**
 
-| Übersicht | Projektmenü |
+| Übersicht (1/2) mit Senderuhr | Projektmenü |
 | --- | --- |
-| ![Übersicht auf der TX16S MK3 mit der Schaltfläche Letzte FC-Warnung](images/screenshots/apmon-color-tx16s-mk3-overview-de-v0.9.0-2026-11-23-092235.png) | ![Deutsches Projektmenü auf der TX16S MK3 mit Version 0.9.0](images/screenshots/apmon-color-tx16s-mk3-menu-de-v0.9.0-2026-11-23-092327.png) |
+| ![Übersicht auf der TX16S MK3 mit Senderuhr und Seitennummer 1/2](images/screenshots/apmon-color-tx16s-mk3-overview-de-v1.0.0-2026-11-23-111728.png) | ![Deutsches Projektmenü auf der TX16S MK3 mit APMon v1.0.0](images/screenshots/apmon-color-tx16s-mk3-menu-de-v1.0.0-2026-11-23-111726.png) |
 
-Weitere TX16S-MK3-Aufnahmen: [Armed-Bilanz](#zusammenfassung-nach-dem-entarmen),
+Weitere TX16S-MK3-Aufnahmen: [HUD](#hud), [Armed-Bilanz](#zusammenfassung-nach-dem-entarmen),
 [GPS-Details](#gps-details), [FC-Meldungen](#senderuhr-und-fc-meldungsverlauf),
 [Telemetrie-Diagnose](#telemetrie-diagnose),
 [Einrichtungscheck](#einrichtungscheck-für-telemetriequellen) und [Diagnosebericht](#diagnosebericht).
@@ -175,10 +175,10 @@ separat geprüft werden.
 
 | Sender | Versionen |
 | --- | --- |
-| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.9.0 |
+| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
 | TX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
-| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.9.0 |
-| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.9.0 |
+| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
+| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
 | Boxer | Hardwaretest noch offen |
 | Andere Sender | Hardwaretest noch offen |
 
@@ -349,16 +349,21 @@ Fluglage, horizontales GPS-Tempo, Richtung und Steigen. Die letzte FC-Meldung
 erscheint unten mit Altersangabe. Langer Text wird auf die verfügbare Breite
 gekürzt.
 
-- **Projektmenü öffnen:** APMon doppelt antippen oder im Kontextmenü
-  **Vollbild** wählen. Im Vollbild auf **Menü** tippen oder **ENTER** drücken.
+- **Vollbild öffnen:** In EdgeTX 2.12.5 für den Bildschirm das Layout
+  **App mode** wählen und APMon als einziges Widget zuweisen. Auf diesem
+  Bildschirm führt ein langer Druck auf **ENTER** direkt ins Vollbild.
+  In einem normalen Layout führt das Widget-Kontextmenü über **Vollbild**
+  dorthin. EdgeTX steuert den Modus und erlaubt einem Lua-Widget keinen
+  automatischen Vollbildstart. Im Vollbild auf **Menü** tippen oder
+  **ENTER** drücken, um das Projektmenü zu öffnen.
 - Unter **APMon** steht **ArduPilot Telemetry Monitor for EdgeTX radios**.
   Darunter stehen die GitHub-Adresse und die installierte APMon-Version.
   **Sprache** und **FC-Meldungen** lassen sich per Touch oder mit Drehgeber
   und **ENTER** öffnen. **RTN** geht eine Ebene zurück. **RTN** lang gedrückt
   verlässt das Vollbild.
 - Die Sprachwahl im APMon-Menü gilt für dieses Widget in der aktuellen
-  Sitzung. Dauerhaft speichert EdgeTX sie im Modell: APMon in der Hauptansicht
-  lange antippen → **Widget-Einstellungen → Language → English oder Deutsch**.
+  Sitzung. Für die dauerhafte Einstellung in den EdgeTX-Bildschirmeinstellungen
+  unter **Widgets einrichten** die **Widget-Einstellungen → Language** öffnen.
 - **Menü → Uhr** schaltet die größere Senderuhr mittig in der Kopfzeile des
   Dashboards für die aktuelle Sitzung ein oder aus. Den dauerhaften Standard
   pro Widget legt **Widget-Einstellungen → Clock** fest.
@@ -369,8 +374,9 @@ gekürzt.
 | --- | --- |
 | Übersicht | Flugmodus und Armed links, darunter Akkustrom, Restladung, Verbrauch, RC-Linkqualität, GPS-Fix mit Satellitenzahl und letzte EKF-Umschaltmeldung |
 | Flugwerte | Höhe groß links, darunter horizontales GPS-Tempo, Steigen, Roll, Pitch und Yaw mit Himmelsrichtung |
+| [HUD](#hud) | Künstlicher Horizont mit Roll- und Nickwinkel auf Seite 3 |
 
-Die **Akkuspannung in Volt steht auf beiden Seiten oben rechts**.
+Die **Akkuspannung in Volt steht in der Übersicht und bei den Flugwerten oben rechts**.
 Ohne gültigen Wert zeigt das Feld `--`.
 
 - **Drehgeber, Plus/Minus oder NEXT/PREV:** Seite manuell wechseln.
@@ -378,7 +384,7 @@ Ohne gültigen Wert zeigt das Feld `--`.
   installierter APMon-Version öffnen.
 - Unter **Sprache** zwischen **Deutsch** und **English** wählen. **FC-Meldungen**
   öffnet den Verlauf. Mit **Uhr: Aus/An** direkt darunter und **ENTER** lässt
-  sich die Uhr umschalten. Sie steht auf beiden Telemetrieseiten
+  sich die Uhr umschalten. Sie steht auf allen drei Telemetrieseiten
   links neben der Seitennummer. **RTN** geht eine Ebene zurück.
 
 Sprache und Uhr werden in `/SCRIPTS/APMON/mono.cfg` gespeichert und gelten
@@ -398,6 +404,43 @@ Für das kleine Display werden kurze Labels verwendet:
 | Vario / Climb | Steigen |
 | Dir | Himmelsrichtung aus Yaw, falls sie nicht neben dem Winkel Platz findet |
 | EKF | letzte EKF-Umschaltmeldung, z. B. `2/30s` = Set 2 vor 30 Sekunden gemeldet |
+
+### HUD
+
+Auf SW den Drehgeber von der **Übersicht** über **Flugwerte** bis zum **HUD**
+nach rechts drehen. Auf COLOR das Widget im Vollbild öffnen und von der
+Hauptansicht (**1/2**) nach rechts zum HUD (**2/2**) drehen. Nach links gelangt
+man zurück. **ENTER**
+öffnet auf beiden Displays weiterhin das Projektmenü.
+
+Das HUD zeigt ein festes Flugzeugsymbol, einen beweglichen Horizont und
+Nickmarken. Daneben stehen Akkuspannung, Strom, RC-Linkqualität, der letzte
+EKF-Quellensatz, GPS-Fixtyp und Satellitenzahl. Die Kopfzeile zeigt die Uhr
+nur, wenn sie auf der Hauptseite eingeschaltet ist.
+Das HUD nutzt Roll- und Nickdaten der konfigurierten EdgeTX-Sensoren
+(standardmäßig `Roll` und `Ptch`). Die Werte müssen nicht gleichzeitig
+eintreffen. Das HUD überbrückt pro Achse Lücken von bis zu einer Sekunde,
+solange EdgeTX die Quelle noch als aktuell meldet. Bei einem längeren
+Ausfall oder einem ungültigen Wert bleibt die letzte vollständige Lage
+mit dem Hinweis **HOLD** stehen. Wurde noch keine vollständige Lage
+empfangen, erscheint kein Horizont. Die übrigen Sensorwerte werden weiter
+aktualisiert und stehen auf SW in zwei Zeilen unter dem Horizont. Auf COLOR
+werden die Werte neben dem Horizont größer dargestellt, wenn der Platz
+ausreicht. Das HUD ist kein primäres Fluginstrument.
+
+| GX12 mit v1.0.0: Live-HUD | Eingefrorener Horizont mit HOLD |
+| --- | --- |
+| <img src="images/screenshots/apmon-sw-gx12-hud-level-de-v1.0.0-2026-11-23-105925.png" width="384" alt="HUD auf der GX12 mit fast waagerechtem Horizont und zwei Zeilen Telemetriewerten"> | <img src="images/screenshots/apmon-sw-gx12-hud-hold-de-v1.0.0-2026-11-23-105932.png" width="384" alt="HUD auf der GX12 mit HOLD und eingefrorenem Nickwinkel von elf Grad"> |
+
+[HOLD bei fast waagerechter Lage](images/screenshots/apmon-sw-gx12-hud-hold-de-v1.0.0-2026-11-23-105929.png).
+
+| GX15 mit v1.0.0: HUD in Schräglage | HUD bei annähernd waagerechter Lage |
+| --- | --- |
+| ![HUD auf der GX15 mit geneigtem Horizont, Seitennummer 2/2 und vergrößerten Telemetriewerten](images/screenshots/apmon-color-gx15-hud-de-v1.0.0-2026-11-23-111021.png) | ![HUD auf der GX15 mit fast waagerechtem Horizont und daneben angeordneten Telemetriewerten](images/screenshots/apmon-color-gx15-hud-level-de-v1.0.0-2026-11-23-111012.png) |
+
+| TX16S MK3 mit v1.0.0: Live-HUD | Eingefrorener Horizont mit HOLD |
+| --- | --- |
+| ![HUD auf der TX16S MK3 mit 16 Grad Nickwinkel und großen Anzeigen für Akku, LQ, GPS und EKF](images/screenshots/apmon-color-tx16s-mk3-hud-de-v1.0.0-2026-11-23-111734.png) | ![HUD auf der TX16S MK3 mit HOLD und einem eingefrorenen waagerechten Horizont](images/screenshots/apmon-color-tx16s-mk3-hud-hold-de-v1.0.0-2026-11-23-111731.png) |
 
 ### Senderuhr und FC-Meldungsverlauf
 
@@ -526,6 +569,13 @@ So können GPS-Koordinaten gültig sein, obwohl noch kein Fixtyp empfangen
 wurde. Der Fixtyp-Check wertet ArduPilot-Passthrough aus und leitet keinen
 Fix aus Koordinaten oder Satellitenzahl ab. Der Check ändert keine
 Sender- oder FC-Einstellungen und ist keine Flugfreigabe.
+
+Ab v1.0.0 zeigt der Check zusätzlich die Namen aus
+`config.lua` in Suchreihenfolge und unterscheidet erkannte von tatsächlich
+verwendeten Quellen. Auf SW können lange Aliaslisten gekürzt sein.
+**Relative Höhe** prüft die ausdrückliche Zuordnung für die Armed-Bilanz.
+`relativeAltitudeSensor` erst setzen, wenn die Quelle nachweislich die Höhe
+über Home liefert. APMon übernimmt dafür nicht automatisch die GPS-Höhe.
 
 | GX12: 3D-Fix | GX15: Warten auf GPS-Fix |
 | --- | --- |

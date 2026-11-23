@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 0.9.0
+-- Project version: 1.0.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -76,7 +76,8 @@ lcd = {
     rectangles[#rectangles + 1] = {x=x, y=y, w=w, h=h, flags=flags}
   end,
   drawLine = function(x1, y1, x2, y2, pattern, flags)
-    assert(not colorDisplay and x1 >= 0 and x2 < LCD_W and y1 >= 0 and y2 >= 0 and y1 < LCD_H and y2 < LCD_H)
+    assert(x1 >= 0 and x1 < LCD_W and x2 >= 0 and x2 < LCD_W
+      and y1 >= 0 and y1 < LCD_H and y2 >= 0 and y2 < LCD_H)
     lines[#lines + 1] = { x1=x1, y1=y1, x2=x2, y2=y2, pattern=pattern, flags=flags }
   end,
   drawBitmap = function(bitmap, x, y)
@@ -204,19 +205,27 @@ data.RxBt, data.GAlt = { value = 15.5 }, { value = 24.6 }
 data.Yaw, data.Sats = { value = 0 }, { value = 12 }
 local mono = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 mono.run(0)
-assertPage('Overview', '1/2')
+assertPage('Overview', '1/3')
 assert(drawOf('STABILIZE') and drawOf('Battery'))
 local voltage, volts = assert(drawOf('15.50', 18)), assert(drawOf('V', 27))
 assert(voltage.flags & 0xF00 == DBLSIZE and volts.x > voltage.x)
 mono.run(EVT_ROT_RIGHT)
-assertPage('Flight', '2/2')
+assertPage('Flight', '2/3')
 local flightVoltage, flightVolts = assert(drawOf('15.50', 18)), assert(drawOf('V', 27))
 assert(flightVoltage.x == voltage.x and flightVoltage.flags == voltage.flags and flightVolts.x == volts.x)
 assert(drawOf('GAlt', 10) and drawOf('24.6', 18) and drawOf('0.0° N', 49))
 mono.run(EVT_ROT_LEFT)
-assertPage('Overview', '1/2')
+assertPage('Overview', '1/3')
 mono.run(EVT_VIRTUAL_PREV)
-assertPage('Flight', '2/2')
+assert(drawOf('HUD', 2) and drawOf('3/3', 2) and not drawOf('--:--', 2))
+assert(drawOf('No attitude data', 27))
+data.Roll, data.Ptch = {value = math.pi / 6}, {value = -math.pi / 18}
+now = now + 20
+mono.run(0)
+assert(drawOf('30°', 19) and drawOf('-10°', 19) and not drawOf('No attitude data'))
+data.Roll, data.Ptch = nil, nil
+mono.run(EVT_VIRTUAL_PREV)
+assertPage('Flight', '2/3')
 data.Yaw.value = -118 * math.pi / 180
 now = now + 20
 mono.run(0)
@@ -253,20 +262,20 @@ mono.run(EVT_ROT_LEFT); mono.run(EVT_VIRTUAL_EXIT)
 assert(savedLanguage == 'de')
 assertMonoMenu('Sprache: Deutsch', 'FC-Meldungen')
 local reloaded = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
-reloaded.run(0); assertPage('Übersicht', '1/2')
+reloaded.run(0); assertPage('Übersicht', '1/3')
 assert(drawOf('Akku') and drawOf('ENT: Menü'))
 reloaded.run(EVT_VIRTUAL_ENTER); reloaded.run(EVT_ROT_LEFT)
 reloaded.run(EVT_VIRTUAL_EXIT); reloaded.run(0)
-assertPage('Übersicht', '1/2'); assert(savedLanguage == 'de')
+assertPage('Übersicht', '1/3'); assert(savedLanguage == 'de')
 reloaded.run(EVT_ROT_RIGHT)
-assertPage('Flugwerte', '2/2')
+assertPage('Flugwerte', '2/3')
 assert(drawOf('Akku') and drawOf('V', 27))
 reloaded.run(EVT_ROT_LEFT)
 getGeneralSettings = function() return { language = 'EN' } end
 local nonGermanRadio = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 nonGermanRadio.run(0)
 local umlautBase = assert(drawOf('Ubersicht', 2))
-assert(calls[3] == '1/2' and drawOf('ENT: Menue'))
+assert(calls[3] == '1/3' and drawOf('ENT: Menue'))
 assert(rectangles[2].flags == ERASE and rectangles[2].x == umlautBase.x and rectangles[2].y == 0)
 assert(rectangles[3].flags == ERASE and rectangles[3].x == umlautBase.x + 3 and rectangles[3].y == 0)
 getGeneralSettings = nil
@@ -275,7 +284,7 @@ reloaded.run(EVT_VIRTUAL_ENTER); reloaded.run(EVT_VIRTUAL_ENTER); reloaded.run(E
 reloaded.run(EVT_VIRTUAL_ENTER)
 assertMonoMenu('Language: English', 'FC messages')
 reloaded.run(EVT_VIRTUAL_EXIT)
-assertPage('Overview', '1/2')
+assertPage('Overview', '1/3')
 assert(calls[#calls] == 'Language not saved')
 writeFailure = false
 local rtc = { year = 2026, mon = 11, day = 21, hour = 7, min = 5 }
@@ -286,13 +295,19 @@ assert(drawOf('Language: English', 25) and drawOf('FC messages', 33))
 reloaded.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Clock: On', 41) and savedLanguage == 'en\n1')
 reloaded.run(EVT_VIRTUAL_EXIT)
-assertPage('Overview', '1/2')
+assertPage('Overview', '1/3')
 local clock = assert(drawOf('07:05', 2))
 assert(draws[1].x + draws[1].w < clock.x and clock.x + clock.w < draws[2].x)
 local clockReload = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 clockReload.run(EVT_ROT_RIGHT)
-assertPage('Flight', '2/2')
+assertPage('Flight', '2/3')
 assert(drawOf('07:05', 2))
+clockReload.run(EVT_ROT_RIGHT)
+do
+  local title, clock, counter = assert(drawOf('HUD', 2)), assert(drawOf('07:05', 2)), assert(drawOf('3/3', 2))
+  assert(title.x + title.w < clock.x and clock.x + clock.w < counter.x)
+end
+clockReload.run(EVT_ROT_LEFT)
 rtc.year = 2000
 clockReload.run(0)
 assert(drawOf('07:05', 2)) -- valid time with an unset calendar
@@ -433,7 +448,7 @@ local function assertColorMenu(language, messages)
   assert(subtitle.y > header.h and subtitle.y + subtitle.h <= repo.y)
   local version = assert(drawOf('APMon ' .. versionLabel))
   assert(repo.y + repo.h <= version.y or (repo.y == version.y and repo.x + repo.w < version.x))
-  assert(drawOf(language) and drawOf(messages))
+  assert(drawOf(language) and drawOf(messages) and not drawOf('1/2') and not drawOf('2/2'))
   return header, logo
 end
 colorFrame(full, EVT_TOUCH_TAP, 30, 275)
@@ -469,6 +484,10 @@ assertColorHeader()
 local offset = widget.create({x=8,y=20,w=464,h=280}, { Language = 2 })
 colorFrame(offset)
 assertColorHeader(8, 20, 464)
+do
+  local counter = assert(drawOf('1/2'))
+  assert(counter.x + counter.w < bitmaps[1].x)
+end
 getDateTime = function() return rtc end
 widget.update(offset, { Language = 2, Clock = 1 })
 colorFrame(offset)
@@ -492,8 +511,25 @@ local compactClock = widget.create({x=0,y=0,w=440,h=252}, {Clock=1})
 getDateTime = function() return rtc end
 colorFrame(compactClock)
 assertColorClock('07:05', MIDSIZE)
+do
+  local title, clock, counter = assert(drawOf('APMon')), assert(drawOf('07:05')), assert(drawOf('1/2'))
+  assert(title.x + title.w < clock.x and clock.x + clock.w < counter.x)
+  assert(counter.x + counter.w < bitmaps[1].x)
+end
+colorFrame(compactClock, EVT_VIRTUAL_NEXT)
+do
+  local title, clock, counter = assert(drawOf('HUD')), assert(drawOf('07:05')), assert(drawOf('2/2'))
+  assert(title.x + title.w < clock.x and clock.x + clock.w < counter.x)
+  assert(#bitmaps == 1 and counter.x + counter.w < bitmaps[1].x)
+end
+colorFrame(compactClock, EVT_VIRTUAL_PREV)
+assert(drawOf('APMon') and drawOf('1/2') and not drawOf('2/2'))
+colorFrame(smallZone, EVT_VIRTUAL_NEXT)
+assert(drawOf('HUD') and drawOf('2/2') and not drawOf('07:05') and not drawOf('--:--'))
+colorFrame(smallZone) -- leaving fullscreen also resets the HUD in a too-small widget zone
 getDateTime = nil
 colorFrame(smallZone, 0)
+assert(drawOf('APMon') and not drawOf('HUD'))
 local lastRow = assert(drawOf('Last EKF set'))
 assert(lastRow.flags & 0xF00 == TINSIZE and lastRow.y + lastRow.h < assert(drawOf('FC message: --')).y)
 getSourceValue = nil
@@ -752,7 +788,7 @@ incoming = { {0xF0,0x02,0x50,0x3F,0x40,0x00,0xFC}, single(0x5001,256),
 local small = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 small.run(0)
 assert(string.find(table.concat(calls,'|'),'ARMED',1,true))
-assertPage('Overview', '1/2')
+assertPage('Overview', '1/3')
 assert(drawOf('DGPS/--', 42))
 small.run(EVT_VIRTUAL_ENTER)
 small.run(EVT_ROT_RIGHT); small.run(EVT_VIRTUAL_ENTER)
@@ -1614,35 +1650,49 @@ do
 end
 
 do
-  local setup = loadScript('/SCRIPTS/APMON/setup_check.lua')()
+  local setup = loadScript('/SCRIPTS/APMON/setup_check.lua')(function(name)
+    return loadScript('/SCRIPTS/APMON/' .. name .. '.lua')()
+  end)
   local rx = loadScript('/SCRIPTS/APMON/pass.lua')(4)
+  local cfg = {sensors={gps={names={'GPS'}}, current={names={'Curr','Amps'}},
+    altitude={names={'Alt','RAlt'}}, gpsaltitude={names={'GAlt'}}}}
   local mon = {sources={gps={name='GPS',state='valid'}, current={name='Curr',state='invalid'}}}
-  local function check(index, title, status, source, tip, sourceLabel)
-    local a,b,c,d,e = setup.check(index, mon, rx)
-    assert(a == title and b == status and c == source and d == tip)
-    if sourceLabel then assert(e == sourceLabel) end
+  local function check(index, title, status, source, tip, sourceLabel, configured)
+    local a,b,c,d,e,f = setup.check(index, mon, rx, cfg)
+    assert(a == title and b == status and c == source and d == tip and e == sourceLabel and f == configured,
+      'unexpected setup result for ' .. title)
   end
   crossfireTelemetryPop = function() end
   check(1, 'RC-Link', 'Nicht konfiguriert', nil, 'config.lua prüfen')
-  check(2, 'FC-Status', 'Nicht empfangen', 'ELRS MAVLink', 'ELRS MAVLink prüfen')
-  check(3, 'GPS-Koordinaten', 'Gültig', 'GPS', 'Fixtyp fehlt noch', 'Quelle:')
-  check(4, 'GPS-Fixtyp', 'Nicht empfangen', 'ELRS MAVLink', 'ELRS MAVLink prüfen')
-  check(6, 'Stromsensor', 'Ungültig', 'Curr', 'Quelle/Einheit prüfen', 'Quelle:')
+  check(2, 'FC-Status', 'Nicht empfangen', nil, 'ELRS MAVLink prüfen', nil, 'ELRS MAVLink')
+  check(3, 'GPS-Koordinaten', 'Gültig', 'GPS', 'Fixtyp fehlt noch', 'Quelle:', 'GPS')
+  check(4, 'GPS-Fixtyp', 'Nicht empfangen', nil, 'ELRS MAVLink prüfen', nil, 'ELRS MAVLink')
+  check(6, 'Stromsensor', 'Ungültig', 'Curr', 'Quelle/Einheit prüfen', 'Erkannt:', 'Curr, Amps')
   mon.sources.current.state = 'stale'
-  check(6, 'Stromsensor', 'Veraltet', 'Curr', 'Auf neue Werte warten')
+  check(6, 'Stromsensor', 'Veraltet', 'Curr', 'Auf neue Werte warten', 'Erkannt:', 'Curr, Amps')
   mon.sources.current.state = 'missing'
-  check(6, 'Stromsensor', 'Nicht gefunden', 'Curr', 'Sensoren neu suchen', 'Konfiguriert:')
+  check(6, 'Stromsensor', 'Nicht gefunden', nil, 'Sensoren neu suchen', nil, 'Curr, Amps')
   mon.sources.current.state = 'noapi'
-  check(6, 'Stromsensor', 'API fehlt', 'Curr', 'EdgeTX-Version prüfen', 'Konfiguriert:')
+  check(6, 'Stromsensor', 'API fehlt', nil, 'EdgeTX-Version prüfen', nil, 'Curr, Amps')
+  mon.sources.current = {name='Amps',state='valid'}
+  check(6, 'Stromsensor', 'Gültig', 'Amps', nil, 'Quelle:', 'Curr, Amps')
+  mon.sources.gpsaltitude = {name='GAlt',state='valid'}
+  check(8, 'Relative Höhe', 'Nicht zugeordnet', nil, 'Höhe zuordnen')
+  cfg.relativeAltitudeSensor = 'Wrong'
+  check(8, 'Relative Höhe', 'Nicht zugeordnet', nil, 'Zuordnung prüfen', nil, 'Wrong')
+  cfg.relativeAltitudeSensor, mon.sources.altitude = 'RAlt', {name='Alt',state='valid'}
+  check(8, 'Relative Höhe', 'Nicht ausgewählt', 'Alt', 'Alias-Reihenfolge prüfen', 'Andere Quelle:', 'RAlt')
+  cfg.relativeAltitudeSensor = 'GAlt'
+  check(8, 'Relative Höhe', 'Gültig', 'GAlt', nil, 'Quelle:', 'GAlt')
   rx.decode(0x80, single(0x5002, 16), now)
-  check(4, 'GPS-Fixtyp', 'Kein Fix', 'ELRS MAVLink', 'Auf GPS-Fix warten')
+  check(4, 'GPS-Fixtyp', 'Kein Fix', 'ELRS MAVLink', 'Auf GPS-Fix warten', 'Quelle:')
   rx.decode(0x80, single(0x5002, 48), now)
-  check(4, 'GPS-Fixtyp', '3D', 'ELRS MAVLink', nil)
-  check(3, 'GPS-Koordinaten', 'Gültig', 'GPS', nil, 'Quelle:')
+  check(4, 'GPS-Fixtyp', '3D', 'ELRS MAVLink', nil, 'Quelle:')
+  check(3, 'GPS-Koordinaten', 'Gültig', 'GPS', nil, 'Quelle:', 'GPS')
   now = now + 301
-  check(4, 'GPS-Fixtyp', 'Veraltet', 'ELRS MAVLink', 'ELRS MAVLink prüfen')
+  check(4, 'GPS-Fixtyp', 'Veraltet', 'ELRS MAVLink', 'ELRS MAVLink prüfen', 'Erkannt:')
   crossfireTelemetryPop = nil
-  check(2, 'FC-Status', 'API fehlt', 'ELRS MAVLink', 'EdgeTX-Version prüfen')
+  check(2, 'FC-Status', 'API fehlt', nil, 'EdgeTX-Version prüfen', nil, 'ELRS MAVLink')
 end
 do
   local rx = loadScript('/SCRIPTS/APMON/pass.lua')(4, nil, true)
@@ -1703,4 +1753,85 @@ for _, spec in ipairs({{440,252,2}, {480,320,1}, {800,480,2}}) do
   frame(nil)
   assert(drawOf('APMon', 8) and not drawOf(shortcut)) -- no misleading touch target outside fullscreen
 end
-print('OK: sensors, GPS, armed-summary gaps, dated diagnostic reports, setup check, FC warnings, bilingual UI, restricted mono Lua')
+do
+  local hud = loadScript('/SCRIPTS/APMON/hud.lua')()
+  local readings = loadScript('/SCRIPTS/APMON/hud_readings.lua')()
+  local rollSource, pitchSource = {}, {}
+  data = {Roll=rollSource, Ptch=pitchSource}
+  local hudConfig = {sensors={roll={names={'Roll','Roll2'}}, pitch={names={'Ptch'}}}}
+  local monitor = core.new(hudConfig)
+  local horizon, marks
+  local function line(x1, y1, x2, y2, kind)
+    assert(x1 >= 2 and x1 <= 125 and x2 >= 2 and x2 <= 125)
+    assert(y1 >= 12 and y1 <= 44 and y2 >= 12 and y2 <= 44)
+    marks = marks + 1
+    if kind == 'horizon' then horizon = {x1, y1, x2, y2} end
+  end
+  local function render()
+    horizon, marks = nil, 0
+    local roll, pitch = readings.attitude(monitor)
+    if roll and pitch then hud(roll, pitch, 2, 12, 124, 33, line) end
+    return roll, pitch
+  end
+  local function project(roll, pitch)
+    rollSource.value, pitchSource.value = roll, pitch
+    monitor:sample(true)
+    return render()
+  end
+  project(0, 0)
+  assert(horizon[2] == 28 and horizon[4] == 28)
+  project(0, 10)
+  assert(horizon[2] > 28 and horizon[2] == horizon[4])
+  project(0, -10)
+  assert(horizon[2] < 28 and horizon[2] == horizon[4])
+  project(30, 0)
+  assert(horizon[1] < horizon[3] and horizon[2] > horizon[4])
+  project(-30, 0)
+  assert(horizon[1] < horizon[3] and horizon[2] < horizon[4])
+  project(90, 0)
+  assert(horizon[1] == horizon[3] and horizon[2] ~= horizon[4])
+  for roll = -180, 180, 5 do
+    for pitch = -90, 90, 5 do project(roll, pitch) end
+  end
+  local roll, pitch = project(0, 91)
+  assert(roll == 0 and pitch == nil and marks == 0)
+  -- Start with no cache. Roll and pitch arrive on alternating EdgeTX samples.
+  monitor = core.new(hudConfig)
+  pitchSource.fresh = false
+  roll, pitch = project(30, 10)
+  assert(roll == 30 and pitch == nil and marks == 0)
+  now = now + 10
+  rollSource.fresh, pitchSource.fresh = false, true
+  roll, pitch = project(75, 10)
+  assert(roll == 30 and pitch == 10 and horizon) -- the held roll does not jump
+  local _, _, frozen = readings.horizon(monitor)
+  assert(not frozen)
+  now = now + 91
+  roll, pitch = render()
+  assert(roll == nil and pitch == 10 and marks == 0)
+  roll, pitch, frozen = readings.horizon(monitor)
+  assert(roll == 30 and pitch == 10 and frozen)
+  now = now + 10
+  roll, pitch = render()
+  assert(not roll and not pitch and marks == 0) -- redraw did not extend the lifetime
+
+  rollSource.fresh = true
+  project(30, 10)
+  assert(horizon)
+  rollSource.fresh = false
+  data.Roll, data.Roll2 = nil, rollSource
+  roll, pitch = project(10, 0)
+  assert(not roll and pitch == 0 and marks == 0)
+  rollSource.fresh = true
+  project(10, 0)
+  assert(horizon)
+  pitchSource.current = false
+  monitor:sample(true)
+  roll, pitch = render()
+  assert(roll == 10 and not pitch and marks == 0) -- explicit sensor loss wins over the grace period
+  now = now - 200
+  monitor:sample(true)
+  roll, pitch, frozen = readings.horizon(monitor)
+  assert(roll == 10 and not pitch and not frozen) -- restart must not reuse an old pose
+end
+print('OK: sensors, GPS, HUD, armed-summary gaps, dated diagnostic reports, setup check, FC warnings, bilingual UI, restricted mono Lua')

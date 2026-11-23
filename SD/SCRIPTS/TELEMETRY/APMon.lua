@@ -1,8 +1,8 @@
 -- =============================================================================
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/TELEMETRY/APMon.lua
--- Purpose: Render the GX12/Boxer telemetry UI with two pages, menus and saved language choice.
--- Project version: 0.9.0
+-- Purpose: Render the GX12/Boxer telemetry pages, menus and saved language choice.
+-- Project version: 1.0.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -135,7 +135,7 @@ local function dataHeader(width, title, counter)
     lcd.drawFilledRectangle(x, 0, 1, 1, ERASE or 0)
     lcd.drawFilledRectangle(x + 3, 0, 1, 1, ERASE or 0)
   else
-    lcd.drawText(2, 2, fit('APMon ' .. title, titleRight - 2, small), headerStyle)
+    lcd.drawText(2, 2, fit(title == 'HUD' and title or 'APMon ' .. title, titleRight - 2, small), headerStyle)
   end
   rightText(right, 2, counter, small, true)
   if clock then rightText(clockRight, 2, clock, small, true) end
@@ -209,19 +209,36 @@ local function saveReport(includeText)
     config, monitor, receiver, tr, includeText, timed and timestamp or nil)
   return ok and saved == true
 end
+local function loadHud(draw)
+  return module('mono_hud', monitor, receiver, dataHeader, field, monoText, rightText, small,
+    draw, module('hud_readings'))
+end
 local function loadTools(isDiagnostics)
+  if view == 'data' then
+    local ok, draw = pcall(module, 'hud')
+    if ok then
+      local ready, renderer = pcall(loadHud, draw)
+      if ready then return renderer end
+      draw = nil -- leave room for the numeric HUD on constrained radios
+    end
+    return loadHud()
+  end
+  if view == 'setup' then
+    local check = module('setup_check', module)
+    return module('mono_setup', {check = check, config = config, monitor = monitor, receiver = receiver,
+      tr = tr, monoText = monoText, english = i18n.language(language).code == 'en',
+      header = menuHeader, field = field, rightText = rightText, small = small, fit = fit, textWidth = textWidth})
+  end
   local rows, notes
   if toolPhase then rows, notes = summaryData(toolPhase) end
   return module(view == 'sensors' and 'mono_sensors' or isDiagnostics and 'mono_tools' or view == 'gps' and 'mono_gps'
-    or view == 'messageDetail' and 'mono_message' or view == 'setup' and 'mono_setup'
+    or view == 'messageDetail' and 'mono_message'
     or view == 'report' and 'mono_report' or 'mono_summary', {
     tr = tr, monoText = monoText, header = menuHeader, field = field,
     rightText = rightText, small = small, option = menuOption, fit = fit, textWidth = textWidth,
     monitor = monitor, receiver = receiver, tracker = tracker,
     rows = rows, notes = notes, message = messageDetail,
     diagnostics = isDiagnostics and module('diagnostics') or nil,
-    check = view == 'setup' and module('setup_check') or nil,
-    english = view == 'setup' and i18n.language(language).code == 'en' or nil,
     gpsDetails = view == 'gps' and module('gps_details') or nil,
     reportPath = view == 'report' and project.reportPath or nil,
   })
@@ -309,8 +326,7 @@ local function run(event)
     end
   elseif enterEvent then
     view, menuItem = 'menu', 1
-  elseif nextEvent then page = page % 2 + 1
-  elseif prevEvent then page = (page - 2) % 2 + 1 end
+  elseif step ~= 0 then page = (page - 1 + step) % 3 + 1 end
   local width = LCD_W or 128
   lcd.clear()
   local function text(y, value, inverse)
@@ -318,8 +334,9 @@ local function run(event)
   end
   local diagnosticsPage = view == 'diagnostics' or view == 'sensors'
   local summaryPage = view == 'summary' or view == 'summaryDetail'
+  local hudPage = view == 'data' and page == 3
   if diagnosticsPage or summaryPage or view == 'gps' or (view == 'report' and reportSaved == nil)
-      or view == 'messageDetail' or view == 'setup' then
+      or view == 'messageDetail' or view == 'setup' or hudPage then
     local phase = summaryPage and tracker.last or nil
     if toolPhase ~= phase then toolRenderer, toolPhase = nil, phase end
     if toolRenderer == nil then
@@ -338,11 +355,14 @@ local function run(event)
         reportSaved = saveReport(includeText)
       end
     else
-      menuHeader(width, tr(view == 'sensors' and 'Sensoren' or diagnosticsPage and 'Telemetrie-Diagnose' or view == 'gps' and 'GPS-Details'
-        or view == 'report' and 'Diagnosebericht' or view == 'setup' and 'Einrichtungscheck'
-        or view == 'messageDetail' and 'FC-Meldungen' or 'Letzte Armed-Phase'))
+      if hudPage then dataHeader(width, 'HUD', '3/3')
+      else
+        menuHeader(width, tr(view == 'sensors' and 'Sensoren' or diagnosticsPage and 'Telemetrie-Diagnose' or view == 'gps' and 'GPS-Details'
+          or view == 'report' and 'Diagnosebericht' or view == 'setup' and 'Einrichtungscheck'
+          or view == 'messageDetail' and 'FC-Meldungen' or 'Letzte Armed-Phase'))
+      end
       text(11, tr(toolError))
-      text(57, monoText((view == 'report' or view == 'sensors' or view == 'setup') and 'RTN: Diagnose'
+      text(57, monoText(hudPage and 'Rad: Seite' or (view == 'report' or view == 'sensors' or view == 'setup') and 'RTN: Diagnose'
         or view == 'messageDetail' and 'RTN: Liste' or 'RTN: Menü'))
     end
     if view ~= 'report' or reportSaved == nil then return 0 end
@@ -398,7 +418,7 @@ local function run(event)
   end
 
   local right, split = width - 2, math.floor(width / 2)
-  dataHeader(width, tr(page == 1 and 'Übersicht' or 'Flugwerte'), page .. '/2')
+  dataHeader(width, tr(page == 1 and 'Übersicht' or 'Flugwerte'), page .. '/3')
 
   -- The voltage card keeps the same position and size on both data pages.
   local boxLeft, legendX = split - 2, split + 4

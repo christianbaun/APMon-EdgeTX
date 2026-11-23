@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/summary_view.lua
 -- Purpose: Format the armed summary and its data-gap notes for both displays.
--- Project version: 0.9.0
+-- Project version: 1.0.0
 -- Updated: 2026-11-22
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)

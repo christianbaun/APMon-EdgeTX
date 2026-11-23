@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/TELEMETRY/APDiag.lua
 -- Purpose: Display raw EdgeTX sensor values and API validity flags for troubleshooting.
--- Project version: 0.9.0
+-- Project version: 1.0.0
 -- Updated: 2026-11-20
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)

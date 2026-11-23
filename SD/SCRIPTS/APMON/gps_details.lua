@@ -1,12 +1,12 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- APMon: format GPS rows only when the detail page is in use.
--- Project version: 0.9.0
+-- Project version: 1.0.0
 return function(monitor)
   local pos, live, now = monitor.gpsPosition, monitor.gpsLive, getTime()
   local function liveValue(key)
     local entry = monitor.sources[key]
-    if live and entry and entry.gpsTime and now - entry.gpsTime <= monitor.gpsGrace then
-      return monitor:format(key, entry.gpsValue)
+    if live and entry and entry.freshAt and now - entry.freshAt <= monitor.gpsGrace then
+      return monitor:format(key, entry.freshValue)
     end
     return '--'
   end

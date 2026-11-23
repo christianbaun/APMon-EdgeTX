@@ -13,8 +13,8 @@ sensors and selected ArduPilot passthrough data, not the full MAVLink stream.
 It runs as Lua scripts on the radio's SD card: no laptop or
 additional flight-controller script is required during use.
 
-Current project version: **0.9.0**, recorded in [VERSION](VERSION).
-See the [v0.9.0 release notes](releases/v0.9.0.md).
+Current project version: **1.0.0**, recorded in [VERSION](VERSION).
+See the [v1.0.0 release notes](releases/v1.0.0.md).
 
 The GUI supports **English and German**, with English as the default.
 
@@ -41,7 +41,7 @@ See the compatibility section for the current validation status.
 
 | Package | Display / interface | Reference radios |
 | --- | --- | --- |
-| [APMon-SW.zip](APMon-SW.zip) | Telemetry script with two data pages for 128 × 64 monochrome displays | RadioMaster GX12, Boxer |
+| [APMon-SW.zip](APMon-SW.zip) | Telemetry script with Overview, Flight and HUD pages for 128 × 64 monochrome displays | RadioMaster GX12, Boxer |
 | [APMon-COLOR.zip](APMon-COLOR.zip) | Dashboard widget for color displays (minimum zone 440 × 252) | RadioMaster GX15 and TX15 (480 × 320), TX16S MK3 (800 × 480) |
 
 **SW** means *Schwarzweiß* (German for monochrome). Choose the package and
@@ -55,45 +55,47 @@ does not mean the hardware has been tested.
 Actual captures from the GX12, GX15 and TX16S MK3. The readings show the
 captured state and are not an indication of flight readiness.
 
-**Monochrome — GX12 (128 × 64, APMon v0.9.0)**
+**Monochrome — GX12 (128 × 64, APMon v1.0.0)**
 
-The images are enlarged for readability. The radio clock is enabled on both telemetry pages.
+The images are enlarged for readability. The radio clock is visible in both captures.
 
-| Overview | Flight data |
+| Overview (1/3) | Flight data (2/3) |
 | --- | --- |
-| <img src="images/screenshots/apmon-sw-gx12-overview-en-v0.9.0-2026-11-23-091833.png" width="384" alt="APMon overview in English with the radio clock on the GX12"> | <img src="images/screenshots/apmon-sw-gx12-flight-en-v0.9.0-2026-11-23-091834.png" width="384" alt="APMon flight data in English with the radio clock on the GX12"> |
+| <img src="images/screenshots/apmon-sw-gx12-overview-en-v1.0.0-2026-11-23-105911.png" width="384" alt="GX12 overview with the radio clock and page indicator 1/3"> | <img src="images/screenshots/apmon-sw-gx12-flight-en-v1.0.0-2026-11-23-105909.png" width="384" alt="GX12 flight data with the radio clock and page indicator 2/3"> |
 
 **Compact project menu:**
 
-<img src="images/screenshots/apmon-sw-gx12-menu-en-v0.9.0-2026-11-23-091658.png" width="384" alt="Compact APMon project menu showing five entries and version 0.9.0">
+<img src="images/screenshots/apmon-sw-gx12-menu-en-v1.0.0-2026-11-23-105916.png" width="384" alt="English project menu on the GX12 showing APMon v1.0.0">
 
-More GX12 captures: [FC message filter](#radio-clock-and-fc-message-history),
+More GX12 captures: [HUD](#hud), [FC message filter](#radio-clock-and-fc-message-history),
 [GPS details](#gps-details),
 [Telemetry diagnostics](#telemetry-diagnostics),
 [Setup check](#telemetry-setup-check),
 [Diagnostic report](#diagnostic-report), and
 [Post-disarm summary](#post-disarm-summary).
 
-**Color display — GX15 (480 × 320, APMon v0.9.0)**
+**Color display — GX15 (480 × 320, APMon v1.0.0)**
 
-| Dashboard with radio clock | Project menu |
+| Dashboard (1/2) with radio clock | Project menu |
 | --- | --- |
-| ![APMon dashboard on the GX15 with the radio clock and Last FC warning shortcut](images/screenshots/apmon-color-gx15-overview-en-v0.9.0-2026-11-23-091252.png) | ![Project menu on the GX15 showing version 0.9.0](images/screenshots/apmon-color-gx15-menu-en-v0.9.0-2026-11-23-091203.png) |
+| ![GX15 dashboard with the radio clock and page indicator 1/2](images/screenshots/apmon-color-gx15-overview-en-v1.0.0-2026-11-23-111003.png) | ![English project menu on the GX15 showing APMon v1.0.0](images/screenshots/apmon-color-gx15-menu-en-v1.0.0-2026-11-23-111008.png) |
 
-More GX15 captures: [FC message filter](#radio-clock-and-fc-message-history),
+More GX15 captures: [HUD](#hud), [FC message filter](#radio-clock-and-fc-message-history),
 [GPS details](#gps-details),
 [Telemetry diagnostics](#telemetry-diagnostics),
 [Setup check](#telemetry-setup-check),
 [Diagnostic report](#diagnostic-report), and
 [Post-disarm summary](#post-disarm-summary).
 
-**Color display — TX16S MK3 (800 × 480, APMon v0.9.0)**
+**Color display — TX16S MK3 (800 × 480, APMon v1.0.0)**
 
-| Dashboard | Project menu |
+| Dashboard (1/2) with radio clock | Project menu |
 | --- | --- |
-| ![TX16S MK3 dashboard with the Last FC warning shortcut](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.9.0-2026-11-23-092223.png) | ![English project menu on the TX16S MK3 showing version 0.9.0](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.9.0-2026-11-23-092247.png) |
+| ![TX16S MK3 dashboard with the sender clock and page indicator 1/2](images/screenshots/apmon-color-tx16s-mk3-overview-en-v1.0.0-2026-11-23-111707.png) | ![English project menu on the TX16S MK3 showing APMon v1.0.0](images/screenshots/apmon-color-tx16s-mk3-menu-en-v1.0.0-2026-11-23-111712.png) |
 
-More TX16S MK3 captures: [Armed summary](#post-disarm-summary),
+[Dashboard with no EKF source set displayed](images/screenshots/apmon-color-tx16s-mk3-overview-en-v1.0.0-2026-11-23-111701.png).
+
+More TX16S MK3 captures: [HUD](#hud), [Armed summary](#post-disarm-summary),
 [GPS details](#gps-details), [FC messages](#radio-clock-and-fc-message-history),
 [Telemetry diagnostics](#telemetry-diagnostics),
 [Setup check](#telemetry-setup-check), and [Diagnostic report](#diagnostic-report).
@@ -169,10 +171,10 @@ versions require separate testing.
 
 | Radio | Versions |
 | --- | --- |
-| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.9.0 |
+| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
 | TX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
-| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.9.0 |
-| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.9.0 |
+| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
+| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
 | Boxer | Hardware testing pending |
 | Other radios | Hardware testing pending |
 
@@ -338,17 +340,21 @@ satellites and the last EKF source-set message on the left. Flight attitude,
 altitude, horizontal GPS speed, direction and climb rate are on the right.
 The latest FC message appears at the bottom with its age. Long text is clipped.
 
-- **Open the project menu:** double-tap APMon, or choose **Full screen** from
-  the widget's context menu. In full screen, tap **Menu** or press **ENTER**.
+- **Open full screen:** In EdgeTX 2.12.5, select the **App mode** layout for
+  the screen and assign APMon to its single widget slot. Then hold **ENTER**
+  on that screen to open APMon directly in full screen. With a regular
+  layout, choose **Full screen** from the widget's context menu. EdgeTX
+  controls this mode and does not let a Lua widget enter it automatically.
+  In full screen, tap **Menu** or press **ENTER** to open the project menu.
 - Below **APMon**, the menu shows **ArduPilot Telemetry Monitor for EdgeTX radios**,
   followed by the GitHub address and installed version. Open **Language** or
   **FC messages** by tapping an item or using
   the wheel and **ENTER**.
   **RTN** goes back. Hold **RTN** to leave full screen.
 - The menu language change applies to this widget for the current session.
-  To save it in the model, long-press APMon in the main view and choose
-  **Widget settings → Language → English / Deutsch**. If the old English
-  checkbox remains after an update, restart and re-add the widget if needed.
+  To save it in the model, open **Widget settings → Language** through
+  **Set up widgets** in EdgeTX's screen settings. If the old English checkbox
+  remains after an update, restart and re-add the widget if needed.
 - **Menu → Clock** toggles the larger radio clock centered in the dashboard
   header for the current session. Use **Widget settings → Clock** to save
   the default per widget.
@@ -360,7 +366,8 @@ The latest FC message appears at the bottom with its age. Long text is clipped.
   EKF source set below.
 - **Flight:** large altitude on the left, with horizontal GPS speed, climb rate,
   roll, pitch and yaw with compass direction below.
-- **Battery voltage is in the upper right on both pages**. Without a valid
+- **[HUD](#hud):** artificial horizon with roll and pitch, on page 3.
+- **Battery voltage is in the upper right on Overview and Flight**. Without a valid
   reading it shows `--`.
 - **Rotary wheel, Plus/Minus or NEXT/PREV:** change pages manually.
 - **ENTER / press the wheel:** open the menu with the project title, GitHub
@@ -368,7 +375,7 @@ The latest FC message appears at the bottom with its age. Long text is clipped.
 - Select **Language** to choose **English / Deutsch**, or **FC messages** to
   open the history. Select **Clock: Off/On** directly below and press **ENTER**
   to toggle the clock. The time appears next to the page
-  number on both telemetry pages. **RTN** goes back one level.
+  number on all three telemetry pages. **RTN** goes back one level.
 
 Language and clock preferences are saved in `/SCRIPTS/APMON/mono.cfg`, shared by
 all models on that SD card. If a write fails, APMon shows a warning and keeps the
@@ -387,6 +394,42 @@ Short labels keep readings on the same line on the small display:
 | Climb / Vario | Climb rate |
 | Dir | Compass direction derived from yaw, when it does not fit next to the angle |
 | EKF | Last source-set message. `2/30s` means set 2 was reported 30 seconds ago. |
+
+### HUD
+
+On SW, rotate right from **Overview** through **Flight** to **HUD**.
+On COLOR, open the widget in full screen and rotate right from the dashboard
+(**1/2**) to the HUD (**2/2**).
+Rotate left to go back. On either display, **ENTER** still opens the project
+menu.
+
+The HUD shows a fixed aircraft symbol, a moving horizon and pitch marks,
+alongside battery voltage, current, RC link quality, the last EKF source set,
+GPS fix type and satellite count. The header shows the clock only if it is
+enabled on the main page.
+It uses roll and pitch from the configured EdgeTX sensors (`Roll` and `Ptch`
+by default). The two readings do not need to arrive together. The HUD
+bridges gaps of up to one second per axis while EdgeTX still considers
+the source current. If either reading expires, becomes invalid or is lost,
+**HOLD** marks the last complete attitude as frozen. If no complete attitude
+has been received, there is no horizon to show. The other sensor readings
+continue to update. On SW they are grouped in two rows below the horizon.
+On COLOR the values next to the horizon use a larger font when space permits.
+The HUD is not a primary flight instrument.
+
+| GX12 with v1.0.0: Level attitude | Bank and pitch |
+| --- | --- |
+| <img src="images/screenshots/apmon-sw-gx12-hud-level-en-v1.0.0-2026-11-23-105853.png" width="384" alt="GX12 HUD on page 3/3 with a level horizon and two rows of telemetry values"> | <img src="images/screenshots/apmon-sw-gx12-hud-en-v1.0.0-2026-11-23-105903.png" width="384" alt="GX12 HUD with a tilted horizon and both roll and pitch at 14 degrees"> |
+
+| GX15 with v1.0.0: HUD at a bank angle | HUD in HOLD |
+| --- | --- |
+| ![GX15 HUD on page 2/2 showing a banked horizon and enlarged telemetry values](images/screenshots/apmon-color-gx15-hud-en-v1.0.0-2026-11-23-111033.png) | ![GX15 HUD with HOLD marking the frozen horizon and roll and pitch values](images/screenshots/apmon-color-gx15-hud-hold-en-v1.0.0-2026-11-23-111031.png) |
+
+[GX15 HUD with the model nearly level](images/screenshots/apmon-color-gx15-hud-level-en-v1.0.0-2026-11-23-111005.png).
+
+| TX16S MK3 with v1.0.0: Level attitude | Tilted horizon |
+| --- | --- |
+| ![TX16S MK3 HUD at level attitude with large telemetry values on both sides](images/screenshots/apmon-color-tx16s-mk3-hud-level-en-v1.0.0-2026-11-23-111709.png) | ![TX16S MK3 HUD on page 2/2 showing a tilted horizon and the age of EKF source set 1](images/screenshots/apmon-color-tx16s-mk3-hud-en-v1.0.0-2026-11-23-111718.png) |
 
 ### Radio clock and FC message history
 
@@ -509,6 +552,14 @@ where appropriate, suggests a next step. For example, valid GPS coordinates
 can coexist with a fix type that was never received. The fix-type check uses
 ArduPilot passthrough, not satellite count or coordinates. The check never
 changes radio or FC settings and is not a flight-readiness check.
+
+In v1.0.0, the check also shows the names
+configured in `config.lua` in lookup order and distinguishes a detected
+source from one that supplies an accepted value. On SW, long lists of
+aliases may be shortened. **Relative altitude** checks the explicit mapping
+used by the armed summary. Set `relativeAltitudeSensor` only after verifying
+that the source reports height above Home. APMon does not pick a GPS altitude
+source for the summary automatically.
 
 | GX12: 3D fix | GX15: Waiting for a fix |
 | --- | --- |

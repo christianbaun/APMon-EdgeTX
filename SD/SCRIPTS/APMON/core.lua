@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/core.lua
 -- Purpose: Read and validate EdgeTX sensors and merge optional ArduPilot passthrough data.
--- Project version: 0.9.0
+-- Project version: 1.0.0
 -- Updated: 2026-11-20
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -65,6 +65,7 @@ function M.new(config, receiver, armedSummary)
     if not force and self.last and now >= self.last and now - self.last < 20 then return end
     if self.last and now < self.last then
       self.sources, self.gpsPosition, self.gpsBinaryTime = {}, nil, nil
+      self.hudRoll, self.hudPitch = nil, nil
     end
     self.last = now
     self.api = type(getSourceValue) == 'function' and type(getFieldInfo) == 'function'
@@ -103,11 +104,13 @@ function M.new(config, receiver, armedSummary)
             end
           end
         end
-        if key == 'satellites' or key == 'heading' then
-          if entry.fresh then
-            entry.gpsTime, entry.gpsValue = now, entry.lastValue
-          elseif entry.state ~= 'valid' or entry.name ~= previousName then
-            entry.gpsTime = nil
+        if key == 'satellites' or key == 'heading' or key == 'roll' or key == 'pitch' then
+          if entry.state ~= 'valid' or (key == 'pitch' and math.abs(entry.lastValue) > 90) then
+            entry.freshAt = nil
+          elseif entry.fresh then
+            entry.freshAt, entry.freshValue = now, entry.lastValue
+          elseif entry.name ~= previousName then
+            entry.freshAt = nil
           end
         end
         count = count + 1

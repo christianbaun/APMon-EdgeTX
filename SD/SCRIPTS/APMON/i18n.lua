@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/i18n.lua
 -- Purpose: Provide the extensible GUI language registry, translations and fallback rules.
--- Project version: 0.9.0
+-- Project version: 1.0.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -26,6 +26,7 @@ ENT: Menu|ENT: menu
 Übersicht|Overview
 Akku|Battery
 Flugwerte|Flight
+Lagedaten fehlen|No attitude data
 FC-Status|FC status
 Strom|Curr.
 Breite|Latitude
@@ -170,6 +171,8 @@ Letzte FC-Textmeldung|Last FC text message
 Gültige Sensordaten sind keine Flugfreigabe.|Valid sensor data is not flight clearance.
 Vorige|Previous
 Weitere|Next
+Rad: HUD|Wheel: HUD
+Rad links: Übersicht|Wheel left: Overview
 Armed-Zeit, nicht Flugzeit|Time armed, not flight time
 ]], '([^\n|]+)|([^\n]+)') do english[key] = value end
   lookupEnglish = function(value) return english[value] end

@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/WIDGETS/APMon/main.lua
 -- Purpose: Render the color dashboard, full-screen project menu and language selection.
--- Project version: 0.9.0
+-- Project version: 1.0.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -26,8 +26,9 @@ local receiver = module('pass', 32, tracker, true)
 local i18n = module('i18n')
 local project = module('project')
 local diagnostics = module('diagnostics')
-local setup = module('setup_check')
+local setup = module('setup_check', module)
 local gpsDetails = module('gps_details')
+local drawHUD, hudReadings
 local options = { { 'Language', CHOICE, 1, i18n.choices }, { 'Clock', BOOL, 0 } }
 local logo
 local function drawLogo(zone, headerHeight)
@@ -164,6 +165,7 @@ end
 local function handleInput(widget, z, layout, event, touch)
   if event == nil then
     setView(widget)
+    widget.hud = nil
     widget.messageDetail, widget.selectedMessage, widget.messageList = nil, nil, nil
     return
   end
@@ -176,9 +178,15 @@ local function handleInput(widget, z, layout, event, touch)
   end
   if not widget.view then
     local top = layout.footerY - 5
+    local nextPage = event == EVT_VIRTUAL_NEXT or event == EVT_ROT_RIGHT
+    local prevPage = event == EVT_VIRTUAL_PREV or event == EVT_ROT_LEFT
     if enter or (inButton(top, layout.buttonHeight) and tap.x >= z.w - 12 - menuW) then
       setView(widget, 'menu', 1)
-    elseif inButton(warningTop(layout), layout.buttonHeight) and tap.x >= z.w - 12 - warningW then
+    elseif nextPage then
+      widget.hud = true
+    elseif prevPage or exit then
+      widget.hud = nil
+    elseif not widget.hud and inButton(warningTop(layout), layout.buttonHeight) and tap.x >= z.w - 12 - warningW then
       local warning = receiver.latestWarning()
       if warning then
         widget.messageDetail = warning
@@ -401,7 +409,10 @@ local function refresh(widget, event, touch)
   m:sample()
   rect(z.x, z.y, z.w, z.h, bg)
   if z.w < 440 or z.h < 252 then
-    if event == nil then setView(widget) end
+    if event == nil then
+      setView(widget)
+      widget.hud = nil
+    end
     if z.h >= 22 then text(z.x + 3, z.y + 2, 'APMon: grosse Zone waehlen', warn, z.w - 6) end
     return
   end
@@ -409,6 +420,7 @@ local function refresh(widget, event, touch)
   handleInput(widget, z, layout, event, touch)
   language = languageOf(widget)
   local left, inner = z.x + 12, z.w - 24
+  local hudPage = not widget.view and widget.hud
   rect(z.x, z.y, z.w, layout.header, info)
   local heading = widget.view == 'language' and 'Sprache'
     or widget.view == 'warningDetail' and 'Letzte FC-Warnung'
@@ -419,29 +431,113 @@ local function refresh(widget, event, touch)
     or widget.view == 'summary' and 'Letzte Armed-Phase'
     or widget.view == 'summaryDetail' and 'Bilanzdetails'
     or widget.view == 'gps' and 'GPS-Details'
-    or widget.view == 'sensors' and 'Sensoren' or project.title
+    or widget.view == 'sensors' and 'Sensoren' or hudPage and 'HUD' or project.title
   text(left, z.y + 8, heading, bg, inner - 40, headingFont)
+  local clockRight = z.w
+  if not widget.view then
+    local counter = hudPage and '2/2' or '1/2'
+    local w, h = lcd.sizeText(counter, regularFont + CUSTOM_COLOR)
+    literal(z.x + z.w - 52 - w, z.y + math.floor((layout.header - h) / 2), counter, bg, w, regularFont)
+    clockRight = z.w - 60 - w
+  end
   if not widget.view and clockEnabled(widget) then
     local clock = project.clock()
-    local w, h = lcd.sizeText(clock, layout.clockFont + CUSTOM_COLOR)
-    text(z.x + math.floor((z.w - w) / 2), z.y + math.floor((layout.header - h) / 2),
-      clock, bg, w, layout.clockFont)
+    local font = layout.clockFont
+    local w, h = lcd.sizeText(clock, font + CUSTOM_COLOR)
+    local clockLeft = 24 + lcd.sizeText(heading, headingFont + CUSTOM_COLOR)
+    if w > clockRight - clockLeft then
+      font = regularFont
+      w, h = lcd.sizeText(clock, font + CUSTOM_COLOR)
+    end
+    local x = math.max(clockLeft, math.min(math.floor((z.w - w) / 2), clockRight - w))
+    literal(z.x + x, z.y + math.floor((layout.header - h) / 2),
+      clock, bg, math.min(w, clockRight - x), font)
   end
   drawLogo(z, layout.header)
+  if hudPage then
+    if drawHUD == nil then
+      local ok, renderer = pcall(module, 'hud')
+      drawHUD = ok and renderer or false
+      ok, renderer = pcall(module, 'hud_readings')
+      hudReadings = ok and renderer or false
+    end
+    local top, readouts = layout.header + 12, layout.footerY - layout.step - 6
+    local side = math.floor(inner * 0.22)
+    local x, w, h = left + side + 8, inner - 2 * side - 16, readouts - top - 8
+    rect(x, top, w, h, panel)
+    local rowHeight = math.floor(h / 3)
+    local readings = {
+      m:format('voltage'), m:format('current'), m:format('lq'),
+      hudReadings and hudReadings.gpsFix(m, tr) or '--', m:format('satellites'),
+      hudReadings and hudReadings.ekf(receiver) or '--',
+    }
+    local function fits(font)
+      for _, value in ipairs(readings) do
+        local tw, th = lcd.sizeText(value, font + CUSTOM_COLOR)
+        if tw > side or th > rowHeight - layout.step - 2 then return false end
+      end
+      return true
+    end
+    -- Keep the values aligned at one size, enlarging them only when every
+    -- reading fits its column and leaves room for the next caption.
+    local valueFont = DBLSIZE and fits(DBLSIZE) and DBLSIZE
+      or fits(headingFont) and headingFont or regularFont
+    local function reading(col, row, key, value)
+      local y = top + (row - 1) * rowHeight
+      text(col, y, key, info, side)
+      literal(col, y + layout.step, value, normal, side, valueFont)
+    end
+    reading(left, 1, 'Akku', readings[1])
+    reading(left, 2, 'Strom', readings[2])
+    reading(left, 3, 'LQ', readings[3])
+    local right = x + w + 8
+    reading(right, 1, 'GPS Fix', readings[4])
+    reading(right, 2, 'Satelliten', readings[5])
+    reading(right, 3, 'EKF', readings[6])
+    local roll, pitch, frozen
+    if hudReadings then
+      if drawHUD then roll, pitch, frozen = hudReadings.horizon(m)
+      else roll, pitch = hudReadings.attitude(m) end
+    end
+    if drawHUD and roll and pitch then
+      drawHUD(roll, pitch, x, top, w, h, function(x1, y1, x2, y2, kind)
+        lcd.setColor(CUSTOM_COLOR, kind == 'aircraft' and warn or kind == 'horizon' and info or normal)
+        lcd.drawLine(x1, y1, x2, y2, kind == 'ladder' and (DOTTED or 0x55) or (SOLID or 255), CUSTOM_COLOR)
+      end)
+      if frozen then literal(x + 6, top + 4, 'HOLD', warn, w - 12, regularFont) end
+    else
+      local notice = tr(drawHUD and hudReadings and 'Lagedaten fehlen' or 'Werkzeug nicht ladbar')
+      local textW = lcd.sizeText(notice, regularFont + CUSTOM_COLOR)
+      literal(x + math.max(4, math.floor((w - textW) / 2)), top + math.floor(h / 2), notice, warn, w - 8)
+    end
+    for i, name in ipairs({'Roll', 'Pitch'}) do
+      local value = i == 1 and roll or i == 2 and pitch
+      literal(x + (i - 1) * math.floor(w / 2), readouts,
+        name .. ': ' .. (value and string.format('%.1f°', value) or '--'), normal, math.floor(w / 2) - 8)
+    end
+    text(left, layout.footerY, 'Rad links: Übersicht', info, inner - menuW - 12)
+    local buttonX = z.w - 12 - menuW
+    rect(buttonX, layout.footerY - 5, menuW, layout.buttonHeight, panel)
+    text(buttonX + 8, layout.footerY - 2, 'Menü', info, menuW - 16)
+    return
+  end
   if widget.view == 'setup' then
     local top, height, step = layout.header + 8, layout.rowHeight, layout.step
     local back = z.h - height - 12
     local en = i18n.language(languageOf(widget)).code == 'en'
-    local title, status, source, tip, sourceLabel = setup.check(widget.focus, m, receiver)
+    local title, status, source, tip, sourceLabel, configured = setup.check(widget.focus, m, receiver, config)
     literal(left, top, setup.text(title, tr, en), info, inner - 60, headingFont)
     literal(left + inner - 55, top + 2, widget.focus .. '/' .. setup.count, info, 55)
     local y = top + math.max(step, select(2, lcd.sizeText('Ag', headingFont + CUSTOM_COLOR)) + 6)
-    rect(left, y, inner, 3 * step, panel)
+    rect(left, y, inner, 4 * step, panel)
     literal(left + 8, y + 4, setup.text(status, tr, en), tip and warn or normal, inner - 16)
-    if source then
-      literal(left + 8, y + 4 + step, setup.text(sourceLabel or 'Quelle:', tr, en) .. ' ' .. source, normal, inner - 16)
+    if configured then
+      literal(left + 8, y + 4 + step, setup.text('Konfiguriert:', tr, en) .. ' ' .. configured, normal, inner - 16)
     end
-    if tip then literal(left + 8, y + 4 + 2 * step, setup.text(tip, tr, en), info, inner - 16) end
+    if source then
+      literal(left + 8, y + 4 + 2 * step, setup.text(sourceLabel, tr, en) .. ' ' .. source, normal, inner - 16)
+    end
+    if tip then literal(left + 8, y + 4 + 3 * step, setup.text(tip, tr, en), info, inner - 16) end
     local third = math.floor(inner / 3)
     for i, label in ipairs({'Vorige', 'Zurück', 'Weitere'}) do
       local x = left + (i - 1) * third
@@ -786,8 +882,11 @@ local function refresh(widget, event, touch)
   local messageColor = message and message.severity <= 4 and warn or normal
   local label = message and string.format(tr('FC-Meldung / vor %ds'), age or 0) or tr('FC-Meldung: --')
   local buttonX = z.x + z.w - 12 - menuW
-  text(z.x + 8, footer, label, info, z.w - menuW - 24)
+  local hudHint = event ~= nil and tr('Rad: HUD')
+  local hintW = hudHint and lcd.sizeText(hudHint, regularFont + CUSTOM_COLOR) + 16 or 0
+  text(z.x + 8, footer, label, info, z.w - menuW - 24 - hintW)
   if event ~= nil then
+    literal(buttonX - hintW, footer, hudHint, info, hintW - 8)
     rect(buttonX, footer - 5, menuW, layout.buttonHeight, panel)
     text(buttonX + 8, footer - 2, 'Menü', info, menuW - 16)
     if receiver.latestWarning() then

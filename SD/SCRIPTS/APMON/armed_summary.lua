@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/armed_summary.lua
 -- Purpose: Keep the last observed armed interval and its sampled measurements.
--- Project version: 0.9.0
+-- Project version: 1.0.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI (code, tests and documentation)

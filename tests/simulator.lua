@@ -56,7 +56,7 @@ lcd = {
     if not color and flags & RIGHT ~= 0 then x = x - width end
     assert(x >= 0 and y >= 0 and x + width <= LCD_W and y + height <= LCD_H,
       'text outside display: ' .. value)
-    draws[value] = {x=x, y=y}
+    draws[value] = {x=x, y=y, flags=flags, h=height}
     op('text', x, y, width, height, color and ink or flags & INVERS ~= 0 and 0 or 0xFFFFFF,
       not color and flags & INVERS ~= 0 and 1 or 0, value)
   end,
@@ -65,7 +65,9 @@ lcd = {
     op('rect', x, y, width, height, color and ink or flags == ERASE and 0 or 0xFFFFFF)
   end,
   drawLine = function(x1, y1, x2, y2, _, flags)
-    op('line', x1, y1, x2, y2, flags == ERASE and 0 or 0xFFFFFF)
+    assert(x1 >= 0 and x1 < LCD_W and x2 >= 0 and x2 < LCD_W
+      and y1 >= 0 and y1 < LCD_H and y2 >= 0 and y2 < LCD_H, 'line outside display')
+    op('line', x1, y1, x2, y2, color and ink or flags == ERASE and 0 or 0xFFFFFF)
   end,
   drawBitmap = function(_, x, y) op('logo', x, y) end,
 }
@@ -161,7 +163,7 @@ end
 
 data = {RxBt={16.1}, Curr={1}, ['Bat%']={94}, Capa={100}, Alt={24.6}, GAlt={25},
   GSpd={29}, VSpd={2.2}, Sats={12}, Hdg={274}, FM={'LOIT'}, RQly={96},
-  GPS={{lat=0.123456,lon=-0.654321}}, Yaw={-0.4}, Roll={0.1}, Ptch={0.05}}
+  GPS={{lat=0.123456,lon=-0.654321}}, Yaw={-0.4}, Roll={math.pi / 6}, Ptch={math.pi / 18}}
 tick(20, packet(0x5001,0), packet(0x5002,48), message('Using EKF Source Set 2',6))
 expect(color and 'APMon' or 'APMon Overview', color and 'APMon' or 'APMon Übersicht')
 frame('Overview and live telemetry', 'Übersicht und Live-Telemetrie')
@@ -169,8 +171,75 @@ if not color then
   render(nextEvent)
   expect('APMon Flight','APMon Flugwerte')
   frame('Second telemetry page', 'Zweite Telemetrieseite')
-  render(prev)
+else
+  expect('Wheel: HUD','Rad: HUD')
+  expect('1/2')
 end
+render(nextEvent)
+expect('HUD')
+expect(color and '2/2' or '3/3')
+expect('12:34')
+expect(color and '16.10 V' or '16.10V')
+expect(color and '1.00 A' or '1.00A')
+expect('96 %')
+expect('2/0s')
+if color then expect('3D'); expect('12') else expect('3D/12') end
+expect(color and 'Roll: 30.0°' or '30°')
+expect(color and 'Pitch: 10.0°' or '10°')
+if not color then
+  expect('Bat')
+  expect('GPS:')
+  assert(draws.Bat.x == 2 and draws['16.10V'].y == 40 and draws['1.00A'].y == 40 and draws['96 %'].y == 40)
+  assert(draws['3D/12'].y == 49 and draws['2/0s'].y == 49)
+else
+  local voltage = draws['16.10 V']
+  local font = voltage.flags & 0xF00
+  if LCD_W >= 480 then assert(font == MIDSIZE or font == DBLSIZE, 'HUD readings should have a larger font') end
+  for _, value in ipairs({'1.00 A', '96 %', '3D', '12', '2/0s'}) do
+    assert(draws[value].flags & 0xF00 == font, 'HUD readings should use a consistent font')
+  end
+  assert(voltage.y + voltage.h <= assert(has('Curr.', 'Strom')).y, 'HUD value overlaps next caption')
+end
+frame('HUD with fresh roll and pitch', 'HUD mit frischen Roll- und Nickdaten')
+data.Ptch.fresh = false
+tick(20, packet(0x5001,0))
+expect(color and 'Pitch: 10.0°' or '10°')
+assert(not has('No attitude data','Lagedaten fehlen'))
+data.Roll.fresh, data.Ptch.fresh = false, true
+tick(20, packet(0x5001,0))
+expect(color and 'Roll: 30.0°' or '30°')
+assert(not has('No attitude data','Lagedaten fehlen'))
+frame('Alternating updates keep the horizon visible', 'Versetzte Updates lassen den Horizont sichtbar')
+local function plot()
+  local segments = {}
+  for _, value in ipairs(ops) do
+    if string.sub(value, 1, 5) == 'line\t' then segments[#segments + 1] = value end
+  end
+  return table.concat(segments, '\n')
+end
+local previousPlot = plot()
+data.Ptch.fresh, data.Roll.fresh, data.Roll[1], data.RxBt[1] = false, true, 0, 15.9
+tick(110, packet(0x5001,0))
+expect('HOLD')
+expect(color and 'Roll: 30.0°' or '30°')
+expect(color and 'Pitch: 10.0°' or '10°')
+expect(color and '15.90 V' or '15.90V')
+assert(plot() == previousPlot, 'the drawn attitude changed during HOLD')
+assert(not has('No attitude data','Lagedaten fehlen'))
+frame('HOLD keeps the last horizon during a dropout', 'HOLD hält den letzten Horizont bei einem Ausfall fest')
+data.Roll.fresh, data.Ptch.fresh = true, true
+data.RxBt[1] = 16.1
+tick(20, packet(0x5001,0))
+expect(color and 'Pitch: 10.0°' or '10°')
+assert(not has('HOLD') and plot() ~= previousPlot)
+render(enter)
+expect('APMon')
+render(exit)
+expect('HUD') -- menu round trip retains the page
+render(prev)
+if not color then expect('APMon Flight','APMon Flugwerte'); render(prev) end
+expect(color and 'APMon' or 'APMon Overview', color and 'APMon' or 'APMon Übersicht')
+if color then expect('1/2') end
 tick(100, packet(0x5001,256))
 expect('ARMED')
 frame('Confirmed arming', 'Bestätigtes Armen')
@@ -253,8 +322,16 @@ if color then tap('Next','Weitere'); tap('Next','Weitere')
 else render(nextEvent); render(nextEvent) end
 expect('Current sensor', 'Stromsensor')
 expect('Invalid', 'Ungültig')
+expect('Configured: Curr', 'Konfiguriert: Curr')
+expect('Detected: Curr', 'Erkannt: Curr')
 expect('Check source and unit', 'Quelle/Einheit prüfen')
 frame('Invalid readings have a setup hint', 'Ungültige Werte mit Einrichtungshinweis')
+if color then tap('Next','Weitere'); tap('Next','Weitere')
+else render(nextEvent); render(nextEvent) end
+expect('Relative altitude', 'Relative Höhe')
+expect('Not mapped', 'Nicht zugeordnet')
+expect('Map relative altitude', 'Höhe zuordnen')
+frame('Relative altitude needs an explicit mapping', 'Relative Höhe braucht eine ausdrückliche Zuordnung')
 data.Curr = nil
 render(exit)
 if color then tap('Save report','Bericht speichern')
