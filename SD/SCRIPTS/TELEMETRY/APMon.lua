@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/TELEMETRY/APMon.lua
 -- Purpose: Render the GX12/Boxer telemetry UI with two pages, menus and saved language choice.
--- Project version: 0.8.0
+-- Project version: 0.9.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -204,24 +204,26 @@ local function summaryData(phase)
   return summary.rows(phase), summary.notes(phase)
 end
 local function saveReport(includeText)
+  local timed, timestamp = pcall(module, 'report_time')
   local ok, saved = pcall(module, 'diagnostic_report', project.reportPath, project.version,
-    config, monitor, receiver, tr, includeText)
+    config, monitor, receiver, tr, includeText, timed and timestamp or nil)
   return ok and saved == true
 end
 local function loadTools(isDiagnostics)
-  if view == 'report' then
-    return module('mono_report', {header = menuHeader, option = menuOption,
-      tr = tr, reportPath = project.reportPath})
-  end
   local rows, notes
   if toolPhase then rows, notes = summaryData(toolPhase) end
   return module(view == 'sensors' and 'mono_sensors' or isDiagnostics and 'mono_tools' or view == 'gps' and 'mono_gps'
-    or view == 'messageDetail' and 'mono_message' or 'mono_summary', {
+    or view == 'messageDetail' and 'mono_message' or view == 'setup' and 'mono_setup'
+    or view == 'report' and 'mono_report' or 'mono_summary', {
     tr = tr, monoText = monoText, header = menuHeader, field = field,
     rightText = rightText, small = small, option = menuOption, fit = fit, textWidth = textWidth,
     monitor = monitor, receiver = receiver, tracker = tracker,
     rows = rows, notes = notes, message = messageDetail,
     diagnostics = isDiagnostics and module('diagnostics') or nil,
+    check = view == 'setup' and module('setup_check') or nil,
+    english = view == 'setup' and i18n.language(language).code == 'en' or nil,
+    gpsDetails = view == 'gps' and module('gps_details') or nil,
+    reportPath = view == 'report' and project.reportPath or nil,
   })
 end
 local function background() monitor:sample() end
@@ -241,16 +243,20 @@ local function run(event)
   elseif view == 'gps' then
     if exitEvent then view = 'menu' end
   elseif view == 'diagnostics' then
-    if step ~= 0 then sensorIndex = 3 - sensorIndex end
+    if step ~= 0 then sensorIndex = (sensorIndex - 1 + step) % 3 + 1 end
     if exitEvent then view = 'menu'
     elseif enterEvent and toolRenderer then
       if sensorIndex == 1 then view, toolRenderer = 'sensors', nil
+      elseif sensorIndex == 3 then view, toolRenderer = 'setup', nil
       else view, toolRenderer, enterEvent, reportSaved = 'report', nil, false, nil end
     end
-  elseif view == 'sensors' then
-    local count = #monitor.sensorList
-    if count > 0 then sensorIndex = (sensorIndex - 1 + step) % count + 1 end
-    if enterEvent or exitEvent then view, sensorIndex, toolRenderer = 'diagnostics', 1, nil end
+  elseif view == 'sensors' or view == 'setup' then
+    if enterEvent or exitEvent then
+      view, sensorIndex, toolRenderer = 'diagnostics', view == 'sensors' and 1 or 3, nil
+    elseif view == 'sensors' and step ~= 0 then
+      local count = #monitor.sensorList
+      if count > 0 then sensorIndex = (sensorIndex - 1 + step) % count + 1 end
+    end
   elseif view == 'report' then
     if exitEvent then view, sensorIndex, toolRenderer = 'diagnostics', 2, nil end
   elseif view == 'messageDetail' then
@@ -313,7 +319,7 @@ local function run(event)
   local diagnosticsPage = view == 'diagnostics' or view == 'sensors'
   local summaryPage = view == 'summary' or view == 'summaryDetail'
   if diagnosticsPage or summaryPage or view == 'gps' or (view == 'report' and reportSaved == nil)
-      or view == 'messageDetail' then
+      or view == 'messageDetail' or view == 'setup' then
     local phase = summaryPage and tracker.last or nil
     if toolPhase ~= phase then toolRenderer, toolPhase = nil, phase end
     if toolRenderer == nil then
@@ -333,9 +339,10 @@ local function run(event)
       end
     else
       menuHeader(width, tr(view == 'sensors' and 'Sensoren' or diagnosticsPage and 'Telemetrie-Diagnose' or view == 'gps' and 'GPS-Details'
-        or view == 'report' and 'Diagnosebericht' or view == 'messageDetail' and 'FC-Meldungen' or 'Letzte Armed-Phase'))
+        or view == 'report' and 'Diagnosebericht' or view == 'setup' and 'Einrichtungscheck'
+        or view == 'messageDetail' and 'FC-Meldungen' or 'Letzte Armed-Phase'))
       text(11, tr(toolError))
-      text(57, monoText((view == 'report' or view == 'sensors') and 'RTN: Diagnose'
+      text(57, monoText((view == 'report' or view == 'sensors' or view == 'setup') and 'RTN: Diagnose'
         or view == 'messageDetail' and 'RTN: Liste' or 'RTN: Menü'))
     end
     if view ~= 'report' or reportSaved == nil then return 0 end

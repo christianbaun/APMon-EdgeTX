@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/core.lua
 -- Purpose: Read and validate EdgeTX sensors and merge optional ArduPilot passthrough data.
--- Project version: 0.8.0
+-- Project version: 0.9.0
 -- Updated: 2026-11-20
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -49,9 +49,9 @@ local function formatValue(key, def, value)
 end
 local sourceRank = { missing = 0, unknown = 1, stale = 2, invalid = 3 }
 local gpsFixLabels = { [0] = 'Kein GPS', 'Kein Fix', '2D', '3D', 'DGPS', 'RTK float', 'RTK fix' }
-local gpsGrace = 150 -- 1.5 s bridges ordinary gaps between GPS updates.
 function M.new(config, receiver, armedSummary)
-  local self = { values = {}, sources = {}, sensorList = {}, last = nil, api = false }
+  -- 1.5 s bridges ordinary gaps between GPS updates.
+  local self = { values = {}, sources = {}, sensorList = {}, api = false, gpsGrace = 150 }
   local keys = {}
   for key in pairs(config.sensors) do
     -- Some SW builds do not have the Lua table library.
@@ -128,7 +128,7 @@ function M.new(config, receiver, armedSummary)
     elseif binaryFix ~= self.gpsBinaryFix then
       self.gpsBinaryTime = nil
     end
-    if not self.gpsBinaryTime or now - self.gpsBinaryTime > gpsGrace then binaryFix = nil end
+    if not self.gpsBinaryTime or now - self.gpsBinaryTime > self.gpsGrace then binaryFix = nil end
     if receiver then
       local fix = receiver.value('fix')
       if self.values.armed == nil then self.values.armed = confirmedArmed end
@@ -145,31 +145,14 @@ function M.new(config, receiver, armedSummary)
     if hasFix and pos then
       if self.sources.gps.fresh then
         self.gpsLive, self.gpsPosition, self.gpsTime = true, pos, now
-      elseif wasLive and self.gpsPosition and now - self.gpsTime <= gpsGrace then
+      elseif wasLive and self.gpsPosition and now - self.gpsTime <= self.gpsGrace then
         -- Keep the displayed position and timestamp unchanged during the gap.
         self.gpsLive = true
       end
     end
   end
-  function self:gpsDetails()
-    local pos, live, now = self.gpsPosition, self.gpsLive, getTime()
-    local function liveValue(key)
-      local entry = self.sources[key]
-      if live and entry and entry.gpsTime and now - entry.gpsTime <= gpsGrace then
-        return formatValue(key, config.sensors[key], entry.gpsValue)
-      end
-      return '--'
-    end
-    return {
-      { 'Breite', pos and string.format('%.6f', pos.lat) or '--' },
-      { 'Länge', pos and string.format('%.6f', pos.lon) or '--' },
-      { 'GPS Fix', self.gpsFixLabel or '--' },
-      { 'Satelliten', liveValue('satellites') },
-      { 'GPS-Kurs', liveValue('heading') },
-    }, live, not live and pos and math.floor((now - self.gpsTime) / 100) or nil
-  end
-  function self:format(key)
-    return formatValue(key, config.sensors[key], self.values[key])
+  function self:format(key, value)
+    return formatValue(key, config.sensors[key], value == nil and self.values[key] or value)
   end
   function self:lastSensorValue(entry)
     if entry.lastName == entry.name then return entry.lastValue end

@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/diagnostic_report.lua
 -- Purpose: Write a one-shot diagnostic snapshot to the radio's SD card.
--- Project version: 0.8.0
+-- Project version: 0.9.0
 -- Updated: 2026-11-22
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -11,7 +11,7 @@
 -- See LICENSE in the repository or SCRIPTS/APMON/LICENSE.txt in SD packages.
 -- =============================================================================
 
-local path, version, config, monitor, receiver, tr, includeText = ...
+local path, version, config, monitor, receiver, tr, includeText, senderTime = ...
 if not (io and io.open and io.write and io.close) then return false end
 
 local function clean(value)
@@ -36,6 +36,7 @@ local function writeReport(file)
   end
   line('APMon ' .. version .. ' | ' .. tr('Diagnosebericht'))
   line('EdgeTX: ' .. clean(firmware) .. ' (' .. clean(radio) .. ')')
+  line(tr('Senderzeit') .. ': ' .. (senderTime or tr('Nicht verfügbar')))
   local fc, fcAge = receiver.status('armed')
   line(tr('FC-Status (Passthrough)') .. ': ' .. tr(states[fc]) .. ' / ' .. age(fcAge))
   line('')

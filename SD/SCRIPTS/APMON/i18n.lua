@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/i18n.lua
 -- Purpose: Provide the extensible GUI language registry, translations and fallback rules.
--- Project version: 0.8.0
+-- Project version: 0.9.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -62,6 +62,10 @@ Kein GPS|No GPS
 Keins|None
 Telemetrie-Diagnose|Telemetry diagnostics
 Diagnosebericht|Diagnostic report
+Senderzeit|Radio time
+Nicht verfügbar|Unavailable
+Einrichtungscheck|Setup check
+Quelle:|Source:
 Bericht speichern|Save report
 ENT: Speichern|ENT: save
 Ohne FC-Klartext|Without FC text

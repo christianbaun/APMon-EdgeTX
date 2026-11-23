@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/WIDGETS/APMon/main.lua
 -- Purpose: Render the color dashboard, full-screen project menu and language selection.
--- Project version: 0.8.0
+-- Project version: 0.9.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -26,6 +26,8 @@ local receiver = module('pass', 32, tracker, true)
 local i18n = module('i18n')
 local project = module('project')
 local diagnostics = module('diagnostics')
+local setup = module('setup_check')
+local gpsDetails = module('gps_details')
 local options = { { 'Language', CHOICE, 1, i18n.choices }, { 'Clock', BOOL, 0 } }
 local logo
 local function drawLogo(zone, headerHeight)
@@ -57,7 +59,8 @@ local menuW, warningW = 148, 196
 local menuCount = 7
 local regularFont = SMLSIZE or 0
 local headingFont = MIDSIZE or regularFont
-local menuSubtitle = project.subtitle[1] .. ' ' .. project.subtitle[2]
+local menuSubtitleLines = {'ArduPilot Telemetry', 'Monitor for EdgeTX radios'}
+local menuSubtitle = menuSubtitleLines[1] .. ' ' .. menuSubtitleLines[2]
 local repoAddress = project.repo[1] .. project.repo[2]
 local versionLabel = 'APMon ' .. project.version
 local function layoutFor(widget, z)
@@ -69,7 +72,7 @@ local function layoutFor(widget, z)
   local _, smallHeight = lcd.sizeText('Ag', regularFlags)
   local _, largeHeight = lcd.sizeText('Ag', headingFlags)
   local inner = z.w - 24
-  local subtitles = lcd.sizeText(menuSubtitle, regularFlags) <= inner and {menuSubtitle} or project.subtitle
+  local subtitles = lcd.sizeText(menuSubtitle, regularFlags) <= inner and {menuSubtitle} or menuSubtitleLines
   local repo = lcd.sizeText(repoAddress, regularFlags) <= inner and {repoAddress} or project.repo
   -- EdgeTX devices can use different pixel sizes for the same font flag.
   -- Keep the full font box on the colored bar, with padding above and below.
@@ -136,6 +139,14 @@ local function diagnosticWindow(widget, z, layout)
   local first = math.min(widget.sensorFirst or 1, last)
   return top, back, listTop, visible, count, first, last
 end
+local diagnosticLabels = {'Sensoren', 'Bericht speichern', 'Einrichtungscheck', 'Zurück'}
+local diagnosticBounds = {0, 21, 53, 83, 100}
+local function diagnosticButton(z, index)
+  local inner = z.w - 24
+  local x = math.floor(inner * diagnosticBounds[index] / 100)
+  local right = math.floor(inner * diagnosticBounds[index + 1] / 100)
+  return 12 + x, right - x - (index < #diagnosticLabels and 4 or 0)
+end
 local function messageBack(z, layout)
   return z.h - layout.rowHeight - 16
 end
@@ -177,6 +188,17 @@ local function handleInput(widget, z, layout, event, touch)
     return
   end
   local rowHeight = layout.rowHeight
+  if widget.view == 'setup' then
+    local back = z.h - rowHeight - 12
+    local step = event == EVT_VIRTUAL_NEXT and 1 or event == EVT_VIRTUAL_PREV and -1 or 0
+    if inButton(back, rowHeight - 3) then
+      step = tap.x < z.w / 3 and -1 or tap.x >= z.w * 2 / 3 and 1 or 0
+      exit = step == 0
+    end
+    if exit or enter then setView(widget, 'diagnostics', 3)
+    else widget.focus = (widget.focus - 1 + step) % setup.count + 1 end
+    return
+  end
   if widget.view == 'gps' then
     if exit or enter or inButton(z.h - rowHeight - 12, rowHeight - 3) then setView(widget, 'menu', 6) end
     return
@@ -191,8 +213,10 @@ local function handleInput(widget, z, layout, event, touch)
         or inButton(back - rowHeight, rowHeight - 3) and 2 or enter and widget.focus
       if choice then
         local function save()
+          local timed, timestamp = pcall(module, 'report_time')
           return module('diagnostic_report', project.reportPath, project.version, config,
-            widget.monitor, receiver, function(key) return i18n.text(languageOf(widget), key) end, choice == 2)
+            widget.monitor, receiver, function(key) return i18n.text(languageOf(widget), key) end,
+            choice == 2, timed and timestamp or nil)
         end
         local ok, saved = pcall(save)
         widget.reportSaved = ok and saved == true
@@ -229,12 +253,17 @@ local function handleInput(widget, z, layout, event, touch)
         widget.sensorFirst = math.max(1, math.min(last, first + step))
       end
     else
-      if event == EVT_VIRTUAL_NEXT then widget.focus = widget.focus % 3 + 1
-      elseif event == EVT_VIRTUAL_PREV then widget.focus = (widget.focus - 2) % 3 + 1 end
-      local choice = inButton(back, rowHeight - 3)
-        and (tap.x < z.w / 4 and 1 or tap.x >= z.w * 3 / 4 and 3 or 2)
-        or enter and widget.focus
-      if exit or choice == 3 then
+      local n = #diagnosticLabels
+      if event == EVT_VIRTUAL_NEXT then widget.focus = widget.focus % n + 1
+      elseif event == EVT_VIRTUAL_PREV then widget.focus = (widget.focus - 2) % n + 1 end
+      local choice = enter and widget.focus
+      if inButton(back, rowHeight - 3) then
+        for i = 1, n do
+          local x, width = diagnosticButton(z, i)
+          if tap.x >= x and tap.x < x + width then choice = i; break end
+        end
+      end
+      if exit or choice == 4 then
         setView(widget, 'menu', 4)
       elseif choice == 1 then
         widget.sensorFirst = 1
@@ -242,6 +271,8 @@ local function handleInput(widget, z, layout, event, touch)
       elseif choice == 2 then
         widget.reportSaved = nil
         setView(widget, 'report', 1)
+      elseif choice == 3 then
+        setView(widget, 'setup', 1)
       end
     end
     return
@@ -383,6 +414,7 @@ local function refresh(widget, event, touch)
     or widget.view == 'warningDetail' and 'Letzte FC-Warnung'
     or messagePage(widget) and 'FC-Meldungen'
     or widget.view == 'diagnostics' and 'Telemetrie-Diagnose'
+    or widget.view == 'setup' and 'Einrichtungscheck'
     or widget.view == 'report' and 'Diagnosebericht'
     or widget.view == 'summary' and 'Letzte Armed-Phase'
     or widget.view == 'summaryDetail' and 'Bilanzdetails'
@@ -396,6 +428,28 @@ local function refresh(widget, event, touch)
       clock, bg, w, layout.clockFont)
   end
   drawLogo(z, layout.header)
+  if widget.view == 'setup' then
+    local top, height, step = layout.header + 8, layout.rowHeight, layout.step
+    local back = z.h - height - 12
+    local en = i18n.language(languageOf(widget)).code == 'en'
+    local title, status, source, tip, sourceLabel = setup.check(widget.focus, m, receiver)
+    literal(left, top, setup.text(title, tr, en), info, inner - 60, headingFont)
+    literal(left + inner - 55, top + 2, widget.focus .. '/' .. setup.count, info, 55)
+    local y = top + math.max(step, select(2, lcd.sizeText('Ag', headingFont + CUSTOM_COLOR)) + 6)
+    rect(left, y, inner, 3 * step, panel)
+    literal(left + 8, y + 4, setup.text(status, tr, en), tip and warn or normal, inner - 16)
+    if source then
+      literal(left + 8, y + 4 + step, setup.text(sourceLabel or 'Quelle:', tr, en) .. ' ' .. source, normal, inner - 16)
+    end
+    if tip then literal(left + 8, y + 4 + 2 * step, setup.text(tip, tr, en), info, inner - 16) end
+    local third = math.floor(inner / 3)
+    for i, label in ipairs({'Vorige', 'Zurück', 'Weitere'}) do
+      local x = left + (i - 1) * third
+      rect(x, back, third - 4, height - 3, panel)
+      text(x + 8, back + 4, label, info, third - 20)
+    end
+    return
+  end
   if widget.view == 'report' then
     local height = layout.rowHeight
     local top, back = layout.header + 8, z.h - height - 12
@@ -419,7 +473,7 @@ local function refresh(widget, event, touch)
     return
   end
   if widget.view == 'gps' then
-    local details, live, age = m:gpsDetails()
+    local details, live, age = gpsDetails(m)
     local top, back = layout.header + 8, z.h - layout.rowHeight - 12
     local status = tr(live and 'Live' or 'Nicht live')
     if age then status = status .. '  |  ' .. string.format(tr('vor %ds'), age) end
@@ -533,10 +587,15 @@ local function refresh(widget, event, touch)
         if row[3] then literal(left + 8, rowY + line, row[3], row[4] and warn or info, inner - 16, font) end
       end
       text(left, noteY, 'Gültige Sensordaten sind keine Flugfreigabe.', info, inner)
-      local quarter = math.floor(z.w / 4)
-      button(left, back, quarter - 14, 'Sensoren', widget.focus == 1)
-      button(quarter + 2, back, z.w - 2 * quarter - 4, 'Bericht speichern', widget.focus == 2)
-      button(z.w - quarter + 2, back, quarter - 14, 'Zurück', widget.focus == 3)
+      for i, label in ipairs(diagnosticLabels) do
+        local x, width = diagnosticButton(z, i)
+        local font = lcd.sizeText(tr(label), regularFont + CUSTOM_COLOR) > width - 12
+          and (TINSIZE or regularFont) or regularFont
+        local active = widget.focus == i
+        rect(x, back, width, height - 3, active and info or panel)
+        text(x + 6, back + math.floor((height - 3 - select(2, lcd.sizeText('Ag', font + CUSTOM_COLOR))) / 2),
+          label, active and bg or info, width - 12, font)
+      end
     else
       local nameWidth, valueWidth = math.floor(inner * 0.25), math.floor(inner * 0.43)
       text(left + 8, top, 'Sensor', info, nameWidth - 8)

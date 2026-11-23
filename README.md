@@ -13,8 +13,8 @@ sensors and selected ArduPilot passthrough data, not the full MAVLink stream.
 It runs as Lua scripts on the radio's SD card: no laptop or
 additional flight-controller script is required during use.
 
-Current project version: **0.8.0**, recorded in [VERSION](VERSION).
-See the [v0.8.0 release notes](releases/v0.8.0.md).
+Current project version: **0.9.0**, recorded in [VERSION](VERSION).
+See the [v0.9.0 release notes](releases/v0.9.0.md).
 
 The GUI supports **English and German**, with English as the default.
 
@@ -55,43 +55,48 @@ does not mean the hardware has been tested.
 Actual captures from the GX12, GX15 and TX16S MK3. The readings show the
 captured state and are not an indication of flight readiness.
 
-**Monochrome — GX12 (128 × 64)**
+**Monochrome — GX12 (128 × 64, APMon v0.9.0)**
 
 The images are enlarged for readability. The radio clock is enabled on both telemetry pages.
 
-| Overview (v0.7.0) | Flight data (v0.7.0) |
+| Overview | Flight data |
 | --- | --- |
-| <img src="images/screenshots/apmon-sw-gx12-overview-en-v0.7.0-2026-11-22-192557.png" width="384" alt="APMon overview in English with the radio clock on the GX12"> | <img src="images/screenshots/apmon-sw-gx12-flight-en-v0.7.0-2026-11-22-192558.png" width="384" alt="APMon flight data in English with the radio clock on the GX12"> |
+| <img src="images/screenshots/apmon-sw-gx12-overview-en-v0.9.0-2026-11-23-091833.png" width="384" alt="APMon overview in English with the radio clock on the GX12"> | <img src="images/screenshots/apmon-sw-gx12-flight-en-v0.9.0-2026-11-23-091834.png" width="384" alt="APMon flight data in English with the radio clock on the GX12"> |
 
-| Compact project menu (v0.6.0) | FC message list (v0.5.0) |
-| --- | --- |
-| <img src="images/screenshots/apmon-sw-gx12-menu-en-v0.6.0-2026-11-22-172742.png" width="384" alt="Compact APMon project menu showing five entries and version 0.6.0"> | <img src="images/screenshots/apmon-sw-gx12-messages-en-v0.5.0-2026-11-22-112056.png" width="384" alt="GX12 FC message list in English with the All filter"> |
+**Compact project menu:**
+
+<img src="images/screenshots/apmon-sw-gx12-menu-en-v0.9.0-2026-11-23-091658.png" width="384" alt="Compact APMon project menu showing five entries and version 0.9.0">
 
 More GX12 captures: [FC message filter](#radio-clock-and-fc-message-history),
 [GPS details](#gps-details),
-[Telemetry diagnostics](#telemetry-diagnostics), and
+[Telemetry diagnostics](#telemetry-diagnostics),
+[Setup check](#telemetry-setup-check),
+[Diagnostic report](#diagnostic-report), and
 [Post-disarm summary](#post-disarm-summary).
 
-**Color display — GX15 (480 × 320, APMon v0.7.0)**
+**Color display — GX15 (480 × 320, APMon v0.9.0)**
 
 | Dashboard with radio clock | Project menu |
 | --- | --- |
-| ![APMon color dashboard with the radio clock on the GX15](images/screenshots/apmon-color-gx15-overview-en-v0.7.0-2026-11-22-193059.png) | ![Project menu on the GX15 showing version 0.7.0](images/screenshots/apmon-color-gx15-menu-en-v0.7.0-2026-11-22-193108.png) |
+| ![APMon dashboard on the GX15 with the radio clock and Last FC warning shortcut](images/screenshots/apmon-color-gx15-overview-en-v0.9.0-2026-11-23-091252.png) | ![Project menu on the GX15 showing version 0.9.0](images/screenshots/apmon-color-gx15-menu-en-v0.9.0-2026-11-23-091203.png) |
 
 More GX15 captures: [FC message filter](#radio-clock-and-fc-message-history),
 [GPS details](#gps-details),
-[Telemetry diagnostics](#telemetry-diagnostics), and
+[Telemetry diagnostics](#telemetry-diagnostics),
+[Setup check](#telemetry-setup-check),
+[Diagnostic report](#diagnostic-report), and
 [Post-disarm summary](#post-disarm-summary).
 
-**Color display — TX16S MK3 (800 × 480)**
+**Color display — TX16S MK3 (800 × 480, APMon v0.9.0)**
 
-| Dashboard (v0.6.0) | Project menu (v0.7.0) |
+| Dashboard | Project menu |
 | --- | --- |
-| ![APMon color dashboard in English on the TX16S MK3](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.6.0-2026-11-22-185702.png) | ![English project menu on the TX16S MK3 showing version 0.7.0](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.7.0-2026-11-22-192217.png) |
+| ![TX16S MK3 dashboard with the Last FC warning shortcut](images/screenshots/apmon-color-tx16s-mk3-overview-en-v0.9.0-2026-11-23-092223.png) | ![English project menu on the TX16S MK3 showing version 0.9.0](images/screenshots/apmon-color-tx16s-mk3-menu-en-v0.9.0-2026-11-23-092247.png) |
 
 More TX16S MK3 captures: [Armed summary](#post-disarm-summary),
-[telemetry diagnostics](#telemetry-diagnostics), [GPS details](#gps-details)
-and [FC message filter](#radio-clock-and-fc-message-history).
+[GPS details](#gps-details), [FC messages](#radio-clock-and-fc-message-history),
+[Telemetry diagnostics](#telemetry-diagnostics),
+[Setup check](#telemetry-setup-check), and [Diagnostic report](#diagnostic-report).
 
 **Change language:** On SW, press **ENTER** and select **Language / Sprache**.
 On COLOR, open APMon in full screen and select **Menu → Language**. For a
@@ -108,7 +113,8 @@ persistent COLOR setting, use **Widget settings → Language**.
   both with their age.
 - **RC link quality:** percentage of received control packets.
 - **Telemetry diagnostics:** check the RC link, EdgeTX sensors and FC status
-  separately and [save a diagnostic report](#diagnostic-report).
+  separately, open the [setup check](#telemetry-setup-check) or
+  [save a diagnostic report](#diagnostic-report).
 - **Last armed period:** review elapsed time and recorded extremes after
   disarming from the project menu.
 - **Language selection:** on the radio, with a central, extensible language registry.
@@ -163,10 +169,10 @@ versions require separate testing.
 
 | Radio | Versions |
 | --- | --- |
-| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.7.0 |
+| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.9.0 |
 | TX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
-| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.7.0 |
-| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.7.0 |
+| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.9.0 |
+| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.9.0 |
 | Boxer | Hardware testing pending |
 | Other radios | Hardware testing pending |
 
@@ -399,6 +405,12 @@ dashboard to open the latest retained warning or error (S0–S4). The button
 only appears when a warning or error is available. **Back** or **RTN**
 returns directly to the dashboard without changing the history filter.
 
+| Last FC warning on the GX15 | Last FC warning on the TX16S MK3 |
+| --- | --- |
+| ![GX15 warning details showing severity, age and repeat count](images/screenshots/apmon-color-gx15-last-fc-warning-en-v0.9.0-2026-11-23-091256.png) | ![TX16S MK3 showing a retained severity 4 warning and its age](images/screenshots/apmon-color-tx16s-mk3-last-fc-warning-en-v0.9.0-2026-11-23-092225.png) |
+
+[The same warning in the telemetry diagnostics overview](images/screenshots/apmon-color-gx15-diagnostics-en-v0.9.0-2026-11-23-091154.png).
+
 Use **Filter: All** to switch between all messages and **Warnings & errors**.
 Use the wheel or **PREV** from the newest row to reach the filter, then press
 **ENTER**. On COLOR, you can also tap the filter directly. The warnings view
@@ -473,16 +485,37 @@ After a sensor drops out, its cached value remains visible only as the last
 value, not as live telemetry. Unconfigured sensors are not counted. Valid
 readings are not flight clearance.
 
-| GX15 with v0.7.0: Telemetry diagnostics | Sensor list (coordinates masked) |
+| GX15 with v0.9.0: Telemetry diagnostics | Sensor list |
 | --- | --- |
-| ![Telemetry diagnostics showing radio link, sensor and FC status separately](images/screenshots/apmon-color-gx15-diagnostics-en-v0.7.0-2026-11-22-193131.png) | ![Sensor list showing the last readings and their validity with GPS coordinates masked](images/screenshots/apmon-color-gx15-sensors-en-v0.7.0-2026-11-22-193133.png) |
+| ![Telemetry diagnostics showing radio link, sensor and FC status with buttons for the report and setup check](images/screenshots/apmon-color-gx15-diagnostics-en-v0.9.0-2026-11-23-091111.png) | ![Sensor list showing the last readings and validity for roll, satellite count, ground speed, capacity, receiver voltage and yaw](images/screenshots/apmon-color-gx15-sensors-en-v0.9.0-2026-11-23-091118.png) |
 
-| GX12 with v0.7.0: Telemetry diagnostics | Sensor details |
+| GX12 with v0.9.0: Telemetry diagnostics | Sensor details |
 | --- | --- |
-| <img src="images/screenshots/apmon-sw-gx12-diagnostics-en-v0.7.0-2026-11-22-192648.png" width="384" alt="Telemetry diagnostics on the GX12 showing RC link, sensor validity and FC status"> | <img src="images/screenshots/apmon-sw-gx12-sensors-en-v0.7.0-2026-11-22-192651.png" width="384" alt="Sensor details for Hdg showing its last valid GPS course"> |
+| <img src="images/screenshots/apmon-sw-gx12-diagnostics-en-v0.9.0-2026-11-23-091702.png" width="384" alt="GX12 telemetry diagnostics with Sensors selected"> | <img src="images/screenshots/apmon-sw-gx12-sensors-en-v0.9.0-2026-11-23-091709.png" width="384" alt="Sensor details for FM showing the last valid flight mode, STABILIZE"> |
 
-On the TX16S MK3 with v0.7.0: [diagnostics overview](images/screenshots/apmon-color-tx16s-mk3-diagnostics-en-v0.7.0-2026-11-22-192304.png)
-and [sensor list with coordinates masked](images/screenshots/apmon-color-tx16s-mk3-sensors-en-v0.7.0-2026-11-22-192308.png) at 800 × 480.
+| TX16S MK3 with v0.9.0: Telemetry diagnostics | Sensor list |
+| --- | --- |
+| ![TX16S MK3 telemetry diagnostics with Sensors selected](images/screenshots/apmon-color-tx16s-mk3-diagnostics-en-v0.9.0-2026-11-23-092250.png) | ![TX16S MK3 sensor list with nine readings and their validity](images/screenshots/apmon-color-tx16s-mk3-sensors-en-v0.9.0-2026-11-23-092255.png) |
+
+[TX16S MK3 diagnostics with a valid FC status and a separate GPS or compass warning](images/screenshots/apmon-color-tx16s-mk3-diagnostics-en-v0.9.0-2026-11-23-092316.png).
+
+### Telemetry setup check
+
+Open **Project menu → Telemetry diagnostics → Setup check**. Use the wheel
+or **NEXT/PREV** to browse on SW, or tap **Previous/Next** on COLOR. It checks
+RC link quality, FC status, GPS coordinates, GPS fix type, battery voltage,
+current and the mAh counter. The check shows the source and its status and,
+where appropriate, suggests a next step. For example, valid GPS coordinates
+can coexist with a fix type that was never received. The fix-type check uses
+ArduPilot passthrough, not satellite count or coordinates. The check never
+changes radio or FC settings and is not a flight-readiness check.
+
+| GX12: 3D fix | GX15: Waiting for a fix |
+| --- | --- |
+| <img src="images/screenshots/apmon-sw-gx12-setup-check-en-v0.9.0-2026-11-23-091740.png" width="384" alt="GX12 setup check showing a 3D GPS fix from ELRS MAVLink"> | ![GX15 setup check advising the user to wait for a GPS fix](images/screenshots/apmon-color-gx15-setup-check-en-v0.9.0-2026-11-23-091150.png) |
+
+[GX12 telemetry diagnostics with Setup check selected](images/screenshots/apmon-sw-gx12-diagnostics-en-v0.9.0-2026-11-23-091731.png).
+On the TX16S MK3: [valid FC status from ELRS MAVLink](images/screenshots/apmon-color-tx16s-mk3-setup-check-fc-status-en-v0.9.0-2026-11-23-092313.png).
 
 ### Diagnostic report
 
@@ -491,12 +524,29 @@ and **ENTER** on SW, or tap the buttons on COLOR. Confirm **Without FC text**
 to write `/APMon-report.txt` to the SD card. A new report replaces the old one.
 APMon displays the path on success or a write error on failure.
 
+| GX15 with v0.9.0: Export confirmation | Report saved |
+| --- | --- |
+| ![Diagnostic report confirmation with Without FC text selected](images/screenshots/apmon-color-gx15-report-confirm-en-v0.9.0-2026-11-23-091126.png) | ![Diagnostic report saved to /APMon-report.txt](images/screenshots/apmon-color-gx15-report-saved-en-v0.9.0-2026-11-23-091247.png) |
+
+| GX12 with v0.9.0: Export confirmation | Report saved |
+| --- | --- |
+| <img src="images/screenshots/apmon-sw-gx12-report-confirm-en-v0.9.0-2026-11-23-091722.png" width="384" alt="GX12 report confirmation with Without FC text selected"> | <img src="images/screenshots/apmon-sw-gx12-report-saved-en-v0.9.0-2026-11-23-091725.png" width="384" alt="GX12 confirmation that /APMon-report.txt was saved"> |
+
+On the TX16S MK3: [export confirmation without FC text](images/screenshots/apmon-color-tx16s-mk3-report-confirm-en-v0.9.0-2026-11-23-092259.png)
+and [save result](images/screenshots/apmon-color-tx16s-mk3-report-saved-en-v0.9.0-2026-11-23-092301.png).
+
 The report contains the APMon and EdgeTX versions, configured sensor names and
 detected sources with their validity, FC status and its age, and the severity,
-age and repeat count of up to eight recent FC messages. It contains no sensor
+age and repeat count of up to eight recent FC messages. **Radio time** is the
+local date and time at confirmation (`YYYY-MM-DD HH:MM:SS`). If the radio does
+not provide a valid calendar date and time in 2020–2099, the report says
+**Unavailable**. A plausible time is not proof that the clock is synchronized.
+The report contains no sensor
 values or GPS coordinates from sensors. **Include FC text** is a separate
 choice for each export. FC text can itself contain location data. Review the
 report before sharing it. There is no background logging or automatic upload.
+
+[Confirmation with the optional FC text selected](images/screenshots/apmon-color-gx15-report-confirm-fc-text-en-v0.9.0-2026-11-23-091246.png).
 
 ### Post-disarm summary
 

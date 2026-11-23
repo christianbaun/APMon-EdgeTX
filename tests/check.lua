@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 0.8.0
+-- Project version: 0.9.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -854,7 +854,7 @@ for i = 1, 3 do monoDiag.run(EVT_ROT_LEFT) end
 assert(drawOf('Telemetry diagnostics', 49).flags & INVERS ~= 0)
 monoDiag.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Telemetry diagnostics', 1) and drawOf('98 %', 11) and drawOf('4/16 valid', 19))
-assert(drawOf('Valid 0s', 27) and drawOf('Not found: VSpd', 42))
+assert(drawOf('Valid 0s', 27) and drawOf('Setup check', 57))
 monoDiag.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Sensors', 1) and drawOf('Alt', 11) and drawOf('7.5 m', 43))
 data.Alt.current = false
@@ -881,7 +881,7 @@ monoDE.run(EVT_VIRTUAL_ENTER)
 for i = 1, 3 do monoDE.run(EVT_ROT_LEFT) end
 monoDE.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Telemetrie-Diagnose', 1) and drawOf('3/16 gueltig', 19) and drawOf('API fehlt', 27))
-assert(drawOf('Bericht speichern', 57))
+assert(drawOf('Bericht speichern', 50))
 getGeneralSettings, io = nil, sdIO
 
 local diagWidget = loadScript('/WIDGETS/APMon/main.lua')()
@@ -1316,7 +1316,7 @@ do
   data = {GPS={value={lat=0,lon=0}}, Sats={value=12}, Hdg={value=0}, Yaw={value=2}}
   local function check(lat, lon, fix, sats, course, live, age)
     monitor:sample(true)
-    local rows, actualLive, actualAge = monitor:gpsDetails()
+    local rows, actualLive, actualAge = loadScript('/SCRIPTS/APMON/gps_details.lua')()(monitor)
     for i, expected in ipairs({lat, lon, fix, sats, course}) do
       assert(rows[i][2] == expected, rows[i][1] .. ': ' .. rows[i][2] .. ' instead of ' .. expected)
     end
@@ -1456,6 +1456,7 @@ do
   local path = '/APMon-report.txt'
   local opens, closes, body, failure, preference = 0, 0, nil, nil, nil
   local originalIO, originalFstat, originalVersion = io, fstat, getVersion
+  local originalClock = getDateTime
   local reportFile, prefs = {}, {}
   io = {
     open = function(name, mode)
@@ -1483,6 +1484,7 @@ do
     end,
   }
   getVersion = function() return '2.12.5', 'test-radio' end
+  getDateTime = function() return {year=2028, mon=2, day=29, hour=12, min=34, sec=56} end
   fstat = function(name)
     assert(name == path)
     return {size = failure == 'size' and #body - 1 or #body}
@@ -1500,6 +1502,7 @@ do
   local function has(text) return body and string.find(body, text, 1, true) end
   local function verify(en, full)
     assert(has('APMon ' .. versionLabel) and has('EdgeTX: 2.12.5 (test-radio)'))
+    assert(has((en and 'Radio time: ' or 'Senderzeit: ') .. '2028-02-29 12:34:56'))
     assert(has(en and 'Mapping / Detected / Status' or 'Zuordnung / Erkannt / Status'))
     assert(has(en and 'gps: GPS / GPS / Valid' or 'gps: GPS / GPS / Gültig'))
     assert(has(en and 'current: Curr / -- / Not found' or 'current: Curr / -- / Nicht gefunden'))
@@ -1517,7 +1520,7 @@ do
       for i = 1, 3 do sw.run(EVT_ROT_LEFT) end
       sw.run(EVT_VIRTUAL_ENTER)
       sw.run(EVT_ROT_RIGHT)
-      assert(drawOf(en and 'Save report' or 'Bericht speichern', 57).flags & INVERS ~= 0)
+      assert(drawOf(en and 'Save report' or 'Bericht speichern', 50).flags & INVERS ~= 0)
     end
     local before = opens
     menu()
@@ -1588,7 +1591,58 @@ do
   assert(has('current: Missing, Curr / Curr / Gültig'))
   assert(has('Report message 10') and has('Report message 3') and not has('Report message 2'))
   assert(not has('[ARMED]') and not has('7.25'))
+  for _, date in ipairs({
+    {year=2027,mon=2,day=29,hour=12,min=0,sec=0},
+    {year=2028,mon=4,day=31,hour=12,min=0,sec=0},
+    {year=2000,mon=1,day=1,hour=0,min=0,sec=0},
+    {year=2028,mon=1,day=1,hour=24,min=0,sec=0},
+    {year=2028,mon=1,day=1,hour=0,min=0.5,sec=0},
+    {year=2028,mon=1,day=1,hour=0,min=0,sec=60},
+    {year=2028,mon=1,day=1,hour=0,min=0},
+    'not a date',
+    false,
+  }) do
+    getDateTime = date and function() return date end or nil
+    local time = loadScript('/SCRIPTS/APMON/report_time.lua')()
+    assert(time == nil)
+    assert(loadScript('/SCRIPTS/APMON/diagnostic_report.lua')(
+      path, versionLabel, cfg, mon, rx, function(key) return key end, false, time))
+    assert(has('Senderzeit: Nicht verfügbar') and not has('2028-02-29'))
+  end
+  getDateTime = originalClock
   io, fstat, getVersion = originalIO, originalFstat, originalVersion
+end
+
+do
+  local setup = loadScript('/SCRIPTS/APMON/setup_check.lua')()
+  local rx = loadScript('/SCRIPTS/APMON/pass.lua')(4)
+  local mon = {sources={gps={name='GPS',state='valid'}, current={name='Curr',state='invalid'}}}
+  local function check(index, title, status, source, tip, sourceLabel)
+    local a,b,c,d,e = setup.check(index, mon, rx)
+    assert(a == title and b == status and c == source and d == tip)
+    if sourceLabel then assert(e == sourceLabel) end
+  end
+  crossfireTelemetryPop = function() end
+  check(1, 'RC-Link', 'Nicht konfiguriert', nil, 'config.lua prüfen')
+  check(2, 'FC-Status', 'Nicht empfangen', 'ELRS MAVLink', 'ELRS MAVLink prüfen')
+  check(3, 'GPS-Koordinaten', 'Gültig', 'GPS', 'Fixtyp fehlt noch', 'Quelle:')
+  check(4, 'GPS-Fixtyp', 'Nicht empfangen', 'ELRS MAVLink', 'ELRS MAVLink prüfen')
+  check(6, 'Stromsensor', 'Ungültig', 'Curr', 'Quelle/Einheit prüfen', 'Quelle:')
+  mon.sources.current.state = 'stale'
+  check(6, 'Stromsensor', 'Veraltet', 'Curr', 'Auf neue Werte warten')
+  mon.sources.current.state = 'missing'
+  check(6, 'Stromsensor', 'Nicht gefunden', 'Curr', 'Sensoren neu suchen', 'Konfiguriert:')
+  mon.sources.current.state = 'noapi'
+  check(6, 'Stromsensor', 'API fehlt', 'Curr', 'EdgeTX-Version prüfen', 'Konfiguriert:')
+  rx.decode(0x80, single(0x5002, 16), now)
+  check(4, 'GPS-Fixtyp', 'Kein Fix', 'ELRS MAVLink', 'Auf GPS-Fix warten')
+  rx.decode(0x80, single(0x5002, 48), now)
+  check(4, 'GPS-Fixtyp', '3D', 'ELRS MAVLink', nil)
+  check(3, 'GPS-Koordinaten', 'Gültig', 'GPS', nil, 'Quelle:')
+  now = now + 301
+  check(4, 'GPS-Fixtyp', 'Veraltet', 'ELRS MAVLink', 'ELRS MAVLink prüfen')
+  crossfireTelemetryPop = nil
+  check(2, 'FC-Status', 'API fehlt', 'ELRS MAVLink', 'EdgeTX-Version prüfen')
 end
 do
   local rx = loadScript('/SCRIPTS/APMON/pass.lua')(4, nil, true)
@@ -1649,4 +1703,4 @@ for _, spec in ipairs({{440,252,2}, {480,320,1}, {800,480,2}}) do
   frame(nil)
   assert(drawOf('APMon', 8) and not drawOf(shortcut)) -- no misleading touch target outside fullscreen
 end
-print('OK: sensors, GPS, armed-summary gaps, diagnostic reports, FC warning shortcut, layouts, bilingual UI, restricted mono Lua')
+print('OK: sensors, GPS, armed-summary gaps, dated diagnostic reports, setup check, FC warnings, bilingual UI, restricted mono Lua')

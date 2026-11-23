@@ -71,7 +71,7 @@ lcd = {
 }
 Bitmap = {open = function(path) return assert(path == '/WIDGETS/APMon/logo.png') end}
 getTime = function() return clock end
-getDateTime = function() return {hour=12,min=34} end
+getDateTime = function() return {year=2026,mon=11,day=23,hour=12,min=34,sec=56} end
 getVersion = function() return '2.12.5', 'host-simulator' end
 getGeneralSettings = function() return {language='DE'} end
 getFieldInfo = function(name) if data[name] then return {id=name} end end
@@ -234,9 +234,32 @@ openMenu()
 choose(4, 'Telemetry diagnostics', 'Telemetrie-Diagnose')
 expect('Telemetry diagnostics', 'Telemetrie-Diagnose')
 frame('Check the telemetry sources', 'Telemetriequellen prüfen')
+if color then tap('Setup check','Einrichtungscheck') else render(prev); render(enter) end
+expect('Setup check', 'Einrichtungscheck')
+if color then tap('Next','Weitere'); tap('Next','Weitere')
+else render(nextEvent); render(nextEvent) end
+expect('GPS coordinates', 'GPS-Koordinaten')
+expect('Valid', 'Gültig')
+frame('GPS coordinates are available', 'GPS-Koordinaten sind verfügbar')
+tick(100, packet(0x5001,0))
+if color then tap('Next','Weitere') else render(nextEvent) end
+expect('GPS fix type', 'GPS-Fixtyp')
+expect('Stale', 'Veraltet')
+expect('Check ELRS MAVLink', 'ELRS MAVLink prüfen')
+frame('The FC fix type is checked separately', 'Der FC-Fixtyp wird getrennt geprüft')
+data.Curr = {-1}
+tick(20)
+if color then tap('Next','Weitere'); tap('Next','Weitere')
+else render(nextEvent); render(nextEvent) end
+expect('Current sensor', 'Stromsensor')
+expect('Invalid', 'Ungültig')
+expect('Check source and unit', 'Quelle/Einheit prüfen')
+frame('Invalid readings have a setup hint', 'Ungültige Werte mit Einrichtungshinweis')
+data.Curr = nil
+render(exit)
 if color then tap('Save report','Bericht speichern')
 else
-  render(nextEvent)
+  render(prev)
   frame('Select Save report', 'Bericht speichern auswählen', 1000)
   render(enter)
 end
@@ -247,6 +270,7 @@ render(enter)
 expect('Report saved','Bericht gespeichert')
 expect(reportPath)
 assert(string.find(sd[reportPath], 'S4 | ', 1, true))
+assert(string.find(sd[reportPath], localize('Radio time:', 'Senderzeit:') .. ' 2026-11-23 12:34:56', 1, true))
 for _, secret in ipairs({'0.123456','-0.654321','Battery warning'}) do
   assert(not string.find(sd[reportPath], secret, 1, true), 'sensitive data in default report')
 end

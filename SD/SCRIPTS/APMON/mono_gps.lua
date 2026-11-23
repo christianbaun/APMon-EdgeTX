@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/mono_gps.lua
 -- Purpose: Draw the SW GPS detail page on demand.
--- Project version: 0.8.0
+-- Project version: 0.9.0
 -- Updated: 2026-11-22
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -14,7 +14,7 @@
 local ui = ...
 return function(_, width, _, text)
   local right = width - 2
-  local rows, live, age = ui.monitor:gpsDetails()
+  local rows, live, age = ui.gpsDetails(ui.monitor)
   ui.header(width, ui.tr('GPS-Details'))
   text(10, live and 'Live' or ui.tr('Nicht live'), not live)
   if age then ui.rightText(right, 10, string.format(ui.tr('vor %ds'), age), ui.small) end

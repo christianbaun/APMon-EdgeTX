@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/pass.lua
 -- Purpose: Decode ELRS ArduPilot passthrough frames, status text and data freshness.
--- Project version: 0.8.0
+-- Project version: 0.9.0
 -- Updated: 2026-11-21
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -35,7 +35,7 @@ local function mark(armed, now)
   order = order + 1
   markerHead = markerHead % markerCapacity + 1
   markerCount = math.min(markerCount + 1, markerCapacity)
-  markers[markerHead] = { armed = armed, time = now, order = order }
+  markers[markerHead] = { order, armed = armed, time = now }
 end
 -- Merge references, not copies. Markers do not consume any of the FC text slots.
 function M.timeline(list, warnings)
@@ -45,7 +45,7 @@ function M.timeline(list, warnings)
   while i <= count or j <= markerCount do
     local message = i <= count and at(i)
     local marker = j <= markerCount and markers[(markerHead - j) % markerCapacity + 1]
-    if marker and (not message or marker.order > message.order) then
+    if marker and (not message or marker[1] > message[1]) then
       n, j = n + 1, j + 1
       list[n] = marker
     else
@@ -69,13 +69,14 @@ function M.timelineIndex(list, selected)
 end
 local function remember(value, severity, now)
   local latest = M.message
-  if latest and latest.order == order and latest.value == value and latest.severity == severity then
+  if latest and latest[1] == order and latest.value == value and latest.severity == severity then
     latest.time, latest.repeats = now, latest.repeats + 1
   else
     head = head % capacity + 1
     count = math.min(count + 1, capacity)
     order = order + 1
-    M.message = { value = value, time = now, severity = severity, repeats = 1, order = order }
+    -- The sequence number occupies an array slot, avoiding a larger hash part on SW.
+    M.message = { order, value = value, time = now, severity = severity, repeats = 1 }
     log[head] = M.message
   end
 end
