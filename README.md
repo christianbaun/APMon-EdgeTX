@@ -255,7 +255,22 @@ Do not add an enclosing package directory:
 2. Under **Model → Display**, set a telemetry screen to **Script → APMon**.
 3. Open the telemetry view.
 
-Run APMon as a telemetry screen, not as a one-time tool from the SD-card browser.
+### Start APMon from SYS → Tools
+
+Both the SW and COLOR packages add **APMon** to the EdgeTX **SYS → Tools**
+menu. Open the intended model first, then select **APMon** under **Tools**.
+No telemetry screen or widget needs to be configured for this launch.
+Use **RTN** to go back and press it on the dashboard to close the tool.
+On COLOR, the tool opens directly at full size without entering widget full screen.
+
+Use this entry for bench checks, not during flight. EdgeTX suspends other
+Lua scripts while the tool is open, including Lua mixer scripts. The tool
+starts with its own message history and armed summary. For monitoring in
+the background, use the model's telemetry screen on SW or widget on COLOR.
+On SW, EdgeTX reloads the model's Lua scripts after the tool closes, so
+the telemetry screen's previous in-memory history and armed summary are lost.
+On COLOR, language and clock changes in the tool apply only until it closes
+and do not change the widget settings.
 
 ### Automated deployment on Linux
 
@@ -731,7 +746,7 @@ FC restart.
 
 | Problem | What to check |
 | --- | --- |
-| APMon is missing from the selection | Verify SD layout and restart. SW: `/SCRIPTS/TELEMETRY/APMon.lua`. COLOR: `/WIDGETS/APMon/main.lua`. |
+| APMon is missing from the selection | Verify SD layout and restart. Tools: `/SCRIPTS/TOOLS/APMon.lua`. SW telemetry screen: `/SCRIPTS/TELEMETRY/APMon.lua`. COLOR widget: `/WIDGETS/APMon/main.lua`. |
 | Module load error | Install the complete matching package, not just its main file. Remove old APMon `.luac` files. |
 | SW reports `not enough memory` | Install the complete latest SW package, remove old APMon `.luac` files and restart the radio. If it still happens, temporarily disable other Lua scripts in the model and retest. |
 | Only mode and RC link quality work | Check EdgeTX's Telemetry screen first. If readings are absent there too, investigate the upstream telemetry path. |
@@ -770,6 +785,7 @@ EdgeTX API values and validity flags. It does not decode a full MAVLink stream.
 ```text
 SD/SCRIPTS/APMON/        Shared adapter, passthrough, sensor configuration, languages
 SD/SCRIPTS/TELEMETRY/    Monochrome application and APDiag
+SD/SCRIPTS/TOOLS/        SYS → Tools launcher for both display types
 SD/WIDGETS/APMon/        Color LCD widget
 tests/                  Lua regression tests and deployment tests
 deploy.py               SD-card deployment preview and installation

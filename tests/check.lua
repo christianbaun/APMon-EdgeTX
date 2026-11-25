@@ -379,6 +379,24 @@ local function colorFrame(w, event, x, y)
   calls, draws, rectangles, bitmaps = {}, {}, {}, {}
   widget.refresh(w, event, x and {x=x,y=y})
 end
+do
+  local widgetBitmapLoads = bitmapLoads
+  local tool = loadScript('/SCRIPTS/TOOLS/APMon.lua')()
+  local function frame(event, touch)
+    calls, draws, rectangles, bitmaps = {}, {}, {}, {}
+    return tool.run(event, touch)
+  end
+  assert(tool.background == nil)
+  assert(frame(0) == 0 and drawOf('1/2') and drawOf('15.50 V'))
+  assert(frame(EVT_VIRTUAL_NEXT) == 0 and drawOf('2/2') and drawOf('HUD'))
+  local menu = assert(drawOf('Menu'))
+  assert(frame(EVT_TOUCH_TAP, {x=menu.x, y=menu.y}) == 0 and drawOf('FC messages'))
+  assert(frame(EVT_VIRTUAL_EXIT) == 0 and drawOf('2/2'))
+  assert(frame(EVT_VIRTUAL_EXIT) == 0 and drawOf('1/2'))
+  assert(frame(EVT_VIRTUAL_EXIT) == 1)
+  assert(bitmapLoads == widgetBitmapLoads + 1)
+  bitmapLoads = widgetBitmapLoads
+end
 local function assertColorClock(time, font)
   local title, shown, logo = assert(drawOf('APMon')), assert(drawOf(time)), assert(bitmaps[1])
   local header = rectangles[2]
@@ -852,6 +870,25 @@ restrictedMono.run(EVT_ROT_RIGHT)
 restrictedMono.run(EVT_VIRTUAL_ENTER)
 restrictedMono.run(EVT_VIRTUAL_ENTER)
 assert(string.find(table.concat(calls,'|'),'Using EKF Source Set 1',1,true))
+
+-- The SYS Tools entry uses the same screens but exits only at the dashboard.
+do
+  local toolPath = '/SCRIPTS/TOOLS/APMon.lua'
+  restricted.lcd = setmetatable({}, {__index = function(_, key)
+    if key ~= 'RGB' then return lcd[key] end -- Only the real COLOR LCD API has RGB.
+  end})
+  local tool = restricted.loadScript(toolPath)()
+  restricted.lcd = nil
+  assert(tool.background == nil and type(restrictedMono.background) == 'function')
+  assert(tool.run(0) == 0 and drawOf('1/3') and not drawOf('ARMED'))
+  assert(tool.run(EVT_ROT_RIGHT) == 0 and drawOf('2/3'))
+  assert(tool.run(EVT_ROT_RIGHT) == 0 and drawOf('3/3'))
+  assert(tool.run(EVT_VIRTUAL_ENTER) == 0)
+  assertMonoMenu('Language: English', 'FC messages')
+  assert(tool.run(EVT_VIRTUAL_EXIT) == 0 and drawOf('3/3'))
+  assert(tool.run(EVT_VIRTUAL_EXIT) == 1)
+  assert(restrictedMono.run(EVT_VIRTUAL_EXIT) == 0)
+end
 
 -- Shared diagnostics: an invalid alias must not hide a valid fallback. A cached
 -- value is shown only for its own sensor name and never becomes a live reading.

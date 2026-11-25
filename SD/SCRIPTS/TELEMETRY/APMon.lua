@@ -12,6 +12,7 @@
 -- =============================================================================
 
 -- GX12 / Boxer: 128x64 telemetry application, classic EdgeTX 2.x LCD API.
+local standalone = ... == true -- Set only by the SYS → Tools launcher.
 local function reclaim()
   if type(collectgarbage) == 'function' then pcall(collectgarbage, 'collect') end
 end
@@ -245,11 +246,12 @@ local function loadTools(isDiagnostics)
 end
 local function background() monitor:sample() end
 local function run(event)
+  local exitEvent = match(event, EVT_VIRTUAL_EXIT or EVT_EXIT_BREAK)
+  if standalone and view == 'data' and exitEvent then return 1 end
   monitor:sample()
   local nextEvent = match(event, EVT_VIRTUAL_NEXT, EVT_PLUS_FIRST, EVT_ROT_RIGHT)
   local prevEvent = match(event, EVT_VIRTUAL_PREV, EVT_MINUS_FIRST, EVT_ROT_LEFT)
   local enterEvent = match(event, EVT_VIRTUAL_ENTER or EVT_ENTER_BREAK or EVT_ENTER_FIRST)
-  local exitEvent = match(event, EVT_VIRTUAL_EXIT or EVT_EXIT_BREAK)
   local step = nextEvent and 1 or prevEvent and -1 or 0
   if view == 'summary' then
     if exitEvent then view = 'menu'
@@ -494,4 +496,4 @@ local function run(event)
   end
   return 0
 end
-return { run = run, background = background }
+return { run = run, background = not standalone and background or nil }

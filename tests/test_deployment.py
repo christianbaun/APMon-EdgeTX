@@ -23,6 +23,8 @@ from zipfile import ZipFile
 import deploy
 from package_sd import COLOR_LOGO, SD_VERSION, SW_TOOLS, build_all, files_for, source_for
 
+SYS_TOOL = Path('SCRIPTS/TOOLS/APMon.lua')
+
 
 class DeploymentTests(unittest.TestCase):
     def test_display_file_sets(self):
@@ -33,6 +35,9 @@ class DeploymentTests(unittest.TestCase):
                   Path('SCRIPTS/APMON/project.lua'), SD_VERSION}
         self.assertTrue(shared <= sw & color)
         self.assertIn(Path('SCRIPTS/TELEMETRY/APMon.lua'), sw)
+        self.assertIn(SYS_TOOL, sw)
+        self.assertIn(SYS_TOOL, color)
+        self.assertIn(b'TNS|APMon|TNE', source_for(SYS_TOOL).read_bytes()[:1024])
         self.assertNotIn(Path('WIDGETS/APMon/main.lua'), sw)
         self.assertIn(Path('WIDGETS/APMon/main.lua'), color)
         self.assertIn(COLOR_LOGO, color)
@@ -48,10 +53,12 @@ class DeploymentTests(unittest.TestCase):
             output = Path(tmp)
             build_all(output)
             with ZipFile(output / 'APMon-COLOR.zip') as archive:
+                self.assertEqual(archive.read(SYS_TOOL.as_posix()), source_for(SYS_TOOL).read_bytes())
                 self.assertEqual(archive.read(SD_VERSION.as_posix()), (deploy.ROOT / 'VERSION').read_bytes())
                 self.assertEqual(archive.read(COLOR_LOGO.as_posix()),
                                  (deploy.ROOT / 'SD' / COLOR_LOGO).read_bytes())
             with ZipFile(output / 'APMon-SW.zip') as archive:
+                self.assertEqual(archive.read(SYS_TOOL.as_posix()), source_for(SYS_TOOL).read_bytes())
                 self.assertEqual(archive.read(SD_VERSION.as_posix()), (deploy.ROOT / 'VERSION').read_bytes())
                 self.assertNotIn(COLOR_LOGO.as_posix(), archive.namelist())
 

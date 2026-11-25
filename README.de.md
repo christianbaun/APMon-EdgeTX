@@ -264,8 +264,24 @@ WIDGETS/                   # nur im COLOR-Paket
    **Script → APMon** einstellen.
 3. Die Telemetrieansicht öffnen.
 
-APMon wird als Telemetrieskript verwendet, nicht als einmaliges Werkzeug
-über den SD-Karten-Browser gestartet.
+### APMon über SYS → Tools starten
+
+Beide Pakete, SW und COLOR, ergänzen **APMon** im EdgeTX-Menü **SYS → Tools**.
+Zuerst das gewünschte Modell öffnen, dann unter **Tools** den Eintrag
+**APMon** wählen. Dafür muss weder eine Telemetrieseite noch ein Widget
+eingerichtet sein. **RTN** geht zurück und schließt das Tool auf der
+Übersicht. Auf COLOR nutzt das Tool direkt die gesamte Anzeige, ohne in den
+Vollbildmodus eines Widgets zu wechseln.
+
+Diesen Einstieg für Tests am Boden verwenden, nicht im Flug. EdgeTX setzt
+währenddessen andere Lua-Skripte aus, darunter auch Lua-Mischerskripte.
+Das Tool startet mit eigenem Meldungsverlauf und eigener Armed-Bilanz. Für
+die Erfassung im Hintergrund die Telemetrieseite des Modells auf SW oder
+das Widget auf COLOR verwenden. Auf SW lädt EdgeTX die Lua-Skripte des
+Modells nach dem Schließen neu. Der bisherige Meldungsverlauf und die
+Armed-Bilanz der Telemetrieseite gehen dabei verloren. Änderungen an Sprache
+und Uhr gelten im COLOR-Tool nur bis zum Schließen und ändern keine
+Widget-Einstellungen.
 
 ### Automatisches Deployment unter Linux
 
@@ -753,7 +769,7 @@ Quellensatz noch aktiv ist, insbesondere nach einem FC-Neustart.
 
 | Problem | Prüfung |
 | --- | --- |
-| APMon fehlt in der Auswahl | Paketstruktur prüfen und Sender neu starten. SW: `/SCRIPTS/TELEMETRY/APMon.lua`. COLOR: `/WIDGETS/APMon/main.lua`. |
+| APMon fehlt in der Auswahl | Paketstruktur prüfen und Sender neu starten. Tools: `/SCRIPTS/TOOLS/APMon.lua`. SW-Telemetrieseite: `/SCRIPTS/TELEMETRY/APMon.lua`. COLOR-Widget: `/WIDGETS/APMon/main.lua`. |
 | Fehler beim Laden eines Moduls | Gesamtes passendes Paket installieren, nicht nur die Hauptdatei. Alte APMon-`.luac`-Dateien entfernen. |
 | SW meldet `not enough memory` | Aktuelles SW-Paket vollständig installieren, alte APMon-`.luac`-Dateien entfernen und den Sender neu starten. Tritt die Meldung weiter auf, andere Lua-Skripte im Modell vorübergehend deaktivieren und erneut testen. |
 | Nur Modus und RC-Linkqualität kommen an | Zuerst Werte in EdgeTX → Telemetrie prüfen. Fehlen sie dort ebenfalls, liegt das Problem vor APMon. |
@@ -797,6 +813,7 @@ keine Anfragen und ersetzt keine MAVLink-Diagnose.
 ```text
 SD/SCRIPTS/APMON/        Gemeinsamer Adapter, Passthrough, Konfiguration, Sprachen
 SD/SCRIPTS/TELEMETRY/    Schwarzweiß-Anwendung und APDiag
+SD/SCRIPTS/TOOLS/        Einstieg über SYS → Tools für beide Displaytypen
 SD/WIDGETS/APMon/        Farbwidget
 tests/                  Simulierte EdgeTX-APIs und Lua-Testläufe
 deploy.py               Vorschau und Deployment auf eine eingebundene SD-Karte
