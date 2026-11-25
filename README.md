@@ -41,7 +41,7 @@ See the compatibility section for the current validation status.
 
 | Package | Display / interface | Reference radios |
 | --- | --- | --- |
-| [APMon-SW.zip](APMon-SW.zip) | Telemetry script with Overview, Flight and HUD pages for 128 × 64 monochrome displays | RadioMaster GX12, Boxer |
+| [APMon-SW.zip](APMon-SW.zip) | Telemetry script with Overview, Flight and HUD pages for 128 × 64 monochrome displays | RadioMaster GX12, Zorro, Boxer |
 | [APMon-COLOR.zip](APMon-COLOR.zip) | Dashboard widget for color displays (minimum zone 440 × 252) | RadioMaster GX15 and TX15 (480 × 320), TX16S MK3 (800 × 480) |
 
 **SW** means *Schwarzweiß* (German for monochrome). Choose the package and
@@ -52,7 +52,7 @@ does not mean the hardware has been tested.
 
 ## Screenshots
 
-Actual captures from the GX12, GX15 and TX16S MK3. The readings show the
+Actual captures from the GX12, Zorro, GX15 and TX16S MK3. The readings show the
 captured state and are not an indication of flight readiness.
 
 **Monochrome — GX12 (128 × 64, APMon v1.0.0)**
@@ -73,6 +73,16 @@ More GX12 captures: [HUD](#hud), [FC message filter](#radio-clock-and-fc-message
 [Setup check](#telemetry-setup-check),
 [Diagnostic report](#diagnostic-report), and
 [Post-disarm summary](#post-disarm-summary).
+
+**Monochrome — RadioMaster Zorro (128 × 64, APMon v1.0.0)**
+
+| Overview (1/3) | HUD (3/3) |
+| --- | --- |
+| <img src="images/screenshots/apmon-sw-zorro-overview-en-v1.0.0-2026-11-25-204157.png" width="384" alt="Zorro overview with live battery and a 3D GPS fix"> | <img src="images/screenshots/apmon-sw-zorro-hud-level-en-v1.0.0-2026-11-25-204201.png" width="384" alt="Zorro HUD with live roll, pitch and battery readings"> |
+
+Also see [Flight data (2/3)](images/screenshots/apmon-sw-zorro-flight-en-v1.0.0-2026-11-25-204159.png),
+the [project menu](images/screenshots/apmon-sw-zorro-menu-en-v1.0.0-2026-11-25-204204.png) and the
+[Zorro setup examples in the Wiki](https://github.com/christianbaun/APMon-EdgeTX/wiki/Installation-and-Telemetry-EN).
 
 **Color display — GX15 (480 × 320, APMon v1.0.0)**
 
@@ -169,14 +179,15 @@ SW is designed for 128 × 64 pixels. COLOR needs a widget zone of at least
 440 × 252 pixels. Other resolutions, key mappings, memory budgets and firmware
 versions require separate testing.
 
-| Radio | Versions |
+| Radio (display type, resolution) | Versions |
 | --- | --- |
-| GX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
-| TX15 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
-| TX16S MK3 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
-| GX12 | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
-| Boxer | Hardware testing pending |
-| Other radios | Hardware testing pending |
+| GX15 (color, 480 × 320) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
+| TX15 (color, 480 × 320) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
+| TX16S MK3 (color, 800 × 480) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
+| GX12 (monochrome, 128 × 64) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
+| RadioMaster Zorro (monochrome, 128 × 64) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
+| Boxer (monochrome, 128 × 64) | Hardware testing pending |
+| Other radios (varies by model) | Hardware testing pending |
 
 For the complete feature set, you need:
 
@@ -273,6 +284,8 @@ On SW, EdgeTX reloads the model's Lua scripts after the tool closes, so
 the telemetry screen's previous in-memory history and armed summary are lost.
 On COLOR, language and clock changes in the tool apply only until it closes
 and do not change the widget settings.
+
+<img src="images/screenshots/edgetx-sw-zorro-tools-en-2026-11-25-112609.png" width="384" alt="APMon selected in the EdgeTX Tools list on a RadioMaster Zorro">
 
 ### Automated deployment on Linux
 
@@ -514,6 +527,8 @@ at once. Scroll past **Last armed period** for **GPS details**, then press
 
 *GX12 and GX15 captures are from APMon 0.6.0. Coordinates are masked in all three screenshots.*
 
+[RadioMaster Zorro with APMon v1.0.0: GPS details with coordinates masked](images/screenshots/apmon-sw-zorro-gps-masked-en-v1.0.0-2026-11-25-204232.png).
+
 Coordinates are shown in decimal degrees. APMon needs a fresh, valid `GPS`
 reading and a confirmed position fix to show **Live**. To avoid flicker
 between updates, **Live** can persist for up to 1.5 seconds after the last
@@ -583,6 +598,10 @@ source for the summary automatically.
 | <img src="images/screenshots/apmon-sw-gx12-setup-check-en-v0.9.0-2026-11-23-091740.png" width="384" alt="GX12 setup check showing a 3D GPS fix from ELRS MAVLink"> | ![GX15 setup check advising the user to wait for a GPS fix](images/screenshots/apmon-color-gx15-setup-check-en-v0.9.0-2026-11-23-091150.png) |
 
 [GX12 telemetry diagnostics with Setup check selected](images/screenshots/apmon-sw-gx12-diagnostics-en-v0.9.0-2026-11-23-091731.png).
+
+| RadioMaster Zorro with v1.0.0: Telemetry diagnostics | Setup check for RC link |
+| --- | --- |
+| <img src="images/screenshots/apmon-sw-zorro-diagnostics-en-v1.0.0-2026-11-25-204212.png" width="384" alt="Zorro diagnostics with 15 of 16 sensors valid and a fresh FC status"> | <img src="images/screenshots/apmon-sw-zorro-setup-check-rc-link-en-v1.0.0-2026-11-25-204226.png" width="384" alt="Zorro setup check showing RQly as both the configured and accepted RC link source"> |
 On the TX16S MK3: [valid FC status from ELRS MAVLink](images/screenshots/apmon-color-tx16s-mk3-setup-check-fc-status-en-v0.9.0-2026-11-23-092313.png).
 
 ### Diagnostic report
