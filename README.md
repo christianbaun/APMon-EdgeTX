@@ -229,9 +229,11 @@ SCRIPTS/
 │   ├── project.lua
 │   ├── VERSION
 │   └── LICENSE.txt
-└── TELEMETRY/             # SW package only
-    ├── APMon.lua
-    └── APDiag.lua
+├── TELEMETRY/             # SW package only
+│   ├── APMon.lua
+│   └── APDiag.lua
+└── TOOLS/                 # both packages
+    └── APMon.lua          # SYS → Tools launcher
 WIDGETS/                   # COLOR package only
 └── APMon/
     ├── main.lua
