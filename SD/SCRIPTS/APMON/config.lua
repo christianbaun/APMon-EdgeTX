@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/config.lua
 -- Purpose: Define sensor names, units, conversion factors and value validation limits.
--- Project version: 1.0.0
--- Updated: 2026-11-20
+-- Project version: 1.1.0
+-- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -33,7 +33,8 @@ return {
     gps = { names = { 'GPS' }, gps = true },
     -- CRSF attitude sensors use radians; convert the default unit to degrees.
     roll = { names = { 'Roll' }, unit = 'deg', decimals = 1, scale = 180 / math.pi },
-    pitch = { names = { 'Ptch' }, unit = 'deg', decimals = 1, scale = 180 / math.pi },
+    -- Betaflight CRSF pitch is nose-down positive. The HUD uses nose-up positive.
+    pitch = { names = { 'Ptch' }, unit = 'deg', decimals = 1, scale = 180 / math.pi, betaflightScale = -1 },
     yaw = { names = { 'Yaw' }, unit = 'deg', decimals = 1, scale = 180 / math.pi },
     -- Assign only verified sensors. GPS position/satellite count do not prove fix.
     ground = { names = {}, unit = 'm', decimals = 1, min = 0 },

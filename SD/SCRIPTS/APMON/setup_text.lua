@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- Setup-only translations. Compile this catalogue separately on SW.
--- Project version: 1.0.0
+-- Project version: 1.1.0
 local english = [[
 
 GPS-Koordinaten|GPS coordinates
@@ -19,6 +19,8 @@ GPS am FC prüfen|Check GPS on the FC
 Auf GPS-Fix warten|Wait for GPS fix
 Konfiguriert:|Configured:
 Fixtyp fehlt noch|Fix type not received
+Nicht bestätigt|Unconfirmed
+Kein bestätigter Fix|No verified GPS fix
 Erkannt:|Detected:
 Höhe zuordnen|Map relative altitude
 Relative Höhe|Relative altitude

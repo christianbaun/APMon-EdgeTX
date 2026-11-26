@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/diagnostic_report.lua
 -- Purpose: Write a one-shot diagnostic snapshot to the radio's SD card.
--- Project version: 1.0.0
--- Updated: 2026-11-22
+-- Project version: 1.1.0
+-- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -35,10 +35,15 @@ local function writeReport(file)
     if ok then firmware, radio = sw, hw end
   end
   line('APMon ' .. version .. ' | ' .. tr('Diagnosebericht'))
+  line(tr('Flugcontroller') .. ': ' .. (monitor.betaflight and 'Betaflight' or 'ArduPilot'))
   line('EdgeTX: ' .. clean(firmware) .. ' (' .. clean(radio) .. ')')
   line(tr('Senderzeit') .. ': ' .. (senderTime or tr('Nicht verfügbar')))
-  local fc, fcAge = receiver.status('armed')
-  line(tr('FC-Status (Passthrough)') .. ': ' .. tr(states[fc]) .. ' / ' .. age(fcAge))
+  if monitor.betaflight then
+    line(tr('FC-Status (Passthrough)') .. ': ' .. tr('Nicht verfügbar'))
+  else
+    local fc, fcAge = receiver.status('armed')
+    line(tr('FC-Status (Passthrough)') .. ': ' .. tr(states[fc]) .. ' / ' .. age(fcAge))
+  end
   line('')
   line(tr('Sensoren') .. ': ' .. tr('Zuordnung / Erkannt / Status'))
   for _, entry in ipairs(monitor.sensorList) do
@@ -50,6 +55,10 @@ local function writeReport(file)
     line(entry.key .. ': ' .. names .. ' / ' .. clean(detected) .. ' / ' .. tr(states[entry.state]))
   end
   line('')
+  if monitor.betaflight then
+    line(tr('FC-Meldungen') .. ': ' .. tr('Nicht verfügbar'))
+    return bytes
+  end
   line(tr('FC-Meldungen') .. ' (' .. tr(includeText and 'Mit FC-Klartext' or 'Ohne FC-Klartext') .. ')')
   local count = 0
   for _, entry in ipairs(receiver.timeline(nil, false)) do

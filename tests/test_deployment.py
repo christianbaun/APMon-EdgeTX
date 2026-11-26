@@ -2,8 +2,8 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: tests/test_deployment.py
 # Purpose: Verify display selection, deployment preview and SD-card file isolation.
-# Project version: 1.0.0
-# Updated: 2026-11-21
+# Project version: 1.1.0
+# Updated: 2026-11-26
 # Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)
 # SPDX-License-Identifier: Apache-2.0
@@ -80,6 +80,8 @@ class DeploymentTests(unittest.TestCase):
                 compiled.write_bytes(b'old bytecode')
                 preference = card / 'SCRIPTS/APMON/mono.cfg'
                 preference.write_text('de')
+                profile = card / 'SCRIPTS/APMON/fc-model01.yml.cfg'
+                profile.write_text('bf\n')
                 other = card / 'SCRIPTS/other.lua'
                 other.write_text('unrelated script')
                 model = card / 'MODELS/test.yml'
@@ -108,6 +110,7 @@ class DeploymentTests(unittest.TestCase):
                     self.assertEqual((card / rel).read_bytes(), source_for(rel).read_bytes())
                 self.assertFalse(compiled.exists())
                 self.assertEqual(preference.read_text(), 'de')
+                self.assertEqual(profile.read_text(), 'bf\n')
                 self.assertEqual(other.read_text(), 'unrelated script')
                 self.assertEqual(model.read_text(), 'model settings')
                 if display == 'sw':

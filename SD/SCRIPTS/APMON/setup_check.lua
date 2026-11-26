@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- APMon: read-only setup checks for telemetry features, shared by SW and COLOR.
--- Project version: 1.0.0
+-- Project version: 1.1.0
 local load = ...
 local defs = load('setup_defs')
 local checks, labels, tips, fixes = defs.checks, defs.labels, defs.tips, defs.fixes
@@ -35,6 +35,10 @@ return {
   text = load('setup_text'),
   check = function(index, monitor, receiver, config)
     local key, title = checks[2 * index - 1], checks[2 * index]
+    if monitor.betaflight and (key == 'armed' or key == 'relative' or key == 'fix') then
+      if key == 'fix' and monitor.gpsFixLabel then return title, monitor.gpsFixLabel, monitor.sources.gpsfix.name, nil, 'Quelle:' end
+      return title, 'Nicht verfügbar', nil, key ~= 'fix' and 'Nur mit ArduPilot' or nil
+    end
     if key == 'relative' then return relativeCheck(monitor, config, title) end
     if key == 'armed' or key == 'fix' then
       local state = receiver.status(key)
@@ -55,7 +59,13 @@ return {
     local sensor = monitor.sources[key]
     local state = sensor and sensor.state or 'disabled'
     local status, source, tip, sourceLabel = sensorCheck(sensor, state)
-    if key == 'gps' and state == 'valid' and receiver.status('fix') == 'unreceived' then tip = 'Fixtyp fehlt noch' end
+    if key == 'gps' and state == 'valid' then
+      if monitor.betaflight then
+        if monitor.gpsFixLabel ~= 'Bestätigt' then
+          status, tip, sourceLabel = 'Nicht bestätigt', 'Kein bestätigter Fix', 'Erkannt:'
+        end
+      elseif receiver.status('fix') == 'unreceived' then tip = 'Fixtyp fehlt noch' end
+    end
     local def = config.sensors[key]
     local names = def and def.names
     local configured = names and names[1]

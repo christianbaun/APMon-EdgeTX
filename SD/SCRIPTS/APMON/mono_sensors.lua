@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/mono_sensors.lua
 -- Purpose: Draw detailed sensor status on SW displays.
--- Project version: 1.0.0
+-- Project version: 1.1.0
 -- Updated: 2026-11-22
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)

@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/TELEMETRY/APMon.lua
 -- Purpose: Render the GX12/Boxer telemetry pages, menus and saved language choice.
--- Project version: 1.0.0
--- Updated: 2026-11-21
+-- Project version: 1.1.0
+-- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -29,7 +29,8 @@ local core, config = module('core'), module('config')
 local tracker = module('armed_summary').new(config.relativeAltitudeSensor)
 local receiver = module('pass', 12, tracker)
 local project = module('project')
-local monitor = core.new(config, receiver, tracker)
+local profile = module('fc_profile')
+local monitor = core.new(config, receiver, tracker, profile)
 local page, language, menuItem, languageItem = 1, 1, 1, 1
 local showClock, saveError, selectedMessage, messageDetail = false, nil, nil, nil
 local warningsOnly, filterFocus, messageList = false, false, nil
@@ -37,6 +38,7 @@ local view = 'data'
 local sensorIndex = 1
 local toolRenderer, toolError, toolPhase
 local reportSaved
+local uiBetaflight
 local radioLanguage = type(getGeneralSettings) == 'function' and getGeneralSettings().language
 local nativeUmlauts = not radioLanguage or radioLanguage == 'DE'
 local preference = '/SCRIPTS/APMON/mono.cfg'
@@ -195,7 +197,7 @@ local function projectMenu(width)
   filled(2, 23, width - 4, 1)
   local labels = { tr('Sprache') .. ': ' .. i18n.language(language).name, tr('FC-Meldungen'),
     tr('Uhr') .. ': ' .. tr(showClock and 'An' or 'Aus'), tr('Telemetrie-Diagnose'),
-    tr('Letzte Armed-Phase'), tr('GPS-Details') }
+     tr('Letzte Armed-Phase'), tr('GPS-Details'), tr('Flugcontroller') }
   local first = math.max(1, menuItem - 4)
   for i = first, first + 4 do menuOption(width, 25 + (i - first) * 8, labels[i], menuItem == i) end
 end
@@ -249,6 +251,11 @@ local function run(event)
   local exitEvent = match(event, EVT_VIRTUAL_EXIT or EVT_EXIT_BREAK)
   if standalone and view == 'data' and exitEvent then return 1 end
   monitor:sample()
+  if uiBetaflight ~= nil and uiBetaflight ~= monitor.betaflight then
+    if view ~= 'data' then view = 'menu' end
+    toolRenderer, messageDetail, messageList, selectedMessage = nil, nil, nil, nil
+  end
+  uiBetaflight = monitor.betaflight
   local nextEvent = match(event, EVT_VIRTUAL_NEXT, EVT_PLUS_FIRST, EVT_ROT_RIGHT)
   local prevEvent = match(event, EVT_VIRTUAL_PREV, EVT_MINUS_FIRST, EVT_ROT_LEFT)
   local enterEvent = match(event, EVT_VIRTUAL_ENTER or EVT_ENTER_BREAK or EVT_ENTER_FIRST)
@@ -309,21 +316,37 @@ local function run(event)
       saveError = not savePreferences() and 'Sprache nicht gespeichert' or nil
       view = 'menu'
     end
+  elseif view == 'profile' then
+    if step ~= 0 then sensorIndex = 3 - sensorIndex end
+    if exitEvent then view, saveError = 'menu', nil
+    elseif enterEvent then
+      if profile.set(sensorIndex == 2 and 'Betaflight' or 'ArduPilot', getTime()) then
+        monitor:sample(true)
+        uiBetaflight = monitor.betaflight
+        view, saveError, selectedMessage, messageDetail, messageList = 'menu', nil, nil, nil, nil
+      else
+        saveError = 'Profil nicht gespeichert'
+      end
+    end
+  elseif view == 'unsupported' then
+    if enterEvent or exitEvent then view = 'menu' end
   elseif view == 'menu' then
-    if step ~= 0 then menuItem = (menuItem - 1 + step) % 6 + 1 end
+    if step ~= 0 then menuItem = (menuItem - 1 + step) % 7 + 1 end
     if exitEvent then view = 'data' end
     if enterEvent then
       if menuItem == 1 then view, languageItem = 'language', language
-      elseif menuItem == 2 then view, selectedMessage, filterFocus = 'messages', nil, false
+      elseif menuItem == 2 then view, selectedMessage, filterFocus = monitor.betaflight and 'unsupported' or 'messages', nil, false
       elseif menuItem == 3 then
         showClock = not showClock
         saveError = not savePreferences() and 'Uhr nicht gespeichert' or nil
       elseif menuItem == 4 then
         view, sensorIndex = 'diagnostics', 1
       elseif menuItem == 5 then
-        view = 'summary'
-      else
+        view = monitor.betaflight and 'unsupported' or 'summary'
+      elseif menuItem == 6 then
         view = 'gps'
+      else
+        view, sensorIndex, saveError = 'profile', monitor.betaflight and 2 or 1, nil
       end
     end
   elseif enterEvent then
@@ -379,6 +402,20 @@ local function run(event)
   end
   if view == 'menu' then
     projectMenu(width)
+    return 0
+  end
+  if view == 'profile' then
+    menuHeader(width, tr('Flugcontroller'))
+    menuOption(width, 14, 'ArduPilot' .. (monitor.betaflight and '' or ' *'), sensorIndex == 1)
+    menuOption(width, 25, 'Betaflight' .. (monitor.betaflight and ' *' or ''), sensorIndex == 2)
+    if saveError then text(40, tr(saveError), true) end
+    text(55, tr('Enter: waehlen'))
+    return 0
+  end
+  if view == 'unsupported' then
+    menuHeader(width, tr(menuItem == 2 and 'FC-Meldungen' or 'Letzte Armed-Phase'))
+    text(15, tr('Nur mit ArduPilot'))
+    text(57, monoText('RTN: Menü'))
     return 0
   end
   if view == 'language' then

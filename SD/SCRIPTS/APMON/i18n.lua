@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/i18n.lua
 -- Purpose: Provide the extensible GUI language registry, translations and fallback rules.
--- Project version: 1.0.0
--- Updated: 2026-11-21
+-- Project version: 1.1.0
+-- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -21,6 +21,9 @@ Rest|Left
 Verbr.|Used
 FC-Meldungen|FC messages
 Sprache|Language
+Flugcontroller|Flight Controller
+Profil nicht gespeichert|Profile not saved
+Nur mit ArduPilot|Only with ArduPilot
 Rad: Seite|Wheel: page
 ENT: Menu|ENT: menu
 Übersicht|Overview

@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 1.0.0
--- Updated: 2026-11-21
+-- Project version: 1.1.0
+-- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -124,7 +124,9 @@ local function assertMonoMenu(language, messages)
   assertMonoLogo()
 end
 -- Any attempt to write or transmit fails the test.
-model = setmetatable({}, { __index = function() error('Model mutation/access not allowed') end })
+local function noModelAccess() error('Model mutation or unexpected access') end
+model = setmetatable({ getInfo = function() return {} end },
+  { __index = noModelAccess, __newindex = noModelAccess })
 crossfireTelemetryPush = function() error('No transmissions allowed') end
 sportTelemetryPush = crossfireTelemetryPush
 local config = loadScript('/SCRIPTS/APMON/config.lua')()
@@ -923,7 +925,7 @@ now = now + 20
 restricted.crossfireTelemetryPop = nil
 local monoDiag = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 monoDiag.run(EVT_VIRTUAL_ENTER)
-for i = 1, 3 do monoDiag.run(EVT_ROT_LEFT) end
+for i = 1, 3 do monoDiag.run(EVT_ROT_RIGHT) end
 assert(drawOf('Telemetry diagnostics', 49).flags & INVERS ~= 0)
 monoDiag.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Telemetry diagnostics', 1) and drawOf('98 %', 11) and drawOf('4/16 valid', 19))
@@ -951,7 +953,7 @@ read = function(f, n) return type(f) == 'userdata' and sdIO.read(f, n) or 'de' e
 local monoDE = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 crossfireTelemetryPop = nil
 monoDE.run(EVT_VIRTUAL_ENTER)
-for i = 1, 3 do monoDE.run(EVT_ROT_LEFT) end
+for i = 1, 3 do monoDE.run(EVT_ROT_RIGHT) end
 monoDE.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Telemetrie-Diagnose', 1) and drawOf('3/16 gueltig', 19) and drawOf('API fehlt', 27))
 assert(drawOf('Bericht speichern', 50))
@@ -1158,7 +1160,9 @@ end
 prepareFlight()
 colorDisplay, LCD_W, LCD_H, lcd.sizeText = false, 128, 64, nil
 local summarySW = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
-summarySW.run(EVT_VIRTUAL_ENTER); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
+summarySW.run(EVT_VIRTUAL_ENTER)
+for _ = 1, 4 do summarySW.run(EVT_ROT_RIGHT) end
+summarySW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Last armed period', 1) and drawOf('No summary yet'))
 summarySW.run(EVT_VIRTUAL_EXIT); summarySW.run(EVT_VIRTUAL_EXIT)
 reportStatus(0); summarySW.background()
@@ -1166,7 +1170,9 @@ reportStatus(1); summarySW.background()
 changeFlight(); reportStatus(1); summarySW.background()
 reportStatus(0); summarySW.run(0)
 assert(drawOf('APMon Overview', 2) and drawOf('DISARMED', 27)) -- never opens the menu automatically
-summarySW.run(EVT_VIRTUAL_ENTER); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
+summarySW.run(EVT_VIRTUAL_ENTER)
+for _ = 1, 4 do summarySW.run(EVT_ROT_RIGHT) end
+summarySW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Last armed period') and drawOf('Time armed', 10) and drawOf('00:02', 10))
 assert(drawOf('Min. RC LQ', 17) and drawOf('82 %', 17))
 assert(drawOf('14.50 V', 24) and drawOf('22.0 A', 31) and drawOf('--', 38) and drawOf('20 mAh', 45))
@@ -1174,9 +1180,11 @@ assert(drawOf('ENT: details', 57) and drawOf('Complete', 57)) -- all values and 
 summarySW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Summary details') and drawOf('No rel. altitude source'))
 summarySW.run(EVT_VIRTUAL_EXIT); summarySW.run(EVT_VIRTUAL_EXIT)
-summarySW.run(EVT_ROT_RIGHT); summarySW.run(EVT_ROT_RIGHT); summarySW.run(EVT_VIRTUAL_ENTER)
+for _ = 1, 3 do summarySW.run(EVT_ROT_RIGHT) end
+summarySW.run(EVT_VIRTUAL_ENTER)
 summarySW.run(EVT_ROT_RIGHT); summarySW.run(EVT_VIRTUAL_ENTER) -- select German
-summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_ROT_LEFT); summarySW.run(EVT_VIRTUAL_ENTER)
+for _ = 1, 4 do summarySW.run(EVT_ROT_RIGHT) end
+summarySW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Letzte Armed-Phase') and drawOf('Armed-Zeit', 10) and drawOf('Vollständig', 57))
 assert(drawOf('RC-LQ min.', 17) and drawOf('82 %', 17))
 
@@ -1226,7 +1234,7 @@ do
   flightWithGaps(sw.background)
   local function openSW()
     sw.run(EVT_VIRTUAL_ENTER)
-    sw.run(EVT_ROT_LEFT); sw.run(EVT_ROT_LEFT)
+    for _ = 1, 4 do sw.run(EVT_ROT_RIGHT) end
     sw.run(EVT_VIRTUAL_ENTER); sw.run(EVT_VIRTUAL_ENTER)
   end
   openSW()
@@ -1276,7 +1284,9 @@ local lowSW = lowMemory.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 lowSW.run(0)
 assert(drawOf('APMon Overview', 2) and not attempted.diagnostics and not attempted.mono_tools
   and not attempted.mono_summary and not attempted.mono_gps)
-lowSW.run(EVT_VIRTUAL_ENTER); lowSW.run(EVT_ROT_LEFT); lowSW.run(EVT_ROT_LEFT); lowSW.run(EVT_VIRTUAL_ENTER)
+lowSW.run(EVT_VIRTUAL_ENTER)
+for _ = 1, 4 do lowSW.run(EVT_ROT_RIGHT) end
+lowSW.run(EVT_VIRTUAL_ENTER)
 assert(drawOf('Not enough memory') and attempted.mono_summary == 1 and not attempted.diagnostics)
 lowSW.run(0)
 assert(attempted.mono_summary == 1) -- do not retry every frame
@@ -1486,9 +1496,10 @@ do
   assert(drawOf('-41.125000', 18) and drawOf('--', 42) and drawOf('--', 50))
   sw.run(EVT_VIRTUAL_EXIT)
   assert(drawOf('GPS details', 57).flags & INVERS ~= 0)
-  sw.run(EVT_ROT_RIGHT); sw.run(EVT_VIRTUAL_ENTER)
+  sw.run(EVT_ROT_RIGHT); sw.run(EVT_ROT_RIGHT); sw.run(EVT_VIRTUAL_ENTER)
   sw.run(EVT_ROT_RIGHT); sw.run(EVT_VIRTUAL_ENTER) -- switch this session to German
-  sw.run(EVT_ROT_LEFT); sw.run(EVT_VIRTUAL_ENTER)
+  for _ = 1, 5 do sw.run(EVT_ROT_RIGHT) end
+  sw.run(EVT_VIRTUAL_ENTER)
   assert(drawOf('GPS-Details', 1) and drawOf('Nicht live', 10) and drawOf('vor 2s', 10))
   assert(drawOf('Breite', 18) and drawOf('Länge', 26))
 
@@ -1590,7 +1601,7 @@ do
     local sw = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
     local function menu()
       sw.run(EVT_VIRTUAL_ENTER)
-      for i = 1, 3 do sw.run(EVT_ROT_LEFT) end
+      for i = 1, 3 do sw.run(EVT_ROT_RIGHT) end
       sw.run(EVT_VIRTUAL_ENTER)
       sw.run(EVT_ROT_RIGHT)
       assert(drawOf(en and 'Save report' or 'Bericht speichern', 50).flags & INVERS ~= 0)
@@ -1871,4 +1882,132 @@ do
   roll, pitch, frozen = readings.horizon(monitor)
   assert(roll == 10 and not pitch and not frozen) -- restart must not reuse an old pose
 end
-print('OK: sensors, GPS, HUD, armed-summary gaps, dated diagnostic reports, setup check, FC warnings, bilingual UI, restricted mono Lua')
+do
+  -- Two identically named models still have separate preferences. Launchers
+  -- share only settings, not telemetry history.
+  local modelFile, fs, writeDenied = 'model01.yml', {}, false
+  model.getInfo = function() return {name='Quad', filename=modelFile} end
+  local writable = {
+    open = function(path, mode)
+      if mode == 'r' then
+        if fs[path] then return {value=fs[path]} end
+        return sdIO.open(path, mode)
+      end
+      assert(string.match(path, '^/SCRIPTS/APMON/fc%-[^/]+%.cfg$') or path == '/APMon-report.txt', path)
+      if not writeDenied then return {value='', path=path} end
+    end,
+    read = function(file, n)
+      if type(file) == 'table' then return string.sub(file.value,1,n) end
+      return sdIO.read(file, n)
+    end,
+    write = function(file, value) file.value = file.value .. value; return file end,
+    close = function(file)
+      if type(file) ~= 'table' then return sdIO.close(file) end
+      if file.path then fs[file.path] = file.value end
+    end,
+  }
+  io, fstat = writable, nil
+  colorDisplay, LCD_W, LCD_H, lcd.sizeText = false, 128, 64, nil
+  data = { FM={value='STAB*'}, RQly={value=97}, RxBt={value=14.8}, Curr={value=2},
+    Roll={value=0}, Ptch={value=math.pi/6}, Sats={value=12},
+    GPS={value={lat=12.345678,lon=23.456789}} }
+  incoming = {single(0x5001, 256), single(0x5002, 48), message('Old ArduPilot message')}
+  local pops = 0
+  crossfireTelemetryPop = function()
+    pops = pops + 1
+    local packet = table.remove(incoming, 1)
+    if packet then return 0x80, packet end
+  end
+  local sw = restricted.loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
+  sw.run(0)
+  assert(drawOf('STABILIZE') and drawOf('ARMED', 27))
+  sw.run(EVT_VIRTUAL_ENTER); sw.run(EVT_ROT_LEFT)
+  assert(drawOf('Flight Controller', 57))
+  sw.run(EVT_VIRTUAL_ENTER)
+  assert(drawOf('ArduPilot *') and drawOf('Betaflight'))
+  sw.run(EVT_ROT_RIGHT)
+  writeDenied = true
+  sw.run(EVT_VIRTUAL_ENTER)
+  assert(drawOf('Profile not saved') and drawOf('ArduPilot *'))
+  writeDenied = false
+  sw.run(EVT_VIRTUAL_ENTER); sw.run(EVT_VIRTUAL_EXIT)
+  assert(drawOf('ANGLE') and not drawOf('ARMED', 27) and not drawOf('DISARMED', 27))
+  local bfPops = pops
+  for input, expected in pairs({['WAIT*']='GPS WAIT', ['ANGL!']='ANGLE',
+      ['HOR?']='HORIZON', ['!FS!']='FAILSAFE', ['ACRO']='ACRO'}) do
+    data.FM.value, now = input, now + 20
+    sw.run(0)
+    assert(drawOf(expected) and not drawOf('ARMED', 27) and not drawOf('DISARMED', 27))
+  end
+  data.FM.value = 'STAB*'
+  now = now + 20
+  sw.run(EVT_ROT_RIGHT)
+  assert(drawOf('-30.0°') and pops == bfPops)
+  data.Ptch.value, now = 0.0001, now + 20
+  sw.run(0)
+  assert(drawOf('0.0°') and not drawOf('-0.0°'))
+  sw.run(EVT_ROT_RIGHT)
+  assert(drawOf('HUD') and drawOf('0°') and not drawOf('-0°') and not drawOf('HOLD'))
+
+  colorDisplay, LCD_W, LCD_H, lcd.sizeText = true, 480, 320, measure
+  local widget = loadScript('/WIDGETS/APMon/main.lua')()
+  local first = widget.create({x=0,y=0,w=LCD_W,h=LCD_H}, { Language=2 })
+  local function run(event, target)
+    local label = target and assert(drawOf(target), target)
+    calls, draws, rectangles, bitmaps = {}, {}, {}, {}
+    widget.refresh(first, event, label and {x=label.x,y=label.y})
+  end
+  run(0)
+  assert(drawOf('ANGLE') and drawOf('14.80 V') and pops == bfPops)
+  assert(not first.monitor.gpsLive and not first.monitor.fix)
+  run(EVT_VIRTUAL_NEXT)
+  assert(drawOf('Pitch: 0.0°') and not drawOf('Pitch: -0.0°'))
+  run(EVT_VIRTUAL_PREV)
+  local checks = loadScript('/SCRIPTS/APMON/setup_check.lua')(function(name, ...)
+    return loadScript('/SCRIPTS/APMON/' .. name .. '.lua')(...)
+  end)
+  local title, status, source, tip, sourceLabel = checks.check(3, first.monitor, nil, config)
+  assert(title == 'GPS-Koordinaten' and status == 'Nicht bestätigt' and source == 'GPS'
+    and tip == 'Kein bestätigter Fix' and sourceLabel == 'Erkannt:')
+  local rows, live = loadScript('/SCRIPTS/APMON/gps_details.lua')()(first.monitor)
+  assert(not live and rows[1][2] == '--' and rows[2][2] == '--' and rows[4][2] == '12' and rows[5][2] == '--')
+  run(EVT_VIRTUAL_ENTER); run(EVT_VIRTUAL_NEXT); run(EVT_VIRTUAL_ENTER)
+  assert(drawOf('Nur mit ArduPilot'))
+  run(EVT_VIRTUAL_EXIT)
+  run(EVT_VIRTUAL_NEXT); run(EVT_VIRTUAL_NEXT); run(EVT_VIRTUAL_ENTER)
+  run(EVT_TOUCH_TAP, 'Bericht speichern')
+  assert(drawOf('Speichern: Ohne FC-Klartext') and not drawOf('Speichern: Mit FC-Klartext'))
+  assert(fs['/APMon-report.txt'] == nil)
+  run(EVT_VIRTUAL_ENTER)
+  local report = assert(fs['/APMon-report.txt'])
+  assert(string.find(report, 'Flugcontroller: Betaflight', 1, true))
+  for _, secret in ipairs({'12.345678', '23.456789', 'Old ArduPilot message', '14.80 V'}) do
+    assert(not string.find(report, secret, 1, true), secret)
+  end
+  calls, draws, rectangles, bitmaps = {}, {}, {}, {}
+  local launch = loadScript('/SCRIPTS/TOOLS/APMon.lua')()
+  data.FM.value = 'HOR*'
+  assert(launch.run(0) == 0 and drawOf('HORIZON') and pops == bfPops)
+  local profile = loadScript('/SCRIPTS/APMON/fc_profile.lua')()
+  assert(profile.get(now) == 'Betaflight')
+  modelFile = 'model02.yml'
+  now = now + 201
+  assert(profile.get(now) == 'ArduPilot')
+  assert(profile.set('ArduPilot', now))
+  modelFile = 'model01.yml'
+  now = now + 201
+  assert(profile.get(now) == 'Betaflight')
+  assert(fs['/SCRIPTS/APMON/fc-model01.yml.cfg'] == 'bf\n'
+    and fs['/SCRIPTS/APMON/fc-model02.yml.cfg'] == 'ap\n')
+  assert(profile.set('ArduPilot', now))
+  -- A separate widget state observes a tool's write even after a background tick.
+  data.FM.value = 'STAB'
+  local tick = now + 201
+  incoming = {single(0x5001, 0)}
+  now = tick
+  widget.background(first)
+  run(0)
+  assert(drawOf('STABILIZE') and drawOf('DISARMED') and not drawOf('Old ArduPilot message'))
+end
+
+print('OK: sensors, GPS, HUD, armed-summary gaps, dated diagnostic reports, setup check, FC warnings, bilingual UI, restricted mono Lua, FC profiles')

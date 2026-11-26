@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/WIDGETS/APMon/main.lua
 -- Purpose: Render the color dashboard, full-screen project menu and language selection.
--- Project version: 1.0.0
--- Updated: 2026-11-21
+-- Project version: 1.1.0
+-- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -28,6 +28,7 @@ local project = module('project')
 local diagnostics = module('diagnostics')
 local setup = module('setup_check', module)
 local gpsDetails = module('gps_details')
+local profile = module('fc_profile')
 local drawHUD, hudReadings
 local options = { { 'Language', CHOICE, 1, i18n.choices }, { 'Clock', BOOL, 0 } }
 local logo
@@ -39,7 +40,7 @@ local function drawLogo(zone, headerHeight)
   if logo then lcd.drawBitmap(logo, zone.x + zone.w - 44, zone.y + math.floor((headerHeight - 32) / 2)) end
 end
 local function create(zone, opts)
-  return { zone = zone, options = opts, monitor = core.new(config, receiver, tracker) }
+  return { zone = zone, options = opts, monitor = core.new(config, receiver, tracker, profile) }
 end
 local function update(widget, opts)
   widget.options, widget.sessionLanguage, widget.sessionClock = opts, nil, nil
@@ -57,7 +58,7 @@ local function setView(widget, view, focus)
   widget.view, widget.focus = view, focus
 end
 local menuW, warningW = 148, 196
-local menuCount = 7
+local menuCount = 8
 local regularFont = SMLSIZE or 0
 local headingFont = MIDSIZE or regularFont
 local menuSubtitleLines = {'ArduPilot Telemetry', 'Monitor for EdgeTX radios'}
@@ -119,7 +120,7 @@ local function rows(widget, layout)
   if widget.view == 'menu' then
     return layout.menuTop, math.max(1, widget.focus - layout.menuRows + 1), menuCount, layout.menuRows
   end
-  local count = #i18n.languages + 1
+  local count = widget.view == 'profile' and 3 or #i18n.languages + 1
   return layout.languageTop, math.max(1, widget.focus - layout.languageRows + 1), count, layout.languageRows
 end
 local function messagePage(widget)
@@ -196,6 +197,12 @@ local function handleInput(widget, z, layout, event, touch)
     return
   end
   local rowHeight = layout.rowHeight
+  if widget.view == 'unsupported' then
+    if exit or enter or inButton(z.h - rowHeight - 12, rowHeight - 3) then
+      setView(widget, 'menu', widget.focus)
+    end
+    return
+  end
   if widget.view == 'setup' then
     local back = z.h - rowHeight - 12
     local step = event == EVT_VIRTUAL_NEXT and 1 or event == EVT_VIRTUAL_PREV and -1 or 0
@@ -216,9 +223,12 @@ local function handleInput(widget, z, layout, event, touch)
     if exit or inButton(back, rowHeight - 3) or (enter and widget.reportSaved ~= nil) then
       setView(widget, 'diagnostics', 2)
     elseif widget.reportSaved == nil then
-      if event == EVT_VIRTUAL_NEXT or event == EVT_VIRTUAL_PREV then widget.focus = 3 - widget.focus end
+      if not widget.monitor.betaflight and (event == EVT_VIRTUAL_NEXT or event == EVT_VIRTUAL_PREV) then
+        widget.focus = 3 - widget.focus
+      end
       local choice = inButton(back - 2 * rowHeight, rowHeight - 3) and 1
-        or inButton(back - rowHeight, rowHeight - 3) and 2 or enter and widget.focus
+        or not widget.monitor.betaflight and inButton(back - rowHeight, rowHeight - 3) and 2
+        or enter and widget.focus
       if choice then
         local function save()
           local timed, timestamp = pcall(module, 'report_time')
@@ -336,6 +346,7 @@ local function handleInput(widget, z, layout, event, touch)
   end
   if exit then
     if widget.view == 'menu' then setView(widget)
+    elseif widget.view == 'profile' then setView(widget, 'menu', 7)
     else setView(widget, 'menu', 1) end
     return
   end
@@ -354,21 +365,36 @@ local function handleInput(widget, z, layout, event, touch)
     if widget.focus == 1 then setView(widget, 'language', languageOf(widget))
     elseif widget.focus == 2 then
       widget.selectedMessage, widget.filterFocus = nil, false
-      setView(widget, 'messages', 1)
+      if widget.monitor.betaflight then setView(widget, 'unsupported', 2)
+      else setView(widget, 'messages', 1) end
     elseif widget.focus == 3 then
       -- Like the language menu, this overrides the saved widget setting for this session.
       widget.sessionClock = not clockEnabled(widget)
     elseif widget.focus == 4 then
       setView(widget, 'diagnostics', 1)
     elseif widget.focus == 5 then
-      setView(widget, 'summary', tracker.last and 1 or 2)
+      if widget.monitor.betaflight then setView(widget, 'unsupported', 5)
+      else setView(widget, 'summary', tracker.last and 1 or 2) end
     elseif widget.focus == 6 then
       setView(widget, 'gps', 1)
+    elseif widget.focus == 7 then
+      widget.profileError = nil
+      setView(widget, 'profile', widget.monitor.betaflight and 2 or 1)
     else setView(widget) end
   elseif widget.view == 'language' then
     -- EdgeTX persists widget options only via its own settings screen.
     if widget.focus <= #i18n.languages then widget.sessionLanguage = widget.focus end
     setView(widget, 'menu', 1)
+  elseif widget.view == 'profile' then
+    if widget.focus == 3 then setView(widget, 'menu', 7)
+    elseif profile.set(widget.focus == 2 and 'Betaflight' or 'ArduPilot', getTime()) then
+      widget.monitor:sample(true)
+      widget.uiBetaflight = widget.monitor.betaflight
+      widget.messageDetail, widget.selectedMessage, widget.messageList = nil, nil, nil
+      setView(widget, 'menu', 7)
+    else
+      widget.profileError = true
+    end
   end
 end
 local function refresh(widget, event, touch)
@@ -407,6 +433,11 @@ local function refresh(widget, event, touch)
     literal(x, y, tr(value), color, maxWidth, font)
   end
   m:sample()
+  if widget.uiBetaflight ~= nil and widget.uiBetaflight ~= m.betaflight then
+    setView(widget)
+    widget.messageDetail, widget.selectedMessage, widget.messageList = nil, nil, nil
+  end
+  widget.uiBetaflight = m.betaflight
   rect(z.x, z.y, z.w, z.h, bg)
   if z.w < 440 or z.h < 252 then
     if event == nil then
@@ -423,6 +454,8 @@ local function refresh(widget, event, touch)
   local hudPage = not widget.view and widget.hud
   rect(z.x, z.y, z.w, layout.header, info)
   local heading = widget.view == 'language' and 'Sprache'
+    or widget.view == 'profile' and 'Flugcontroller'
+    or widget.view == 'unsupported' and (widget.focus == 2 and 'FC-Meldungen' or 'Letzte Armed-Phase')
     or widget.view == 'warningDetail' and 'Letzte FC-Warnung'
     or messagePage(widget) and 'FC-Meldungen'
     or widget.view == 'diagnostics' and 'Telemetrie-Diagnose'
@@ -454,6 +487,13 @@ local function refresh(widget, event, touch)
       clock, bg, math.min(w, clockRight - x), font)
   end
   drawLogo(z, layout.header)
+  if widget.view == 'unsupported' then
+    local back = z.h - layout.rowHeight - 12
+    text(left, layout.header + 10, 'Nur mit ArduPilot', info, inner)
+    rect(left, back, inner, layout.rowHeight - 3, info)
+    text(left + 8, back + 4, 'Zurück', bg, inner - 16)
+    return
+  end
   if hudPage then
     if drawHUD == nil then
       local ok, renderer = pcall(module, 'hud')
@@ -512,6 +552,7 @@ local function refresh(widget, event, touch)
     end
     for i, name in ipairs({'Roll', 'Pitch'}) do
       local value = i == 1 and roll or i == 2 and pitch
+      if value and math.abs(value) < 0.05 then value = 0 end
       literal(x + (i - 1) * math.floor(w / 2), readouts,
         name .. ': ' .. (value and string.format('%.1f°', value) or '--'), normal, math.floor(w / 2) - 8)
     end
@@ -556,10 +597,12 @@ local function refresh(widget, event, touch)
     if widget.reportSaved == nil then
       literal(left, top, project.reportPath, normal, inner)
       text(left, top + layout.step, 'Ersetzt alten Bericht', normal, inner)
-      text(left, top + 2 * layout.step, 'Klartext evtl. mit GPS', warn, inner)
       local save = tr('Speichern') .. ': '
       button(back - 2 * height, save .. tr('Ohne FC-Klartext'), widget.focus == 1)
-      button(back - height, save .. tr('Mit FC-Klartext'), widget.focus == 2)
+      if not m.betaflight then
+        text(left, top + 2 * layout.step, 'Klartext evtl. mit GPS', warn, inner)
+        button(back - height, save .. tr('Mit FC-Klartext'), widget.focus == 2)
+      end
     else
       text(left, top, widget.reportSaved and 'Bericht gespeichert' or 'Schreibfehler',
         widget.reportSaved and info or warn, inner)
@@ -665,7 +708,8 @@ local function refresh(widget, event, touch)
         { 'EdgeTX-Sensoren', counts, issue and (issue.name .. ': ' .. tr(state[issue.state])), not m.api or issue },
         { 'FC-Status (Passthrough)', tr(state[data.fcState]), age, data.fcState ~= 'valid' },
         { 'Letzte FC-Textmeldung', messageAge and string.format(tr('vor %ds'), messageAge)
-          or tr(data.fcState == 'noapi' and state.noapi or state.unreceived),
+           or tr(data.fcState == 'unsupported' and state.unsupported
+             or data.fcState == 'noapi' and state.noapi or state.unreceived),
           message and message.value, message and message.severity <= 4 },
       }
       text(left, top, 'Datenquellen', info, inner)
@@ -799,6 +843,8 @@ local function refresh(widget, event, touch)
     local rowHeight = widget.view == 'menu' and layout.menuRowHeight or layout.rowHeight
     if widget.view == 'language' then
       text(left, z.h - layout.smallHeight - 8, 'Nur für diese Sitzung', info, inner)
+    elseif widget.view == 'profile' and widget.profileError then
+      text(left, z.h - layout.smallHeight - 8, 'Profil nicht gespeichert', warn, inner)
     end
     for i = first, math.min(count, first + visibleChoices - 1) do
       local label
@@ -809,7 +855,11 @@ local function refresh(widget, event, touch)
           or i == 4 and 'Telemetrie-Diagnose'
           or i == 5 and 'Letzte Armed-Phase'
           or i == 6 and 'GPS-Details'
+          or i == 7 and 'Flugcontroller'
           or 'Zurück'
+      elseif widget.view == 'profile' and i <= 2 then
+        local name = i == 1 and 'ArduPilot' or 'Betaflight'
+        label = name .. ((i == 2) == m.betaflight and ' *' or '')
       else
         label = widget.view == 'language' and i <= #i18n.languages and i18n.languages[i].name or 'Zurück'
       end
@@ -880,7 +930,8 @@ local function refresh(widget, event, touch)
   end
   local message, age = receiver.message, receiver.age(receiver.message)
   local messageColor = message and message.severity <= 4 and warn or normal
-  local label = message and string.format(tr('FC-Meldung / vor %ds'), age or 0) or tr('FC-Meldung: --')
+  local label = m.betaflight and 'Betaflight'
+    or message and string.format(tr('FC-Meldung / vor %ds'), age or 0) or tr('FC-Meldung: --')
   local buttonX = z.x + z.w - 12 - menuW
   local hudHint = event ~= nil and tr('Rad: HUD')
   local hintW = hudHint and lcd.sizeText(hudHint, regularFont + CUSTOM_COLOR) + 16 or 0

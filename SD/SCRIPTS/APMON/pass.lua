@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/pass.lua
 -- Purpose: Decode ELRS ArduPilot passthrough frames, status text and data freshness.
--- Project version: 1.0.0
--- Updated: 2026-11-21
+-- Project version: 1.1.0
+-- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -128,15 +128,24 @@ function M.decode(command, p, now)
     end
   end
 end
+local function reset()
+  M.data, M.message, M.ekf, log, head, count = {}, nil, nil, {}, 0, 0
+  markers, markerHead, markerCount, order = {}, 0, 0, order + 1
+  M.last = nil
+  if armedSummary then armedSummary:reset() end
+end
+local enabled = true
+function M.enable(on)
+  if enabled ~= on then
+    enabled = on
+    reset()
+  end
+end
 function M.poll()
+  if not enabled then return end
   local now = getTime()
   if M.last == now then return end
-  if M.last and now < M.last then
-    M.data, M.message, M.ekf, log, head, count = {}, nil, nil, {}, 0, 0
-    markers, markerHead, markerCount, order = {}, 0, 0, order + 1
-    M.last = nil
-    if armedSummary then armedSummary:reset() end
-  end
+  if M.last and now < M.last then reset() end
   if type(crossfireTelemetryPop) ~= 'function' then return end
   M.last = now
   for i = 1, 12 do

@@ -6,16 +6,17 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
-**Telemetrie für ArduPilot auf RadioMaster-Fernsteuerungen mit EdgeTX.**
-APMon ist für **ExpressLRS im MAVLink-Modus** ausgelegt. Es zeigt Akkudaten,
-Fluglage, GPS-Status und Meldungen des Flugcontrollers an. Dazu liest es die
-EdgeTX-Sensoren und ausgewählte ArduPilot-Passthrough-Daten, nicht den
-vollständigen MAVLink-Datenstrom. Die Anwendung besteht aus Lua-Skripten auf der
-SD-Karte und benötigt zur Laufzeit weder einen Laptop noch ein zusätzliches
-Skript im Flugcontroller.
+**Telemetrie für ArduPilot und Betaflight auf EdgeTX-Sendern.** APMon zeigt
+Akkudaten, Linkqualität und Flugwerte direkt am Sender. Das **ArduPilot-Profil**
+nutzt EdgeTX-Sensoren und ausgewählte ArduPilot-Passthrough-Daten von
+ExpressLRS im MAVLink-Modus. Das **Betaflight-Profil** liest die normalen
+CRSF-Sensoren, die EdgeTX bereitstellt. APMon läuft von der SD-Karte und
+benötigt zur Laufzeit weder einen Laptop noch ein Skript im Flight Controller.
 
-Der aktuelle Projektstand ist **Version 1.0.0**, siehe [VERSION](VERSION).
-Siehe [Release-Notizen zu v1.0.0](releases/v1.0.0.md).
+Der aktuelle Projektstand ist **Version 1.1.0**, siehe [VERSION](VERSION).
+Neu ist [Betaflight-Telemetrie über CRSF](#betaflight-telemetrie-über-crsf).
+ArduPilot bleibt die Standardeinstellung.
+Siehe [Versionsnotizen zu v1.1.0](releases/v1.1.0.md).
 
 Die GUI unterstützt **Englisch und Deutsch**. Englisch ist die Standardsprache.
 
@@ -29,6 +30,7 @@ Hardwaretests. Der aktuelle Prüfstand steht im Abschnitt zur Kompatibilität.
 - [Screenshots](#screenshots)
 - [Funktionen](#funktionen)
 - [Kompatibilität und Voraussetzungen](#kompatibilität-und-voraussetzungen)
+- [Betaflight-Telemetrie über CRSF](#betaflight-telemetrie-über-crsf)
 - [Installation](#installation)
 - [Bedienung](#bedienung)
 - [Sensoren konfigurieren](#sensoren-konfigurieren)
@@ -76,6 +78,9 @@ Weitere GX12-Aufnahmen: [HUD](#hud), [FC-Meldungsfilter](#senderuhr-und-fc-meldu
 [Diagnosebericht](#diagnosebericht) und
 [Zusammenfassung nach dem Entarmen](#zusammenfassung-nach-dem-entarmen).
 
+Aufnahmen von APMon v1.1.0 auf GX12 und GX15 stehen unter
+[Betaflight-Telemetrie über CRSF](#betaflight-telemetrie-über-crsf).
+
 **Schwarzweiß — RadioMaster Zorro (128 × 64, APMon v1.0.0)**
 
 | Übersicht (1/3) | HUD (3/3) |
@@ -116,18 +121,22 @@ Language** auswählen. Auf COLOR-Displays APMon im Vollbild öffnen und
 
 ## Funktionen
 
+Welche Daten verfügbar sind, hängt vom gewählten Flugcontroller-Profil und
+den aktuellen EdgeTX-Sensoren ab. Die [Betaflight-Funktionen](#betaflight-telemetrie-über-crsf)
+sind ohne ArduPilot-Passthrough nutzbar.
+
 - **Akku:** Spannung, Strom, vom FC gemeldete Restladung und verbrauchte mAh.
 - **Flug:** ausgeschriebener Flugmodus, Armed/Disarmed, Höhe, Roll, Pitch, Yaw,
   horizontales GPS-Tempo, Steigen und Himmelsrichtung aus Yaw.
 - **[GPS-Details](#gps-details):** Koordinaten, bestätigter Fixtyp, Satellitenzahl
   und GPS-Kurs. Nach einem Ausfall bleibt die letzte bestätigte Position sichtbar.
-- **FC-Status:** letzte Textmeldung und zuletzt gemeldeter EKF-Quellensatz,
+- **FC-Status (ArduPilot):** letzte Textmeldung und zuletzt gemeldeter EKF-Quellensatz,
   jeweils mit Alter der Meldung.
 - **RC-Linkqualität:** Anteil empfangener Steuerpakete in Prozent.
 - **Telemetrie-Diagnose:** Zustand von RC-Link, EdgeTX-Sensoren und FC-Status
   getrennt prüfen, den [Einrichtungscheck](#einrichtungscheck-für-telemetriequellen)
   öffnen oder einen [Diagnosebericht speichern](#diagnosebericht).
-- **Letzte Armed-Phase:** Dauer und gemessene Extremwerte nach dem Entarmen
+- **Letzte Armed-Phase (ArduPilot):** Dauer und gemessene Extremwerte nach dem Entarmen
   im Projektmenü nachsehen.
 - **Sprachwahl:** direkt am Sender. Weitere Sprachen können zentral ergänzt werden.
 
@@ -145,15 +154,15 @@ PreArm-Prüfungen des Flugcontrollers.
 ## Alternativen und Abgrenzung
 
 APMon ist ein **rein lesender Monitor direkt am Sender**, keine
-Bodenstation (Ground Control Station, GCS). Es nutzt EdgeTX-Sensoren und
-ausgewählte ArduPilot-Passthrough-Daten aus dem ExpressLRS-MAVLink-Modus,
-nicht den vollständigen MAVLink-Datenstrom. APMon plant oder überträgt keine
+Bodenstation (Ground Control Station, GCS). Es nutzt EdgeTX-Sensoren und im
+ArduPilot-Profil ausgewählte Passthrough-Daten, nicht den vollständigen
+MAVLink-Datenstrom. APMon plant oder überträgt keine
 Missionen, konfiguriert keinen Flugcontroller, flasht keine Firmware und
 wertet keine Fluglogs aus. Für diese Aufgaben ergänzt eine GCS APMon.
 
 | Lösung | Plattform und typischer Einsatz | Schwerpunkt |
 | --- | --- | --- |
-| **APMon** | EdgeTX 2.x mit Lua-LCD-API auf Schwarzweiß- und Farbsendern, ArduPilot mit ExpressLRS im MAVLink-Modus | Telemetrie direkt am Sender, FC-Meldungen, Armed-Bilanz und lokaler Diagnosebericht |
+| **APMon** | EdgeTX 2.x auf SW- und Farbsendern, ArduPilot mit ELRS im MAVLink-Modus oder Betaflight mit ELRS über CRSF | Telemetrie, Lage-HUD und lokale Diagnose am Sender. FC-Meldungen und Armed-Bilanz erfordern ArduPilot-Passthrough. |
 | [FM2M ToolBox](https://fm2m.online/) | EdgeTX- oder ETHOS-Farbsender, vor allem Betaflight und INAV mit kompatibler CRSF- oder FrSky-S.Port-Telemetrie | Status, Telemetrie und Diagnose am Sender, je nach Edition und Aufbau auch Geräte- und VTX-Konfiguration |
 | [Yaapu Telemetry Script](https://github.com/yaapu/frskytelemetryscript) | OpenTX, EdgeTX oder ETHOS, ArduPilot-Passthrough je nach Aufbau über FrSky S.Port, TBS Crossfire oder ExpressLRS | ArduPilot-Telemetrie als Skript oder Widget für mehr Sender und Telemetrieverbindungen |
 | [INAV Lua Telemetry](https://github.com/iNavFlight/OpenTX-Telemetry-Widget) | OpenTX oder EdgeTX mit INAV und kompatibler Telemetrie | Status, Akku, GPS und Flugdaten direkt am Sender für INAV statt ArduPilot |
@@ -185,15 +194,15 @@ separat geprüft werden.
 
 | Sender (Displaytyp, Auflösung) | Versionen |
 | --- | --- |
-| GX15 (Farbe, 480 × 320) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
+| GX15 (Farbe, 480 × 320) | ArduPilot: APMon 1.0.0, EdgeTX 2.12.5, ELRS 4.1.0. Betaflight über ELRS-CRSF: Hardwaretest mit APMon 1.1.0. |
 | TX15 (Farbe, 480 × 320) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
 | TX16S MK3 (Farbe, 800 × 480) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
-| GX12 (S/W, 128 × 64) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
+| GX12 (S/W, 128 × 64) | ArduPilot: APMon 1.0.0, EdgeTX 2.12.5, ELRS 4.1.0. Betaflight über ELRS-CRSF: Hardwaretest mit APMon 1.1.0 auf EdgeTX 2.12.5. |
 | RadioMaster Zorro (S/W, 128 × 64) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
 | Boxer (S/W, 128 × 64) | Hardwaretest noch offen |
 | Andere Sender (je nach Modell) | Hardwaretest noch offen |
 
-Für den vollständigen Funktionsumfang werden benötigt:
+Für den vollständigen Funktionsumfang mit ArduPilot werden benötigt:
 
 1. ArduPilot mit funktionierender ExpressLRS-Verbindung im **MAVLink-Modus**.
 2. Im EdgeTX-Modell entdeckte Telemetriesensoren mit passenden Namen und Einheiten.
@@ -216,6 +225,111 @@ ArduPilot FC → ELRS-Empfänger → Funk → ELRS-Sendemodul
 Der vollständige MAVLink-Datenstrom am Backpack steht einem EdgeTX-Lua-Skript
 nicht automatisch zur Verfügung. APMon wertet die EdgeTX-Sensoren und eine
 begrenzte Auswahl der Passthrough-Pakete aus.
+
+## Betaflight-Telemetrie über CRSF
+
+APMon v1.1.0 zeigt Betaflight-Daten aus normaler CRSF-Telemetrie auf **SW und
+COLOR** an. Dazu liest APMon die von EdgeTX bereits dekodierten Werte:
+**Betaflight-FC → CRSF über UART → ELRS-Empfänger → Funkstrecke →
+EdgeTX-Sensoren → APMon**. Ein MAVLink-Datenstrom, MSP-Anfragen und ein
+zusätzliches Skript im Flight Controller sind nicht nötig. Dieser Aufbau
+wurde auf RadioMaster GX12 und GX15 getestet. Je nach Sender,
+Firmware-Build und Telemetrieverbindung können andere Sensoren verfügbar sein.
+
+### Betaflight, ExpressLRS und EdgeTX einrichten
+
+1. **Betaflight:** Einen Firmware-Build mit CRSF-Unterstützung verwenden.
+   Wenn der Build nur MAVLink als Funkprotokoll enthält, lässt sich CRSF in
+   den Empfängereinstellungen nicht auswählen. Bei einem externen
+   UART-Empfänger unter **Ports** für dessen UART **Serial RX** aktivieren.
+   Unter **Receiver** **Serial (via UART)** und **CRSF** wählen,
+   **Telemetry** einschalten und speichern. Für normales CRSF auf diesem
+   UART keinen separaten **Telemetry Output** einstellen. Siehe auch die
+   [ExpressLRS-Anleitung zur FC-Einrichtung](https://www.expresslrs.org/quick-start/receivers/configuring-fc/).
+2. **ExpressLRS:** **Link Mode → Normal** statt MAVLink wählen. Der
+   Empfänger-UART muss CRSF nutzen und **Telem Ratio** darf nicht auf
+   **Off** stehen. `1:2` im Screenshot ist ein Beispiel, keine Vorgabe.
+3. **EdgeTX:** Den FC und den Empfänger mit abgenommenen Propellern
+   einschalten. Unter **Modell → Telemetrie → Neue Sensoren suchen**
+   prüfen, ob `FM` und `RxBt` erscheinen und ob sich `Roll` und `Ptch`
+   beim Neigen des Modells ändern. Nach der Erkennung die Suche beenden.
+   Dazu sind weder Armen noch ein GPS-Fix nötig.
+4. **APMon:** [Das passende SW- oder COLOR-Paket installieren](#installation),
+   APMon öffnen und **Flugcontroller → Betaflight** wählen. Ein Sternchen
+   markiert das aktive Profil. Die Auswahl [gilt pro EdgeTX-Modell](#flugcontroller-profil)
+   und ändert weder den Link-Modus noch Einstellungen am FC.
+
+| ExpressLRS auf der GX12: Link-Modus Normal | APMon auf der GX15: Betaflight-Profil |
+| --- | --- |
+| <img src="images/screenshots/edgetx-sw-gx12-elrs-normal-en-2026-11-26-210630.png" width="384" alt="ExpressLRS auf der GX12 mit Link-Modus Normal und Telemetriequote 1:2"> | ![Englische Flugcontroller-Auswahl auf der GX15 mit aktivem Betaflight-Profil](images/screenshots/apmon-color-gx15-fc-profile-betaflight-en-v1.1.0-2026-11-26-214113.png) |
+
+Siehe auch die [Profilwahl auf SW](images/screenshots/apmon-sw-gx12-fc-profile-betaflight-en-v1.1.0-2026-11-26-210728.png)
+und das [Projektmenü auf COLOR](images/screenshots/apmon-color-gx15-menu-en-v1.1.0-2026-11-26-214033.png).
+EdgeTX-Beispiele: [Akkusensoren](images/screenshots/edgetx-sw-gx12-telemetry-battery-en-2026-11-26-210647.png)
+sowie [Lage und Flugmodus](images/screenshots/edgetx-sw-gx12-telemetry-attitude-en-2026-11-26-210651.png).
+
+### Was APMon anzeigt
+
+Auf **SW** mit dem Drehgeber über **Übersicht → Flugwerte → HUD** blättern.
+Auf **COLOR** APMon im Vollbild öffnen. Von der Übersicht führt der
+Drehgeber nach rechts zum HUD und nach links zurück. Das HUD nutzt
+aktuelle Roll- und Nickwerte. Bei einem Ausfall kennzeichnet **HOLD** die
+letzte vollständige Lage. Die übrigen Werte können sich weiter aktualisieren.
+
+| Funktion | Standardquellen in EdgeTX | Was angezeigt wird |
+| --- | --- | --- |
+| Akku | `RxBt`, `Curr`, `Bat%`, `Capa` | Flugakkuspannung, Strom, gemeldeter Akkustand in Prozent und verbrauchte mAh. Prüfen, ob `RxBt` tatsächlich den Flugakku abbildet. APMon schätzt den Akkustand nicht aus der Spannung. |
+| RC-Link | `RQly` | Linkqualität in Übersicht, HUD und Diagnose. Dieser Wert kann vorliegen, auch wenn keine FC-Telemetrie am Sender ankommt. |
+| Flugmodus | `FM` | `STAB` und `ANGL` erscheinen als **ANGLE**, `HOR` als **HORIZON**, `WAIT` als **GPS WAIT** und `!FS!` als **FAILSAFE**. `GPS WAIT` ist ein Betaflight-Modusname, keine Messung des Fixtyps. |
+| Fluglage | `Roll`, `Ptch`, `Yaw` | Winkel in Grad. Roll und Nick bewegen den künstlichen Horizont. Die Standardzuordnung für `Ptch` nutzt `betaflightScale = -1`, damit Nase hoch im HUD positiv ist. Beim Übernehmen einer eigenen `config.lua` diese Einstellung für eine normale Betaflight-`Ptch`-Quelle ergänzen und den Horizont am Boden prüfen. Gier ist nicht der GPS-Kurs. |
+| Höhe und Steigen | `Alt`, `GAlt`, `VSpd` | `Alt` hat Vorrang, sonst erscheint die separat beschriftete GPS-Höhe `GAlt`. Für die Steigrate muss `VSpd` vorliegen. Weder `GAlt` noch angezeigte `0 m` bestätigen die Höhe über Home oder den Bodenabstand. |
+| GPS-Tempo und Satelliten | `GSpd`, `Sats` | Gemeldetes Tempo und Satellitenzahl, sofern vorhanden. Eine frische Satellitenzahl kann in den GPS-Details stehen, auch wenn Position und GPS-Kurs ausgeblendet bleiben. |
+
+| GX15 COLOR: Übersicht (englisch) | GX15 COLOR: Lage-HUD |
+| --- | --- |
+| ![APMon mit Betaflight auf der GX15: GPS WAIT, Akkudaten und Linkqualität](images/screenshots/apmon-color-gx15-overview-en-v1.1.0-2026-11-26-214036.png) | ![Betaflight-HUD auf der GX15 mit künstlichem Horizont, Roll, Nick und Akkudaten](images/screenshots/apmon-color-gx15-hud-level-en-v1.1.0-2026-11-26-214039.png) |
+
+Auf der GX12: [Übersicht](images/screenshots/apmon-sw-gx12-overview-de-v1.1.0-2026-11-26-210700.png),
+[Flugwerte](images/screenshots/apmon-sw-gx12-flight-de-v1.1.0-2026-11-26-210702.png)
+und [HUD](images/screenshots/apmon-sw-gx12-hud-level-de-v1.1.0-2026-11-26-210704.png).
+
+### Fehlende Daten prüfen und Funktionsgrenzen erkennen
+
+- **Nur LQ sichtbar:** Zuerst die EdgeTX-Telemetrieliste prüfen. Wenn EdgeTX
+  nur [Funkwerte](images/screenshots/edgetx-sw-gx12-telemetry-link-en-2026-11-26-210638.png)
+  anzeigt, den **Telemetry**-Schalter in Betaflight, den ELRS-Modus und die
+  Leitung von FC-TX zu Empfänger-RX prüfen. Sieht EdgeTX einen aktuellen
+  FC-Sensor, APMon aber nicht, Namen und Einheit in der
+  [Sensorzuordnung](#sensoren-konfigurieren) kontrollieren.
+- **Empfangene GPS-Daten sind noch kein bestätigter Fix.** EdgeTX kann
+  etwa [GPS-Daten mit null Satelliten](images/screenshots/edgetx-sw-gx12-telemetry-gps-no-fix-en-2026-11-26-210643.png)
+  auflisten. Ohne eine separat zugeordnete und geprüfte Fixquelle behandelt
+  APMon die Koordinaten nicht als aktuelle Position. Im Einrichtungscheck
+  können sie als **Nicht bestätigt** gekennzeichnet sein. Satellitenzahl,
+  Koordinaten oder `GPS WAIT` allein belegen keinen Fix.
+- **Die Diagnose trennt die Ursachen.** Unter **Menü → Telemetrie-Diagnose**
+  **Sensoren** oder **Einrichtungscheck** öffnen. Auf der abgebildeten GX15
+  waren **14 von 16** Quellen gültig. `Alt` wurde nicht gefunden und `VSpd`
+  war unbekannt. `GAlt` sowie Akku- und Lagedaten waren verfügbar. Diese
+  Zahl beschreibt den konkreten Aufbau und ist weder Mindestanforderung
+  noch Aussage zur Flugbereitschaft.
+- **ArduPilot-Funktionen fehlen absichtlich.** Das Betaflight-Profil liest
+  kein ArduPilot-Passthrough. Bestätigter Armed-Status, Armed-Bilanz,
+  FC-Meldungen und EKF-Quellensatzmeldungen sind nicht verfügbar. APMon
+  leitet den Armed-Status nicht aus `FM` oder einer Schalterstellung ab.
+  Ein [lokaler Diagnosebericht](#diagnosebericht) bleibt nach Bestätigung
+  möglich, ohne Sensorwerte, GPS-Koordinaten oder FC-Klartext.
+
+| GX15: Telemetrie-Diagnose (englisch) | GX15: Sensornamen und Gültigkeit (englisch) |
+| --- | --- |
+| ![GX15-Diagnose mit 14 von 16 gültigen Quellen und nicht verfügbarem FC-Passthrough](images/screenshots/apmon-color-gx15-diagnostics-en-v1.1.0-2026-11-26-214052.png) | ![GX15-Sensorliste mit Linkqualität, Flugmodus, Nick, Akkustand, Roll und Satellitenzahl](images/screenshots/apmon-color-gx15-sensors-07-12-en-v1.1.0-2026-11-26-214057.png) |
+
+Weitere COLOR-Beispiele: [Höhen- und GPS-Sensoren](images/screenshots/apmon-color-gx15-sensors-01-06-en-v1.1.0-2026-11-26-214055.png),
+[Spannung und weitere Sensoren](images/screenshots/apmon-color-gx15-sensors-11-16-en-v1.1.0-2026-11-26-214059.png)
+und [nicht verfügbare FC-Meldungen](images/screenshots/apmon-color-gx15-messages-unavailable-en-v1.1.0-2026-11-26-214048.png).
+Einrichtungschecks auf SW: [FC-Status](images/screenshots/apmon-sw-gx12-setup-check-fc-status-en-v1.1.0-2026-11-26-210827.png),
+[GPS-Fixtyp](images/screenshots/apmon-sw-gx12-setup-check-gps-fix-en-v1.1.0-2026-11-26-210829.png)
+und [relative Höhe für die Armed-Bilanz](images/screenshots/apmon-sw-gx12-setup-check-relative-altitude-en-v1.1.0-2026-11-26-210832.png).
 
 ## Installation
 
@@ -297,6 +411,19 @@ und Uhr gelten im COLOR-Tool nur bis zum Schließen und ändern keine
 Widget-Einstellungen.
 
 <img src="images/screenshots/edgetx-sw-zorro-tools-en-2026-11-25-112609.png" width="384" alt="APMon in der englischen EdgeTX-Tools-Liste auf einer RadioMaster Zorro">
+
+### Flugcontroller-Profil
+
+Das gewünschte EdgeTX-Modell öffnen, dann im **APMon-Menü → Flugcontroller**
+**ArduPilot** oder **Betaflight** auswählen. Mit **ENTER** oder per Touch
+bestätigen. Ein Sternchen markiert die aktive Auswahl. APMon speichert sie
+anhand des EdgeTX-Modelldateinamens als `fc-*.cfg` unter `/SCRIPTS/APMON/`.
+SW-Telemetrieseite, COLOR-Widget und **SYS → Tools** nutzen dieselbe
+Auswahl. Standard ist ArduPilot. APMon ändert dabei keine Einstellungen
+in EdgeTX, ExpressLRS oder am Flight Controller.
+
+Empfängereinstellungen, Sensorsuche und verfügbare Funktionen stehen unter
+[Betaflight-Telemetrie über CRSF](#betaflight-telemetrie-über-crsf).
 
 ### Automatisches Deployment unter Linux
 

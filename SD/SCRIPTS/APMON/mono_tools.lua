@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/mono_tools.lua
 -- Purpose: Draw the optional SW diagnostic screens on demand.
--- Project version: 1.0.0
--- Updated: 2026-11-21
+-- Project version: 1.1.0
+-- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -30,7 +30,8 @@ return function(_, width, sensorIndex, text)
   local fc = monoText(state[data.fcState])
   if data.fcAge then fc = fc .. ' ' .. data.fcAge .. 's' end
   field(2, right, 27, 'FC-Status', fc)
-  field(2, right, 35, 'FC-Text', data.messageAge and string.format(tr('vor %ds'), data.messageAge) or '--')
+  field(2, right, 35, 'FC-Text', monitor.betaflight and monoText(state.unsupported)
+    or data.messageAge and string.format(tr('vor %ds'), data.messageAge) or '--')
   ui.option(width, 43, tr('Sensoren'), sensorIndex == 1)
   ui.option(width, 50, tr('Bericht speichern'), sensorIndex == 2)
   ui.option(width, 57, tr('Einrichtungscheck'), sensorIndex == 3)

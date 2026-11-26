@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/diagnostics.lua
 -- Purpose: Summarize EdgeTX sensor and FC passthrough status for both displays.
--- Project version: 1.0.0
--- Updated: 2026-11-21
+-- Project version: 1.1.0
+-- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -13,7 +13,8 @@
 
 local M = {}
 M.stateLabel = { valid = 'Gültig', missing = 'Nicht gefunden', stale = 'Veraltet',
-  invalid = 'Ungültig', noapi = 'API fehlt', unknown = 'Unbekannt', unreceived = 'Nicht empfangen' }
+  invalid = 'Ungültig', noapi = 'API fehlt', unknown = 'Unbekannt', unreceived = 'Nicht empfangen',
+  unsupported = 'Nicht verfügbar' }
 
 function M.summary(monitor, receiver)
   local sources, valid, issue = monitor.sensorList, 0, nil
@@ -24,7 +25,8 @@ function M.summary(monitor, receiver)
       issue = entry
     end
   end
-  local fcState, fcAge = receiver.status('armed') -- AP_STATUS, not GPS or text
+  local fcState, fcAge = 'unsupported', nil
+  if not monitor.betaflight then fcState, fcAge = receiver.status('armed') end
   return {
     link = monitor.sources.lq, valid = valid, total = #sources, issue = issue,
     fcState = fcState, fcAge = fcAge,

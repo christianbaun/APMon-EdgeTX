@@ -2,7 +2,7 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: package_sd.py
 # Purpose: Build and verify separate monochrome and color SD-card distribution archives.
-# Project version: 1.0.0
+# Project version: 1.1.0
 # Updated: 2026-11-21
 # Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)

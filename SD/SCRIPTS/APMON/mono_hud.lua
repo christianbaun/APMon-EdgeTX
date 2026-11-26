@@ -1,12 +1,13 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- APMon: attitude HUD for the 128 × 64 monochrome telemetry screen.
--- Project version: 1.0.0
+-- Project version: 1.1.0
 local monitor, receiver, header, field, tr, rightText, small, draw, readings = ...
 
 local function line(x1, y1, x2, y2, kind)
   lcd.drawLine(x1, y1, x2, y2, kind == 'ladder' and (DOTTED or 0x55) or (SOLID or 255), FORCE or 0)
 end
 local function angle(value)
+  if value and math.abs(value) < 0.5 then value = 0 end
   return value and string.format('%.0f°', value) or '--'
 end
 local function compact(key)

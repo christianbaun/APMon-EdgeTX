@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/core.lua
 -- Purpose: Read and validate EdgeTX sensors and merge optional ArduPilot passthrough data.
--- Project version: 1.0.0
--- Updated: 2026-11-20
+-- Project version: 1.1.0
+-- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -33,23 +33,33 @@ local function validated(def, value)
         and (not def.binary or value == 0 or value == 1) then return value end
   end
 end
-local function formatValue(key, def, value)
+local function formatValue(key, def, value, betaflight)
   if value == nil then return '--' end
   if def.gps then return string.format('%.6f, %.6f', value.lat, value.lon) end
   if def.text then
     if key == 'mode' then
+      if betaflight then
+        local base = string.match(value, '^(%a+)[*!?]?$')
+        if base == 'STAB' or base == 'ANGL' then return 'ANGLE' end
+        if base == 'HOR' then return 'HORIZON' end
+        if base == 'WAIT' then return 'GPS WAIT' end
+        if value == '!FS!' or value == '!FS!*' then return 'FAILSAFE' end
+        return base or value
+      end
       local base = string.match(value, '^(%a+)%*?$')
       local names = { STAB = 'STABILIZE', LOIT = 'LOITER', GUID = 'GUIDED' }
       if base then return names[base] or base end
     end
     return value
   end
-  return string.format('%.' .. (def.decimals or 0) .. 'f', value) ..
+  local decimals = def.decimals or 0
+  if math.abs(value) < 0.5 * 10 ^ -decimals then value = 0 end
+  return string.format('%.' .. decimals .. 'f', value) ..
     (def.unit ~= '' and ' ' .. def.unit or '')
 end
 local sourceRank = { missing = 0, unknown = 1, stale = 2, invalid = 3 }
 local gpsFixLabels = { [0] = 'Kein GPS', 'Kein Fix', '2D', '3D', 'DGPS', 'RTK float', 'RTK fix' }
-function M.new(config, receiver, armedSummary)
+function M.new(config, receiver, armedSummary, profile)
   -- 1.5 s bridges ordinary gaps between GPS updates.
   local self = { values = {}, sources = {}, sensorList = {}, api = false, gpsGrace = 150 }
   local keys = {}
@@ -61,7 +71,17 @@ function M.new(config, receiver, armedSummary)
   end
   function self:sample(force)
     local now = getTime()
-    if receiver then receiver.poll() end
+    local betaflight = profile ~= nil and profile.get(now) == 'Betaflight'
+    if self.betaflight ~= betaflight then
+      self.betaflight, force = betaflight, true
+      self.sources, self.gpsPosition, self.gpsBinaryTime = {}, nil, nil
+      self.gpsLive, self.gpsTime, self.gpsBinaryFix = nil, nil, nil
+      self.hudRoll, self.hudPitch = nil, nil
+    end
+    if receiver then
+      if profile then receiver.enable(not betaflight) end
+      if not betaflight then receiver.poll() end
+    end
     if not force and self.last and now >= self.last and now - self.last < 20 then return end
     if self.last and now < self.last then
       self.sources, self.gpsPosition, self.gpsBinaryTime = {}, nil, nil
@@ -74,7 +94,7 @@ function M.new(config, receiver, armedSummary)
     local count = 0
     for _, key in ipairs(keys) do
       local def = config.sensors[key]
-      if def.names[1] then
+      if def.names[1] and not (betaflight and key == 'armed') then
         local entry = self.sources[key] or { key = key }
         local previousName = entry.name
         self.sources[key] = entry
@@ -90,6 +110,9 @@ function M.new(config, receiver, armedSummary)
               -- separately uses isFresh (a short window, not a packet timestamp).
               local valid = current == true and validated(def, value) or nil
               if valid ~= nil then
+                if betaflight and def.betaflightScale and type(valid) == 'number' then
+                  valid = valid * def.betaflightScale
+                end
                 self.values[key] = valid
                 entry.name, entry.state, entry.lastName, entry.lastValue = name, 'valid', name, valid
                 entry.fresh = fresh == true
@@ -120,8 +143,8 @@ function M.new(config, receiver, armedSummary)
       end
     end
     for i = count + 1, #self.sensorList do self.sensorList[i] = nil end
-    local confirmedArmed = receiver and receiver.value('armed')
-    if armedSummary then armedSummary:sample(now, confirmedArmed, self.values, self.sources) end
+    local confirmedArmed = not betaflight and receiver and receiver.value('armed') or nil
+    if armedSummary and not betaflight then armedSummary:sample(now, confirmedArmed, self.values, self.sources) end
     local wasLive = self.gpsLive
     self.gpsLive, self.gpsFixLabel = false, nil
     if not self.api then self.gpsBinaryTime = nil; return end
@@ -132,7 +155,7 @@ function M.new(config, receiver, armedSummary)
       self.gpsBinaryTime = nil
     end
     if not self.gpsBinaryTime or now - self.gpsBinaryTime > self.gpsGrace then binaryFix = nil end
-    if receiver then
+    if receiver and not betaflight then
       local fix = receiver.value('fix')
       if self.values.armed == nil then self.values.armed = confirmedArmed end
       self.fix = fix
@@ -155,13 +178,13 @@ function M.new(config, receiver, armedSummary)
     end
   end
   function self:format(key, value)
-    return formatValue(key, config.sensors[key], value == nil and self.values[key] or value)
+    return formatValue(key, config.sensors[key], value == nil and self.values[key] or value, self.betaflight)
   end
   function self:lastSensorValue(entry)
     if entry.lastName == entry.name then return entry.lastValue end
   end
   function self:formatSensor(entry)
-    return formatValue(entry.key, config.sensors[entry.key], self:lastSensorValue(entry))
+    return formatValue(entry.key, config.sensors[entry.key], self:lastSensorValue(entry), self.betaflight)
   end
   function self:status()
     if not self.api then return 'API fehlt: getSourceValue', 'warn' end

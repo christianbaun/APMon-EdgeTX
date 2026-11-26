@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- APMon: draw one telemetry setup check at a time on the SW screen.
--- Project version: 1.0.0
+-- Project version: 1.1.0
 local ui = ...
 local index, check = 1, ui.check
 local function label(key) return ui.monoText(check.text(key, ui.tr, ui.english)) end

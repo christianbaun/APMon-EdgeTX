@@ -2,7 +2,7 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: import_screenshots.py
 # Purpose: Import and label EdgeTX SD-card screenshots without altering the radio.
-# Project version: 1.0.0
+# Project version: 1.1.0
 # Updated: 2026-11-20
 # Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)

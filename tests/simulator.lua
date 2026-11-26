@@ -87,12 +87,19 @@ crossfireTelemetryPop = function()
 end
 crossfireTelemetryPush = function() error('APMon must not transmit') end
 sportTelemetryPush = crossfireTelemetryPush
-model = setmetatable({}, {__index=function() error('APMon must not access model settings') end})
+local function noModelAccess() error('APMon must not mutate or access other model settings') end
+model = setmetatable({getInfo=function() return {filename='model01.yml'} end},
+  {__index=noModelAccess, __newindex=noModelAccess})
 loadScript = function(path) return loadfile('SD' .. path) end
+local profilePath = '/SCRIPTS/APMON/fc-model01.yml.cfg'
 io = {
   open = function(path, mode)
     if path == '/SCRIPTS/APMON/VERSION' and mode == 'r' then return assert(hostIO.open('VERSION', 'r')) end
     if path == '/SCRIPTS/APMON/mono.cfg' and mode == 'r' then return {content=lang .. '\n1'} end
+    if path == profilePath then
+      if mode == 'r' then return sd[path] and {content=sd[path]} end
+      return {content='', key=path}
+    end
     assert(path == reportPath and mode == 'w', 'unexpected SD write: ' .. path)
     return {content=''}
   end,
@@ -100,6 +107,7 @@ io = {
   write = function(f, text) f.content = f.content .. text; return f end,
   close = function(f)
     if type(f) ~= 'table' then return f:close() end
+    if f.key then sd[f.key] = f.content end
     if string.match(f.content, '^APMon ') then sd[reportPath] = f.content end
   end,
 }
@@ -352,4 +360,30 @@ for _, secret in ipairs({'0.123456','-0.654321','Battery warning'}) do
   assert(not string.find(sd[reportPath], secret, 1, true), 'sensitive data in default report')
 end
 frame('Report saved to the simulated SD card', 'Bericht auf der simulierten SD-Karte gespeichert', 2400)
+
+render(exit); render(exit); render(exit)
+openMenu()
+choose(7, 'Flight Controller', 'Flugcontroller')
+expect('ArduPilot *')
+expect('Betaflight')
+frame('Choose the flight controller profile', 'Flugcontroller-Profil auswählen')
+render(nextEvent)
+render(enter)
+assert(sd[profilePath] == 'bf\n')
+render(exit)
+data.FM = {'STAB*'}
+local savedUsed = used
+clock = clock + 20
+render(0)
+assert(used == savedUsed, 'Betaflight must not read the ArduPilot queue')
+expect('ANGLE')
+assert(not has('ARMED') and not has('DISARMED'))
+frame('Betaflight mode from standard CRSF telemetry', 'Betaflight-Modus aus normaler CRSF-Telemetrie')
+openMenu()
+choose(4, 'Telemetry diagnostics', 'Telemetrie-Diagnose')
+if color then tap('Setup check','Einrichtungscheck') else render(prev); render(enter) end
+render(nextEvent)
+expect('Unavailable', 'Nicht verfügbar')
+expect('Only with ArduPilot', 'Nur mit ArduPilot')
+frame('ArduPilot-specific status is unavailable', 'ArduPilot-spezifischer Status ist nicht verfügbar')
 hostIO.write('done\t', count, '\n')
