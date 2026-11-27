@@ -214,21 +214,21 @@ SW is designed for 128 × 64 pixels. COLOR needs a widget zone of at least
 440 × 252 pixels. Other resolutions, key mappings, memory budgets and firmware
 versions require separate testing.
 
-| Radio (display type, resolution) | Firmware and tested setup |
+| Radio (display type, resolution) | Documented hardware checks |
 | --- | --- |
-| GX15 (color, 480 × 320) | ArduPilot: APMon 1.0.0, EdgeTX 2.12.5, ELRS 4.1.0. Betaflight over ELRS CRSF: APMon 1.1.0 hardware test. |
-| TX15 (color, 480 × 320) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
-| TX16S MK3 (color, 800 × 480) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
-| GX12 (monochrome, 128 × 64) | ArduPilot: APMon 1.0.0, EdgeTX 2.12.5, ELRS 4.1.0. Betaflight over ELRS CRSF: APMon 1.1.0 hardware test on EdgeTX 2.12.5. |
-| RadioMaster Zorro (monochrome, 128 × 64) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
-| Boxer (monochrome, 128 × 64) | Hardware testing pending |
-| Other radios (varies by model) | Hardware testing pending |
+| GX15 (color, 480 × 320) | ArduPilot and Betaflight: setup check in APMon 1.2.0. Betaflight CRSF bench test in 1.1.0. |
+| TX15 (color, 480 × 320) | ArduPilot: setup check in APMon 1.2.0. |
+| TX16S MK3 (color, 800 × 480) | ArduPilot: setup check in APMon 1.2.0. |
+| GX12 (monochrome, 128 × 64) | ArduPilot: setup check in APMon 1.2.0. Betaflight CRSF bench test in 1.1.0. |
+| RadioMaster Zorro (monochrome, 128 × 64) | ArduPilot: setup check in APMon 1.0.0. |
+| Boxer (monochrome, 128 × 64) | Hardware testing pending. |
+| Other radios (varies by model) | Hardware testing pending. |
 
-The Betaflight tests on GX12 and GX15 verified battery readings, flight mode,
-attitude HUD and diagnostics on the bench. They do not establish flight
-readiness or support for other firmware combinations. The new setup page in
-APMon 1.2.0 was also checked on the GX15 with both profiles and on the GX12
-and TX16S MK3 with ArduPilot.
+The documented ArduPilot reference setup uses **EdgeTX 2.12.5** and
+**ExpressLRS 4.1.0** in MAVLink mode. The GX12 and GX15 Betaflight bench tests
+covered battery readings, flight mode, the attitude HUD and diagnostics.
+These checks do not establish flight readiness or support for other firmware
+combinations.
 
 For the complete ArduPilot feature set, you need:
 

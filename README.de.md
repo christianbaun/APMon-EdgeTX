@@ -218,21 +218,20 @@ COLOR benötigt eine Widget-Zone von mindestens 440 × 252 Pixeln. Andere
 Auflösungen, Tastenbelegungen, Speicherbudgets und Firmwarestände müssen
 separat geprüft werden.
 
-| Sender (Displaytyp, Auflösung) | Firmware und getesteter Aufbau |
+| Sender (Displaytyp, Auflösung) | Dokumentierte Hardwaretests |
 | --- | --- |
-| GX15 (Farbe, 480 × 320) | ArduPilot: APMon 1.0.0, EdgeTX 2.12.5, ELRS 4.1.0. Betaflight über ELRS-CRSF: Hardwaretest mit APMon 1.1.0. |
-| TX15 (Farbe, 480 × 320) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 0.4.0 |
-| TX16S MK3 (Farbe, 800 × 480) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
-| GX12 (S/W, 128 × 64) | ArduPilot: APMon 1.0.0, EdgeTX 2.12.5, ELRS 4.1.0. Betaflight über ELRS-CRSF: Hardwaretest mit APMon 1.1.0 auf EdgeTX 2.12.5. |
-| RadioMaster Zorro (S/W, 128 × 64) | EdgeTX 2.12.5, ExpressLRS 4.1.0, APMon 1.0.0 |
-| Boxer (S/W, 128 × 64) | Hardwaretest noch offen |
-| Andere Sender (je nach Modell) | Hardwaretest noch offen |
+| GX15 (Farbe, 480 × 320) | ArduPilot und Betaflight: Einrichtungscheck mit APMon 1.2.0. Betaflight-CRSF-Bodentest mit 1.1.0. |
+| TX15 (Farbe, 480 × 320) | ArduPilot: Einrichtungscheck mit APMon 1.2.0. |
+| TX16S MK3 (Farbe, 800 × 480) | ArduPilot: Einrichtungscheck mit APMon 1.2.0. |
+| GX12 (S/W, 128 × 64) | ArduPilot: Einrichtungscheck mit APMon 1.2.0. Betaflight-CRSF-Bodentest mit 1.1.0. |
+| RadioMaster Zorro (S/W, 128 × 64) | ArduPilot: Einrichtungscheck mit APMon 1.0.0. |
+| Boxer (S/W, 128 × 64) | Hardwaretest noch offen. |
+| Andere Sender (je nach Modell) | Hardwaretest noch offen. |
 
-Bei den Betaflight-Bodentests auf GX12 und GX15 wurden Akkuwerte, Flugmodus,
-Lage-HUD und Diagnose geprüft. Das ist keine Aussage zur Flugbereitschaft oder
-zu anderen Firmwarekombinationen. Die neue Einstiegsseite von APMon 1.2.0
-wurde auch auf der GX15 mit beiden Profilen und auf GX12 und TX16S MK3
-mit ArduPilot geprüft.
+Der dokumentierte ArduPilot-Referenzaufbau nutzt **EdgeTX 2.12.5** und
+**ExpressLRS 4.1.0** im MAVLink-Modus. Die Betaflight-Bodentests auf GX12 und
+GX15 umfassten Akkuwerte, Flugmodus, Lage-HUD und Diagnose. Daraus folgt
+keine Aussage zur Flugbereitschaft oder zu anderen Firmwarekombinationen.
 
 Für den vollständigen Funktionsumfang mit ArduPilot werden benötigt:
 
