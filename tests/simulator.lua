@@ -250,6 +250,7 @@ expect(color and 'APMon' or 'APMon Overview', color and 'APMon' or 'APMon Übers
 if color then expect('1/2') end
 tick(100, packet(0x5001,256))
 expect('ARMED')
+if color then expect('Motors', 'Motoren') end
 frame('Confirmed arming', 'Bestätigtes Armen')
 data.Curr.current, data.RQly[1], data.Capa[1] = false, 82, 110
 tick(100, packet(0x5001,256), message('Battery warning',4))
@@ -383,13 +384,35 @@ render(0)
 assert(used == savedUsed, 'Betaflight must not read the ArduPilot queue')
 expect('ANGLE')
 assert(not has('ARMED') and not has('DISARMED'))
+assert(not has('Motors', 'Motoren'))
+assert(not has('EKF') and not has('Last EKF set', 'EKF zuletzt'))
 frame('Betaflight mode from standard CRSF telemetry', 'Betaflight-Modus aus normaler CRSF-Telemetrie')
+data.Alt, data.GAlt, data.GSpd = nil, {25.7}, {0}
+tick(20)
+if not color then render(nextEvent) end
+expect(color and 'GPS altitude' or 'GAlt', color and 'GPS-Höhe' or 'GAlt')
+assert(not has('25.7') and not has('25.7 m'))
+expect(color and 'GPS horiz. speed' or 'GPS km/h', color and 'H-Tempo GPS' or 'GPS km/h')
+assert(not has('0.0km/h') and not has('0.0 km/h'))
+frame('No GPS altitude or speed without a verified fix', 'Keine GPS-Höhe oder GPS-Geschwindigkeit ohne bestätigten Fix')
+render(nextEvent)
+expect('HUD')
+assert(not has('EKF'))
+render(prev)
+if not color then render(prev) end
 openMenu()
 choose(4, 'Telemetry diagnostics', 'Telemetrie-Diagnose')
+expect('Only with ArduPilot', 'Nur mit ArduPilot')
+assert(not has('Unavailable', 'Nicht verfügbar'))
+if not color then
+  expect('FC status and text', 'FC-Status und -Text')
+  assert(not has('FC status', 'FC-Status') and not has('FC text', 'FC-Text'))
+  frame('One full-width note for ArduPilot-only data', 'Ein Hinweis in voller Breite für ArduPilot-Daten')
+end
 if color then tap('Setup check','Einrichtungscheck') else render(prev); render(enter) end
-expect('GPS fix unconfirmed', 'GPS-Fix nicht bestätigt')
-expect('Fix source if needed', 'Fixquelle bei Bedarf')
-frame('An unconfirmed GPS fix is not a missing RC link', 'Ein unbestätigter GPS-Fix ist kein fehlender RC-Link')
+expect('Basic readings available', 'Basiswerte vorhanden')
+expect('Check fix for live GPS', 'Fix für Live-GPS prüfen')
+frame('Basic readings are available before GPS is confirmed', 'Basiswerte liegen auch ohne bestätigten GPS-Fix vor')
 data = {RQly={96}}
 tick(20)
 expect('No FC sensor readings', 'FC-Sensorwerte fehlen')

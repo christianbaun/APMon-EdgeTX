@@ -13,10 +13,9 @@ ExpressLRS im MAVLink-Modus. Das **Betaflight-Profil** liest die normalen
 CRSF-Sensoren, die EdgeTX bereitstellt. APMon läuft von der SD-Karte und
 benötigt zur Laufzeit weder einen Laptop noch ein Skript im Flight Controller.
 
-Der aktuelle Projektstand ist **Version 1.2.0**, siehe [VERSION](VERSION).
-Der [Einrichtungscheck](#einrichtungscheck-für-telemetriequellen) zeigt beim
-Öffnen einen Befund und den nächsten sinnvollen Schritt. ArduPilot bleibt
-Standard. Siehe [Versionsnotizen zu v1.2.0](releases/v1.2.0.md).
+Der aktuelle Projektstand ist **Version 1.3.2**, siehe [VERSION](VERSION).
+Die COLOR-Übersicht blendet bei Betaflight **Motoren** aus und beschriftet
+den `GAlt`-Ersatz als **GPS-Höhe**. Siehe [Versionsnotizen zu v1.3.2](releases/v1.3.2.md).
 
 Die GUI unterstützt **Englisch und Deutsch**. Englisch ist die Standardsprache.
 
@@ -221,9 +220,9 @@ separat geprüft werden.
 | Sender (Displaytyp, Auflösung) | Dokumentierte Hardwaretests |
 | --- | --- |
 | GX15 (Farbe, 480 × 320) | ArduPilot und Betaflight: Einrichtungscheck mit APMon 1.2.0. Betaflight-CRSF-Bodentest mit 1.1.0. |
-| TX15 (Farbe, 480 × 320) | ArduPilot: Einrichtungscheck mit APMon 1.2.0. |
+| TX15 (Farbe, 480 × 320) | ArduPilot: Einrichtungscheck mit APMon 1.2.0. Betaflight-CRSF: Bodentest mit 1.3.1. |
 | TX16S MK3 (Farbe, 800 × 480) | ArduPilot: Einrichtungscheck mit APMon 1.2.0. |
-| GX12 (S/W, 128 × 64) | ArduPilot: Einrichtungscheck mit APMon 1.2.0. Betaflight-CRSF-Bodentest mit 1.1.0. |
+| GX12 (S/W, 128 × 64) | ArduPilot: Einrichtungscheck mit APMon 1.2.0. Betaflight-CRSF: Bodentest mit 1.3.1. |
 | RadioMaster Zorro (S/W, 128 × 64) | ArduPilot: Einrichtungscheck mit APMon 1.0.0. |
 | Boxer (S/W, 128 × 64) | Hardwaretest noch offen. |
 | Andere Sender (je nach Modell) | Hardwaretest noch offen. |
@@ -270,17 +269,20 @@ beschreibt Firmware-Build, FC-UART, Empfängereinstellungen und Sensorsuche.
   und Nick und kennzeichnet eine eingefrorene Lage mit **HOLD**. `STAB`
   und `ANGL` erscheinen als **ANGLE**, `HOR` als **HORIZON**, `WAIT` als
   **GPS WAIT** und `!FS!` als **FAILSAFE**.
-- **GPS und Höhe:** Tempo und Satellitenzahl können ohne bestätigten Fix
-  verfügbar sein. Ohne geprüfte Fixquelle werden Koordinaten nicht als
-  aktuelle Position angezeigt. `GAlt` bedeutet nicht automatisch Höhe
-  über Home.
+- **GPS und Höhe:** Ohne bestätigten Fix zeigt APMon bei Betaflight weder
+  eine Live-Position noch GPS-Tempo oder den Höhenersatz `GAlt` an. In der
+  Sensorliste bleiben die gemeldeten Werte sichtbar. Die Satellitenzahl kann
+  auch ohne Fix erscheinen. Ein gültiger `Alt`-Wert hat weiter Vorrang.
+  `GAlt` bedeutet nicht automatisch Höhe über Home.
+  [GX12-Flugwerte ohne bestätigten Fix](images/screenshots/apmon-sw-gx12-flight-betaflight-no-gps-fix-de-v1.3.1-2026-11-27-160154.png).
 - **Diagnose:** Der [Einrichtungscheck](#einrichtungscheck-für-telemetriequellen)
   schlägt einen nächsten Schritt vor. FC-Meldungen, bestätigter Armed-Status,
-  Armed-Bilanz und EKF-Verlauf sind in diesem Profil nicht verfügbar.
+  Armed-Bilanz und EKF-Verlauf sind in diesem Profil nicht verfügbar. Auf SW
+  fasst die Diagnose FC-Status und -Text unter **Nur mit ArduPilot** zusammen.
 
-| GX15 COLOR: Übersicht (englisch) | GX15 COLOR: Lage-HUD |
+| TX15 COLOR: Übersicht | GX15 COLOR: Lage-HUD |
 | --- | --- |
-| ![APMon mit Betaflight auf der GX15: GPS WAIT, Akkudaten und Linkqualität](images/screenshots/apmon-color-gx15-overview-en-v1.1.0-2026-11-26-214036.png) | ![Betaflight-HUD auf der GX15 mit künstlichem Horizont, Roll, Nick und Akkudaten](images/screenshots/apmon-color-gx15-hud-level-en-v1.1.0-2026-11-26-214039.png) |
+| ![APMon 1.3.1 mit Betaflight auf der TX15: GPS WAIT, Akkudaten und Linkqualität](images/screenshots/apmon-color-tx15-overview-betaflight-gps-wait-de-v1.3.1-2026-11-27-160635.png) | ![Betaflight-HUD auf der GX15 mit künstlichem Horizont, Roll, Nick und Akkudaten](images/screenshots/apmon-color-gx15-hud-level-en-v1.1.0-2026-11-26-214039.png) |
 
 Auf der GX12: [Übersicht](images/screenshots/apmon-sw-gx12-overview-de-v1.1.0-2026-11-26-210700.png),
 [Flugwerte](images/screenshots/apmon-sw-gx12-flight-de-v1.1.0-2026-11-26-210702.png)
@@ -679,9 +681,11 @@ konfigurierte Sensoren zählen nicht mit. Die Werte sind keine Flugfreigabe.
 **1/9** zeigt das aktive Profil, den ersten relevanten Befund und den
 **nächsten Schritt**. Sind nur Funkwerte und keine akzeptierten FC-Sensorwerte
 vorhanden, verweist APMon auf die EdgeTX-Sensorliste. Fehlende Lagewerte
-führen zur Prüfung von Roll und Nick. Bei nicht bestätigtem Betaflight-Fix
-verweist der Check auf die optionale Fixquelle. Die Hinweise sind
-Prüfschritte, keine Aussagen zur Ursache.
+führen zur Prüfung von Roll und Nick. Fehlt bei Betaflight nur die
+GPS-Bestätigung, bleibt **Basiswerte vorhanden** der Befund. Die Fixquelle
+nur prüfen, wenn Live-GPS benötigt wird. Die Hinweise sind Prüfschritte,
+keine Aussagen zur Ursache. Siehe [GX12-Beispiel aus 1.3.0](https://github.com/christianbaun/APMon-EdgeTX/wiki/Betaflight-CRSF-DE#3-werte-richtig-einordnen)
+im Wiki.
 
 | GX15 COLOR: Betaflight ohne FC-Sensorwerte | GX12 S/W: ArduPilot mit Basiswerten |
 | --- | --- |

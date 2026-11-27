@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- Local APMon preference, keyed by the EdgeTX model file, not its display name.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 local current, checked = 'ArduPilot', nil
 local function path()
   if not model or type(model.getInfo) ~= 'function' then return end

@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/i18n.lua
 -- Purpose: Provide the extensible GUI language registry, translations and fallback rules.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 -- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -82,6 +82,7 @@ Zuordnung / Erkannt / Status|Mapping / Detected / Status
 Sensoren|Sensors
 RC-Link|RC link
 FC-Text|FC text
+FC-Status und -Text|FC status and text
 FC-Status (Passthrough)|FC status (passthrough)
 Gültig|Valid
 Ungültig|Invalid
@@ -154,8 +155,9 @@ Akku (Strom)|Battery (current)
 Akku (Rest laut FC)|Battery (left, FC)
 Akku (Verbrauch)|Battery (used)
 EKF zuletzt|Last EKF set
-Höhe (GPS Altitude)|Height (GPS Altitude)
+GPS-Höhe|GPS altitude
 H-Tempo GPS|GPS horiz. speed
+GPS-Tempo|GPS speed
 Richtung|Direction
 Steigen|Climb rate
 Ja 2D|Yes 2D

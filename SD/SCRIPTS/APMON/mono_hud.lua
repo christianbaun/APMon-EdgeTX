@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- APMon: attitude HUD for the 128 × 64 monochrome telemetry screen.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 local monitor, receiver, header, field, tr, rightText, small, draw, readings = ...
 
 local function line(x1, y1, x2, y2, kind)
@@ -37,7 +37,7 @@ return function(_, width, _, text)
   field(bat + 2, lq - 2, 40, '', compact('current'))
   field(lq + 1, width - 2, 40, 'LQ', monitor:format('lq'))
   field(2, half - 3, 49, 'GPS:', readings.gpsFix(monitor, tr, true) .. '/' .. monitor:format('satellites'))
-  field(half + 1, width - 2, 49, 'EKF', readings.ekf(receiver))
+  if not monitor.betaflight then field(half + 1, width - 2, 49, 'EKF', readings.ekf(receiver)) end
   lcd.drawText(2, 57, tr('Rad: Seite'), small)
   rightText(width - 2, 57, tr('ENT: Menu'), small)
 end

@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/TELEMETRY/APMon.lua
 -- Purpose: Render the GX12/Boxer telemetry pages, menus and saved language choice.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 -- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -143,9 +143,9 @@ local function dataHeader(width, title, counter)
   rightText(right, 2, counter, small, true)
   if clock then rightText(clockRight, 2, clock, small, true) end
 end
-local function instrument(x, right, key, alignRight)
-  local value = string.match(monitor:format(key), '^%S+')
-  local unit, unitWidth = fit(config.sensors[key].unit or '', math.floor((right - x) / 3), small)
+local function instrument(x, right, key, alignRight, hidden)
+  local value = hidden and '--' or string.match(monitor:format(key), '^%S+')
+  local unit, unitWidth = fit(not hidden and config.sensors[key].unit or '', math.floor((right - x) / 3), small)
   local numberRight = right - (unitWidth > 0 and unitWidth + 2 or 0)
   local available = numberRight - x
   local flags, y = large, 18
@@ -478,25 +478,41 @@ local function run(event)
     local mode = fmt('mode')
     local modeFont = textWidth(mode, 0) <= leftRight - 2 and 0 or small
     lcd.drawText(2, 18, fit(mode, leftRight - 2, modeFont), modeFont)
-    lcd.drawText(2, 27, v.armed == 1 and 'ARMED' or v.armed == 0 and 'DISARMED' or '--', small)
+    if not monitor.betaflight then
+      lcd.drawText(2, 27, v.armed == 1 and 'ARMED' or v.armed == 0 and 'DISARMED' or '--', small)
+    end
     local fixes = {[0]='Keins', 'Nein', '2D', '3D', 'DGPS', 'RTKflt', 'RTKfix'}
     local fix = monitor.fix ~= nil and tr(fixes[monitor.fix] or '--')
       or v.gpsfix == 1 and tr('Ja') or v.gpsfix == 0 and tr('Nein') or '--'
-    local ekf = receiver.ekf and tostring(receiver.ekf.value) .. '/'
-      .. tostring(receiver.age(receiver.ekf) or 0) .. 's' or '--'
     field(2, leftRight, 35, 'Strom', compact('current'))
     field(2, leftRight, 42, 'Rest', compact('remaining'))
     field(2, leftRight, 49, 'Verbr.', compact('used'))
     field(rightX, right, 35, 'LQ', compact('lq'))
     field(rightX, right, 42, 'GPS', fix .. '/' .. fmt('satellites'))
-    field(rightX, right, 49, 'EKF', ekf)
+    if not monitor.betaflight then
+      local ekf = receiver.ekf and tostring(receiver.ekf.value) .. '/'
+        .. tostring(receiver.age(receiver.ekf) or 0) .. 's' or '--'
+      field(rightX, right, 49, 'EKF', ekf)
+    end
   else
     local altitude = tr('Höhe')
     if not nativeUmlauts and altitude == 'Höhe' then altitude = 'Hoehe' end
-    lcd.drawText(2, 10, v.altitude == nil and v.gpsaltitude ~= nil and 'GAlt' or altitude, small)
-    instrument(2, leftRight, v.altitude ~= nil and 'altitude' or 'gpsaltitude', false)
+    local key, show = monitor:flightAltitude()
+    lcd.drawText(2, 10, key == 'gpsaltitude' and v.gpsaltitude ~= nil and 'GAlt' or altitude, small)
+    instrument(2, leftRight, key, false, not show)
     local function angle(key) return (string.gsub(compact(key), 'deg$', '°')) end
-    field(2, leftRight, 35, 'GPS', compact('speed'))
+    -- Put the unit in the caption so a GPS reading cannot be mistaken for fix status.
+    local speed = monitor:flightSpeed()
+    local unit = config.sensors.speed.unit
+    local number = string.match(speed, '^%S+')
+    local label = unit and unit ~= '' and 'GPS ' .. unit or 'GPS-Tempo'
+    if textWidth(monoText(label), small) + textWidth(number, small) + 1 > leftRight - 2 then
+      label = unit and unit ~= '' and 'GPS' .. unit or 'GSpd'
+    end
+    if textWidth(label, small) + textWidth(number, small) + 1 > leftRight - 2 then
+      label = 'GSpd'
+    end
+    field(2, leftRight, 35, label, number)
     field(2, leftRight, 42, 'Vario', compact('climb'))
     field(rightX, right, 35, 'Roll', angle('roll'))
     field(rightX, right, 42, 'Pitch', angle('pitch'))

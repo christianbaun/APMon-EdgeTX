@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- APMon: prepare HUD readings, including independently timed attitude samples.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 local function gpsFix(monitor, tr, compact)
   local fix = monitor.gpsFixLabel
   if not fix then return '--' end

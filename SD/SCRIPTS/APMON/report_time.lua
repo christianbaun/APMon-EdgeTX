@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- APMon: sample the sender's RTC at confirmation, not on the dashboard.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 if type(getDateTime) ~= 'function' then return end
 local t = getDateTime()
 if type(t) ~= 'table' then return end

@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- APMon: locate the exact, explicitly verified source used by the armed summary.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 return function(monitor, config, name)
   local candidate
   for _, key in ipairs({'altitude', 'gpsaltitude'}) do

@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 -- Updated: 2026-11-27
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -205,6 +205,7 @@ io = {
 }
 data.RxBt, data.GAlt = { value = 15.5 }, { value = 24.6 }
 data.Yaw, data.Sats = { value = 0 }, { value = 12 }
+data.GSpd = { value = 29 }
 local mono = loadScript('/SCRIPTS/TELEMETRY/APMon.lua')()
 mono.run(0)
 assertPage('Overview', '1/3')
@@ -216,6 +217,10 @@ assertPage('Flight', '2/3')
 local flightVoltage, flightVolts = assert(drawOf('15.50', 18)), assert(drawOf('V', 27))
 assert(flightVoltage.x == voltage.x and flightVoltage.flags == voltage.flags and flightVolts.x == volts.x)
 assert(drawOf('GAlt', 10) and drawOf('24.6', 18) and drawOf('0.0° N', 49))
+assert(drawOf('GPS km/h', 35) and drawOf('29.0', 35))
+data.GSpd.value, now = 123.4, now + 20
+mono.run(0)
+assert((drawOf('GPS km/h', 35) or drawOf('GPSkm/h', 35)) and drawOf('123.4', 35))
 mono.run(EVT_ROT_LEFT)
 assertPage('Overview', '1/3')
 mono.run(EVT_VIRTUAL_PREV)
@@ -1765,13 +1770,46 @@ do
   tip('HUD-Lagedaten fehlen', 'Roll und Nick prüfen', 'Betaflight')
   mon.sources.roll, mon.sources.pitch = valid, valid
   tip('Basiswerte vorhanden', 'Details bei Bedarf prüfen', 'Betaflight')
+  mon.sources.gpsaltitude = valid
+  tip('Basiswerte vorhanden', 'Fix für Live-GPS prüfen', 'Betaflight')
+  mon.sources.altitude = valid
+  tip('Basiswerte vorhanden', 'Details bei Bedarf prüfen', 'Betaflight')
   mon.sources.gps = valid
-  tip('GPS-Fix nicht bestätigt', 'Fixquelle bei Bedarf', 'Betaflight')
+  tip('Basiswerte vorhanden', 'Fix für Live-GPS prüfen', 'Betaflight')
   mon.gpsFixLabel = 'Kein Fix'
-  tip('Kein Fix', 'Auf GPS-Fix warten', 'Betaflight')
+  tip('Basiswerte vorhanden', 'Fix für Live-GPS prüfen', 'Betaflight')
+  mon.gpsFixLabel = 'Bestätigt'
+  tip('Basiswerte vorhanden', 'Details bei Bedarf prüfen', 'Betaflight')
   mon.gpsFixLabel, mon.sources.lq = 'Bestätigt', nil
   tip('RC-Linkwert fehlt', 'RC-Linkquelle prüfen', 'Betaflight')
   crossfireTelemetryPop = nil
+end
+do
+  local cfg = loadScript('/SCRIPTS/APMON/config.lua')()
+  cfg.sensors.gpsfix.names = {'Fix'}
+  local active
+  local monitor = core.new(cfg, nil, nil, {get=function() return active end})
+  data = {GAlt={value=0}, GSpd={value=0}}
+  local function flightGPS(profile, expectedKey, expectedShow, expectedSpeed)
+    active = profile
+    monitor:sample(true)
+    local key, show = monitor:flightAltitude()
+    assert(key == expectedKey and show == expectedShow)
+    assert(monitor.values.gpsaltitude == 0 and monitor.sources.gpsaltitude.state == 'valid')
+    assert(monitor:flightSpeed() == expectedSpeed and monitor.sources.speed.state == 'valid')
+    assert(monitor:formatSensor(monitor.sources.speed) == '0.0 km/h')
+  end
+  flightGPS('ArduPilot', 'gpsaltitude', true, '0.0 km/h')
+  flightGPS('Betaflight', 'gpsaltitude', false, '--')
+  data.Fix = {value=0}
+  flightGPS('Betaflight', 'gpsaltitude', false, '--')
+  data.Fix.value = 1
+  flightGPS('Betaflight', 'gpsaltitude', true, '0.0 km/h')
+  data.Fix.fresh = false
+  now = now + 151
+  flightGPS('Betaflight', 'gpsaltitude', false, '--')
+  data.Alt = {value=0}
+  flightGPS('Betaflight', 'altitude', true, '--')
 end
 do
   local rx = loadScript('/SCRIPTS/APMON/pass.lua')(4, nil, true)
@@ -1962,7 +2000,8 @@ do
   assert(drawOf('Profile not saved') and drawOf('ArduPilot *'))
   writeDenied = false
   sw.run(EVT_VIRTUAL_ENTER); sw.run(EVT_VIRTUAL_EXIT)
-  assert(drawOf('ANGLE') and not drawOf('ARMED', 27) and not drawOf('DISARMED', 27))
+  assert(drawOf('ANGLE') and not drawOf('ARMED', 27) and not drawOf('DISARMED', 27)
+    and not drawOf('--', 27))
   local bfPops = pops
   for input, expected in pairs({['WAIT*']='GPS WAIT', ['ANGL!']='ANGLE',
       ['HOR?']='HORIZON', ['!FS!']='FAILSAFE', ['ACRO']='ACRO'}) do

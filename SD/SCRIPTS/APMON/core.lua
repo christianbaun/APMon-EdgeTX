@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/core.lua
 -- Purpose: Read and validate EdgeTX sensors and merge optional ArduPilot passthrough data.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 -- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -59,6 +59,9 @@ local function formatValue(key, def, value, betaflight)
 end
 local sourceRank = { missing = 0, unknown = 1, stale = 2, invalid = 3 }
 local gpsFixLabels = { [0] = 'Kein GPS', 'Kein Fix', '2D', '3D', 'DGPS', 'RTK float', 'RTK fix' }
+local function showFlightGPS(monitor)
+  return not monitor.betaflight or monitor.gpsFixLabel == 'Bestätigt'
+end
 function M.new(config, receiver, armedSummary, profile)
   -- 1.5 s bridges ordinary gaps between GPS updates.
   local self = { values = {}, sources = {}, sensorList = {}, api = false, gpsGrace = 150 }
@@ -176,6 +179,17 @@ function M.new(config, receiver, armedSummary, profile)
         self.gpsLive = true
       end
     end
+  end
+  function self:flightAltitude()
+    if self.values.altitude ~= nil then return 'altitude', true end
+    -- Keep GAlt in source diagnostics, but do not display unchecked Betaflight
+    -- GPS altitude as a flight reading. ArduPilot MAVLink also uses GAlt for
+    -- heights that are not GNSS-derived, so its existing fallback is unchanged.
+    return 'gpsaltitude', showFlightGPS(self)
+  end
+  function self:flightSpeed()
+    -- Leave the accepted sensor value available to source diagnostics.
+    return showFlightGPS(self) and self:format('speed') or '--'
   end
   function self:format(key, value)
     return formatValue(key, config.sensors[key], value == nil and self.values[key] or value, self.betaflight)

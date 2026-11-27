@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- Setup-only translations. Compile this catalogue separately on SW.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 local english = [[
 
 GPS-Koordinaten|GPS coordinates
@@ -45,7 +45,7 @@ Akkuquelle prüfen|Check battery source
 HUD-Lagedaten fehlen|No HUD attitude data
 Roll und Nick prüfen|Check roll and pitch
 GPS-Fix nicht bestätigt|GPS fix unconfirmed
-Fixquelle bei Bedarf|Fix source if needed
+Fix für Live-GPS prüfen|Check fix for live GPS
 GPS-Passthrough prüfen|Check GPS passthrough
 Basiswerte vorhanden|Basic readings available
 Details bei Bedarf prüfen|Check details as needed

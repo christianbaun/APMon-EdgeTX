@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- APMon: read-only setup checks for telemetry features, shared by SW and COLOR.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 local load = ...
 local defs = load('setup_defs')
 local checks, labels, tips, fixes = defs.checks, defs.labels, defs.tips, defs.fixes
@@ -103,14 +103,15 @@ local function overview(monitor, receiver)
   if not valid(sources, 'roll') or not valid(sources, 'pitch') then
     return 'HUD-Lagedaten fehlen', 'Roll und Nick prüfen'
   end
-  if valid(sources, 'gps') then
-    local fix = monitor.gpsFixLabel
+  local gps, fix = valid(sources, 'gps'), monitor.gpsFixLabel
+  if monitor.betaflight then
+    if fix ~= 'Bestätigt' and (gps or valid(sources, 'gpsaltitude') and not valid(sources, 'altitude')) then
+      return 'Basiswerte vorhanden', 'Fix für Live-GPS prüfen'
+    end
+  elseif gps then
     if fix == 'Kein GPS' then return 'Kein GPS', 'GPS am FC prüfen' end
     if fix == 'Kein Fix' then return 'Kein Fix', 'Auf GPS-Fix warten' end
-    if not fix then
-      return 'GPS-Fix nicht bestätigt',
-        monitor.betaflight and 'Fixquelle bei Bedarf' or 'GPS-Passthrough prüfen'
-    end
+    if not fix then return 'GPS-Fix nicht bestätigt', 'GPS-Passthrough prüfen' end
   end
   return 'Basiswerte vorhanden', 'Details bei Bedarf prüfen'
 end

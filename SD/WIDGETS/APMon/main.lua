@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/WIDGETS/APMon/main.lua
 -- Purpose: Render the color dashboard, full-screen project menu and language selection.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 -- Updated: 2026-11-27
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
@@ -509,7 +509,7 @@ local function refresh(widget, event, touch)
     local readings = {
       m:format('voltage'), m:format('current'), m:format('lq'),
       hudReadings and hudReadings.gpsFix(m, tr) or '--', m:format('satellites'),
-      hudReadings and hudReadings.ekf(receiver) or '--',
+       not m.betaflight and (hudReadings and hudReadings.ekf(receiver) or '--') or nil,
     }
     local function fits(font)
       for _, value in ipairs(readings) do
@@ -533,7 +533,7 @@ local function refresh(widget, event, touch)
     local right = x + w + 8
     reading(right, 1, 'GPS Fix', readings[4])
     reading(right, 2, 'Satelliten', readings[5])
-    reading(right, 3, 'EKF', readings[6])
+     if not m.betaflight then reading(right, 3, 'EKF', readings[6]) end
     local roll, pitch, frozen
     if hudReadings then
       if drawHUD then roll, pitch, frozen = hudReadings.horizon(m)
@@ -707,9 +707,10 @@ local function refresh(widget, event, touch)
       local rows = {
         { 'RC-Link', linkValue, link and link.name, link and link.state ~= 'valid' },
         { 'EdgeTX-Sensoren', counts, issue and (issue.name .. ': ' .. tr(state[issue.state])), not m.api or issue },
-        { 'FC-Status (Passthrough)', tr(state[data.fcState]), age, data.fcState ~= 'valid' },
+         { 'FC-Status (Passthrough)', tr(m.betaflight and 'Nur mit ArduPilot' or state[data.fcState]),
+           age, not m.betaflight and data.fcState ~= 'valid' },
         { 'Letzte FC-Textmeldung', messageAge and string.format(tr('vor %ds'), messageAge)
-           or tr(data.fcState == 'unsupported' and state.unsupported
+            or tr(m.betaflight and 'Nur mit ArduPilot'
              or data.fcState == 'noapi' and state.noapi or state.unreceived),
           message and message.value, message and message.severity <= 4 },
       }
@@ -878,11 +879,11 @@ local function refresh(widget, event, touch)
   local yaw = m.values.yaw
   local directions = i18n.language(language).directions or i18n.language(1).directions
   local direction = yaw and directions[math.floor(((yaw % 360) + 22.5) / 45) % 8 + 1] or '--'
+  local altitudeKey, showAltitude = m:flightAltitude()
   local groups = {
     {
       { 'AKKU / STATUS / GPS' },
       { 'Flugmodus', m:format('mode') },
-      { 'Motoren', m.values.armed == 1 and 'ARMED' or m.values.armed == 0 and 'DISARMED' or '--' },
       { 'Akku (Spannung)', m:format('voltage') },
       { 'Akku (Strom)', m:format('current') },
       { 'Akku (Rest laut FC)', m:format('remaining') },
@@ -890,20 +891,25 @@ local function refresh(widget, event, touch)
       { 'RC-Linkqualität', m:format('lq') },
       { 'GPS Fix', m.fix ~= nil and ({ [0]='Kein GPS', 'Nein', 'Ja 2D', 'Ja 3D', 'Ja DGPS', 'Ja RTK flt', 'Ja RTK fix' })[m.fix] or yesno('gpsfix') },
       { 'Satelliten', m:format('satellites') },
-      { 'EKF zuletzt', receiver.ekf and tostring(receiver.ekf.value) .. ' / ' .. tostring(receiver.age(receiver.ekf) or 0) .. 's' or '--' },
+       not m.betaflight and { 'EKF zuletzt',
+         receiver.ekf and tostring(receiver.ekf.value) .. ' / ' .. tostring(receiver.age(receiver.ekf) or 0) .. 's' or '--' } or nil,
     },
     {
       { 'FLUG' },
-      { m.values.altitude ~= nil and 'Höhe' or 'Höhe (GPS Altitude)',
-        m.values.altitude ~= nil and m:format('altitude') or m:format('gpsaltitude') },
+       { altitudeKey == 'altitude' and 'Höhe' or 'GPS-Höhe',
+         showAltitude and m:format(altitudeKey) or '--' },
       { 'Roll', m:format('roll') },
       { 'Pitch', m:format('pitch') },
       { 'Yaw', m:format('yaw') },
-      { 'H-Tempo GPS', m:format('speed') },
+       { 'H-Tempo GPS', m:flightSpeed() },
       { 'Richtung', direction },
       { 'Steigen', m:format('climb') },
     },
   }
+  if not m.betaflight then
+    local armed = m.values.armed
+    table.insert(groups[1], 3, { 'Motoren', armed == 1 and 'ARMED' or armed == 0 and 'DISARMED' or '--' })
+  end
   local cellWidth = math.floor(z.w / 2)
   local firstY, footer = z.y + layout.header + 4, z.y + layout.footerY
   local rowHeight = math.floor((footer - firstY - 2) / #groups[1])

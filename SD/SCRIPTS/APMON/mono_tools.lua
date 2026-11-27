@@ -2,7 +2,7 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/SCRIPTS/APMON/mono_tools.lua
 -- Purpose: Draw the optional SW diagnostic screens on demand.
--- Project version: 1.2.0
+-- Project version: 1.3.2
 -- Updated: 2026-11-26
 -- Authors: Christian Baun
 -- Development assistance: OpenAI (code, tests and documentation)
@@ -27,11 +27,15 @@ return function(_, width, sensorIndex, text)
   field(2, right, 11, 'RC-Link', linkLabel)
   field(2, right, 19, 'Sensoren', monitor.api and string.format(monoText('%d/%d gültig'), data.valid, data.total)
     or monoText(state.noapi))
-  local fc = monoText(state[data.fcState])
-  if data.fcAge then fc = fc .. ' ' .. data.fcAge .. 's' end
-  field(2, right, 27, 'FC-Status', fc)
-  field(2, right, 35, 'FC-Text', monitor.betaflight and monoText(state.unsupported)
-    or data.messageAge and string.format(tr('vor %ds'), data.messageAge) or '--')
+  if monitor.betaflight then
+    text(27, tr('FC-Status und -Text'))
+    text(35, tr('Nur mit ArduPilot'))
+  else
+    local fc = monoText(state[data.fcState])
+    if data.fcAge then fc = fc .. ' ' .. data.fcAge .. 's' end
+    field(2, right, 27, 'FC-Status', fc)
+    field(2, right, 35, 'FC-Text', data.messageAge and string.format(tr('vor %ds'), data.messageAge) or '--')
+  end
   ui.option(width, 43, tr('Sensoren'), sensorIndex == 1)
   ui.option(width, 50, tr('Bericht speichern'), sensorIndex == 2)
   ui.option(width, 57, tr('Einrichtungscheck'), sensorIndex == 3)
