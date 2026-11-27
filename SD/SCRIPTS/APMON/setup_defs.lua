@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- Setup check labels and order, loaded only with the optional check on SW.
--- Project version: 1.1.0
+-- Project version: 1.2.0
 return {
   checks = { 'lq', 'RC-Link', 'armed', 'FC-Status', 'gps', 'GPS-Koordinaten',
     'fix', 'GPS-Fixtyp', 'voltage', 'Akkuspannung', 'current', 'Stromsensor',

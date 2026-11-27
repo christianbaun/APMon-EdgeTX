@@ -313,8 +313,13 @@ expect('Telemetry diagnostics', 'Telemetrie-Diagnose')
 frame('Check the telemetry sources', 'Telemetriequellen prüfen')
 if color then tap('Setup check','Einrichtungscheck') else render(prev); render(enter) end
 expect('Setup check', 'Einrichtungscheck')
-if color then tap('Next','Weitere'); tap('Next','Weitere')
-else render(nextEvent); render(nextEvent) end
+expect('1/9')
+expect('Next step', 'Nächster Schritt')
+expect('Profile: ArduPilot', 'Profil: ArduPilot')
+frame('Start with a next step for the active profile', 'Einstieg mit nächstem Schritt für das aktive Profil')
+for _ = 1, 3 do
+  if color then tap('Next','Weitere') else render(nextEvent) end
+end
 expect('GPS coordinates', 'GPS-Koordinaten')
 expect('Valid', 'Gültig')
 frame('GPS coordinates are available', 'GPS-Koordinaten sind verfügbar')
@@ -382,7 +387,15 @@ frame('Betaflight mode from standard CRSF telemetry', 'Betaflight-Modus aus norm
 openMenu()
 choose(4, 'Telemetry diagnostics', 'Telemetrie-Diagnose')
 if color then tap('Setup check','Einrichtungscheck') else render(prev); render(enter) end
-render(nextEvent)
+expect('GPS fix unconfirmed', 'GPS-Fix nicht bestätigt')
+expect('Fix source if needed', 'Fixquelle bei Bedarf')
+frame('An unconfirmed GPS fix is not a missing RC link', 'Ein unbestätigter GPS-Fix ist kein fehlender RC-Link')
+data = {RQly={96}}
+tick(20)
+expect('No FC sensor readings', 'FC-Sensorwerte fehlen')
+expect('Check EdgeTX sensor list', 'EdgeTX-Sensorliste prüfen')
+frame('Only link readings: check EdgeTX sensors first', 'Nur Funkwerte: zuerst die EdgeTX-Sensorliste prüfen')
+render(nextEvent); render(nextEvent)
 expect('Unavailable', 'Nicht verfügbar')
 expect('Only with ArduPilot', 'Nur mit ArduPilot')
 frame('ArduPilot-specific status is unavailable', 'ArduPilot-spezifischer Status ist nicht verfügbar')

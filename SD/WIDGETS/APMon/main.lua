@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: SD/WIDGETS/APMon/main.lua
 -- Purpose: Render the color dashboard, full-screen project menu and language selection.
--- Project version: 1.1.0
--- Updated: 2026-11-26
+-- Project version: 1.2.0
+-- Updated: 2026-11-27
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -211,7 +211,7 @@ local function handleInput(widget, z, layout, event, touch)
       exit = step == 0
     end
     if exit or enter then setView(widget, 'diagnostics', 3)
-    else widget.focus = (widget.focus - 1 + step) % setup.count + 1 end
+    else widget.focus = (widget.focus - 1 + step) % setup.pages + 1 end
     return
   end
   if widget.view == 'gps' then
@@ -566,12 +566,13 @@ local function refresh(widget, event, touch)
     local top, height, step = layout.header + 8, layout.rowHeight, layout.step
     local back = z.h - height - 12
     local en = i18n.language(languageOf(widget)).code == 'en'
-    local title, status, source, tip, sourceLabel, configured = setup.check(widget.focus, m, receiver, config)
+    local title, status, source, tip, sourceLabel, configured = setup.page(widget.focus, m, receiver, config)
     literal(left, top, setup.text(title, tr, en), info, inner - 60, headingFont)
-    literal(left + inner - 55, top + 2, widget.focus .. '/' .. setup.count, info, 55)
+    literal(left + inner - 55, top + 2, widget.focus .. '/' .. setup.pages, info, 55)
     local y = top + math.max(step, select(2, lcd.sizeText('Ag', headingFont + CUSTOM_COLOR)) + 6)
     rect(left, y, inner, 4 * step, panel)
-    literal(left + 8, y + 4, setup.text(status, tr, en), tip and warn or normal, inner - 16)
+    literal(left + 8, y + 4, setup.text(status, tr, en),
+      tip and status ~= 'Basiswerte vorhanden' and warn or normal, inner - 16)
     if configured then
       literal(left + 8, y + 4 + step, setup.text('Konfiguriert:', tr, en) .. ' ' .. configured, normal, inner - 16)
     end

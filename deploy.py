@@ -3,7 +3,7 @@
 # APMon - EdgeTX Monitor for ArduPilot
 # File: deploy.py
 # Purpose: Preview or deploy APMon files to a mounted SD card after running validation.
-# Project version: 1.1.0
+# Project version: 1.2.0
 # Updated: 2026-11-21
 # Authors: Christian Baun
 # Development assistance: OpenAI Codex CLI (code, tests and documentation)

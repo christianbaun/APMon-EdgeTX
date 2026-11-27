@@ -2,8 +2,8 @@
 -- APMon - EdgeTX Monitor for ArduPilot
 -- File: tests/check.lua
 -- Purpose: Test sensor handling, passthrough decoding and both UIs with simulated EdgeTX APIs.
--- Project version: 1.1.0
--- Updated: 2026-11-26
+-- Project version: 1.2.0
+-- Updated: 2026-11-27
 -- Authors: Christian Baun
 -- Development assistance: OpenAI Codex CLI (code, tests and documentation)
 -- SPDX-License-Identifier: Apache-2.0
@@ -1741,6 +1741,37 @@ do
   check(4, 'GPS-Fixtyp', 'Veraltet', 'ELRS MAVLink', 'ELRS MAVLink prüfen', 'Erkannt:')
   crossfireTelemetryPop = nil
   check(2, 'FC-Status', 'API fehlt', nil, 'EdgeTX-Version prüfen', nil, 'ELRS MAVLink')
+  local function tip(expected, action, profile)
+    local title, result, name, nextStep = setup.page(1, mon, rx, cfg)
+    assert(title == 'Nächster Schritt' and result == expected and nextStep == action
+      and name == (profile or 'ArduPilot'), tostring(result))
+  end
+  assert(setup.pages == 9 and setup.page(2, mon, rx, cfg) == 'RC-Link')
+  tip('API fehlt', 'EdgeTX-Version prüfen')
+  mon.api, mon.sources = true, {}
+  tip('Keine aktuellen Werte', 'Modell und Link prüfen')
+  local valid = {state='valid'}
+  mon.sources.lq = valid
+  tip('FC-Sensorwerte fehlen', 'EdgeTX-Sensorliste prüfen')
+  mon.sources.mode = valid
+  tip('Passthrough-API fehlt', 'EdgeTX-Version prüfen')
+  crossfireTelemetryPop = function() end
+  tip('FC-Status fehlt', 'Passthrough prüfen')
+  rx.decode(0x80, single(0x5001, 0), now)
+  tip('Akkuspannung fehlt', 'Akkuquelle prüfen')
+  now = now + 301
+  tip('FC-Status veraltet', 'Passthrough prüfen')
+  mon.betaflight, mon.sources.voltage = true, valid
+  tip('HUD-Lagedaten fehlen', 'Roll und Nick prüfen', 'Betaflight')
+  mon.sources.roll, mon.sources.pitch = valid, valid
+  tip('Basiswerte vorhanden', 'Details bei Bedarf prüfen', 'Betaflight')
+  mon.sources.gps = valid
+  tip('GPS-Fix nicht bestätigt', 'Fixquelle bei Bedarf', 'Betaflight')
+  mon.gpsFixLabel = 'Kein Fix'
+  tip('Kein Fix', 'Auf GPS-Fix warten', 'Betaflight')
+  mon.gpsFixLabel, mon.sources.lq = 'Bestätigt', nil
+  tip('RC-Linkwert fehlt', 'RC-Linkquelle prüfen', 'Betaflight')
+  crossfireTelemetryPop = nil
 end
 do
   local rx = loadScript('/SCRIPTS/APMON/pass.lua')(4, nil, true)

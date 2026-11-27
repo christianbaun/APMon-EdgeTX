@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- APMon: project recent attitude onto a clipped wireframe horizon.
--- Project version: 1.1.0
+-- Project version: 1.2.0
 local function clip(lo, hi, point, direction, first, last)
   if math.abs(direction) < 0.00001 then
     if point >= first and point <= last then return lo, hi end

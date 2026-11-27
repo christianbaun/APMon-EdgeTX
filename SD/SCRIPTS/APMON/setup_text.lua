@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- Setup-only translations. Compile this catalogue separately on SW.
--- Project version: 1.1.0
+-- Project version: 1.2.0
 local english = [[
 
 GPS-Koordinaten|GPS coordinates
@@ -29,6 +29,26 @@ Nicht ausgewählt|Not selected
 Andere Quelle:|Other source:
 Zuordnung prüfen|Check mapping
 Alias-Reihenfolge prüfen|Check alias order
+Nächster Schritt|Next step
+Profil:|Profile:
+Keine aktuellen Werte|No current readings
+Modell und Link prüfen|Check model and link
+FC-Sensorwerte fehlen|No FC sensor readings
+EdgeTX-Sensorliste prüfen|Check EdgeTX sensor list
+RC-Linkwert fehlt|No RC link reading
+RC-Linkquelle prüfen|Check RC link source
+Passthrough-API fehlt|Passthrough API missing
+FC-Status veraltet|FC status stale
+Passthrough prüfen|Check passthrough
+Akkuspannung fehlt|No battery voltage
+Akkuquelle prüfen|Check battery source
+HUD-Lagedaten fehlen|No HUD attitude data
+Roll und Nick prüfen|Check roll and pitch
+GPS-Fix nicht bestätigt|GPS fix unconfirmed
+Fixquelle bei Bedarf|Fix source if needed
+GPS-Passthrough prüfen|Check GPS passthrough
+Basiswerte vorhanden|Basic readings available
+Details bei Bedarf prüfen|Check details as needed
 ]]
 return function(key, tr, en)
   if en then

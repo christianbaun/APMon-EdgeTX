@@ -1,6 +1,6 @@
 -- SPDX-License-Identifier: Apache-2.0
 -- APMon: attitude HUD for the 128 × 64 monochrome telemetry screen.
--- Project version: 1.1.0
+-- Project version: 1.2.0
 local monitor, receiver, header, field, tr, rightText, small, draw, readings = ...
 
 local function line(x1, y1, x2, y2, kind)
